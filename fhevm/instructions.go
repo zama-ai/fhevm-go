@@ -6,7 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
-	"github.com/zama-ai/fhevm/crypto"
+	"github.com/zama-ai/fhevm-go/crypto"
 )
 
 // A list of slots that we consider reserved in protected storage.

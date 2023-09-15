@@ -15,12 +15,12 @@ type EVMEnvironment interface {
 	// EVM Logger
 	GetLogger() Logger
 
-	// TODO: clarify the meaning of those names
+	// TODO: clarify meaning of the following
 	IsCommitting() bool
 	IsEthCall() bool
 	IsReadOnly() bool
 
-	GetFhevmData() FhevmData
+	GetFhevmData() *FhevmData
 }
 
 type FhevmData struct {
