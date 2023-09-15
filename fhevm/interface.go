@@ -1,3 +1,32 @@
 package fhevm
 
-type EVMEnvironment interface{}
+import (
+	"github.com/ethereum/go-ethereum/common"
+)
+
+type EVMEnvironment interface {
+	// StateDB related functions
+	GetState(common.Address, common.Hash) common.Hash
+	SetState(common.Address, common.Hash, common.Hash)
+
+	// EVM call stack depth
+	GetDepth() int
+
+	// EVM Logger
+	GetLogger() Logger
+
+	// TODO: clarify the meaning of those names
+	IsCommitting() bool
+	IsEthCall() bool
+	IsReadOnly() bool
+
+	GetFhevmData() FhevmData
+}
+
+type FhevmData struct {
+	// A map from a ciphertext hash to itself and stack depth at which it is verified
+	verifiedCiphertexts map[common.Hash]*verifiedCiphertext
+
+	// All optimistic requires encountered up to that point in the txn execution
+	optimisticRequires []*tfheCiphertext
+}
