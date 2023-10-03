@@ -2,6 +2,7 @@ package fhevm
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/holiman/uint256"
 )
 
 type EVMEnvironment interface {
@@ -29,4 +30,6 @@ type FhevmData struct {
 
 	// All optimistic requires encountered up to that point in the txn execution
 	optimisticRequires []*tfheCiphertext
+
+	nextCiphertextHashOnGasEst uint256.Int
 }
