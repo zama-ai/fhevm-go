@@ -11,4 +11,4 @@ test:
 
 .PHONY: build-tfhe-rs-capi
 build-tfhe-rs-capi:
-	cd tfhe-rs && make build_c_api
+	cd tfhe-rs && make build_c_api_experimental_deterministic_fft
