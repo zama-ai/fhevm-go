@@ -8,7 +8,7 @@ build: build-tfhe-rs-capi
 	cd fhevm && CGO_CFLAGS=${CGO_CFLAGS} CGO_LDFLAGS=${CGO_LDFLAGS} go build .
 
 .PHONY: test
-test:
+test: build-tfhe-rs-capi
 	cd fhevm && CGO_CFLAGS=${CGO_CFLAGS} CGO_LDFLAGS=${CGO_LDFLAGS} go test -v .
 
 .PHONY: build-tfhe-rs-capi
