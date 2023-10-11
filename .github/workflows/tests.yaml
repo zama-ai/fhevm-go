@@ -1,0 +1,34 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - 'main'
+    tags:
+      - '*'
+  pull_request:
+
+jobs:
+  build_and_test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Checkout zbc-fhe-tool
+        uses: actions/checkout@v3
+        with:
+          repository: zama-ai/fhevm-tfhe-cli
+          ref: main
+          path: zbc-fhe-tool
+
+      - name: Generate TFHE-rs keys
+        working-directory: ./zbc-fhe-tool
+        run: |
+          mkdir -p $HOME/.evmosd/zama/keys/network-fhe-keys
+          cargo run --features tfhe/x86_64-unix --release -- generate-keys -d $HOME/.evmosd/zama/keys/network-fhe-keys
+
+      - name: Run tests
+        run: make test
