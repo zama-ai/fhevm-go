@@ -18,7 +18,7 @@ package fhevm
 
 /*
 #cgo CFLAGS: -O3 -I.
-#cgo LDFLAGS: -Llib -ltfhe
+#cgo LDFLAGS: -l:libtfhe.a -lm
 
 #include <tfhe.h>
 
