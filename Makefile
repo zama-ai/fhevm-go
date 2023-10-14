@@ -1,7 +1,8 @@
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 TFHE_RS_FOLDER=${ROOT_DIR}/tfhe-rs/
-CGO_CFLAGS="-I${TFHE_RS_FOLDER}/target/release/"
-CGO_LDFLAGS="-L${TFHE_RS_FOLDER}/target/release/"
+TFHE_BUILD_DIR=${TFHE_RS_FOLDER}/target/release/
+CGO_CFLAGS="-I${TFHE_BUILD_DIR}"
+CGO_LDFLAGS="-L${TFHE_BUILD_DIR}"
 
 .PHONY: build
 build: build-tfhe-rs-capi

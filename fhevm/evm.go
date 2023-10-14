@@ -44,7 +44,7 @@ func makeKeccakSignature(input string) uint32 {
 	return binary.BigEndian.Uint32(crypto.Keccak256([]byte(input))[0:4])
 }
 
-func isScalarOp(environment *EVMEnvironment, input []byte) (bool, error) {
+func isScalarOp(input []byte) (bool, error) {
 	if len(input) != 65 {
 		return false, errors.New("input needs to contain two 256-bit sized values and 1 8-bit value")
 	}
@@ -52,11 +52,11 @@ func isScalarOp(environment *EVMEnvironment, input []byte) (bool, error) {
 	return isScalar, nil
 }
 
-func getVerifiedCiphertext(environment *EVMEnvironment, ciphertextHash common.Hash) *verifiedCiphertext {
-	return getVerifiedCiphertextFromEVM(*environment, ciphertextHash)
+func getVerifiedCiphertext(environment EVMEnvironment, ciphertextHash common.Hash) *verifiedCiphertext {
+	return getVerifiedCiphertextFromEVM(environment, ciphertextHash)
 }
 
-func get2VerifiedOperands(environment *EVMEnvironment, input []byte) (lhs *verifiedCiphertext, rhs *verifiedCiphertext, err error) {
+func get2VerifiedOperands(environment EVMEnvironment, input []byte) (lhs *verifiedCiphertext, rhs *verifiedCiphertext, err error) {
 	if len(input) != 65 {
 		return nil, nil, errors.New("input needs to contain two 256-bit sized values and 1 8-bit value")
 	}
@@ -72,7 +72,7 @@ func get2VerifiedOperands(environment *EVMEnvironment, input []byte) (lhs *verif
 	return
 }
 
-func getScalarOperands(environment *EVMEnvironment, input []byte) (lhs *verifiedCiphertext, rhs *big.Int, err error) {
+func getScalarOperands(environment EVMEnvironment, input []byte) (lhs *verifiedCiphertext, rhs *big.Int, err error) {
 	if len(input) != 65 {
 		return nil, nil, errors.New("input needs to contain two 256-bit sized values and 1 8-bit value")
 	}
@@ -85,8 +85,8 @@ func getScalarOperands(environment *EVMEnvironment, input []byte) (lhs *verified
 	return
 }
 
-func importCiphertextToEVMAtDepth(environment *EVMEnvironment, ct *tfheCiphertext, depth int) *verifiedCiphertext {
-	existing, ok := (*environment).GetFhevmData().verifiedCiphertexts[ct.getHash()]
+func importCiphertextToEVMAtDepth(environment EVMEnvironment, ct *tfheCiphertext, depth int) *verifiedCiphertext {
+	existing, ok := environment.GetFhevmData().verifiedCiphertexts[ct.getHash()]
 	if ok {
 		existing.verifiedDepths.add(depth)
 		return existing
@@ -97,21 +97,21 @@ func importCiphertextToEVMAtDepth(environment *EVMEnvironment, ct *tfheCiphertex
 			verifiedDepths,
 			ct,
 		}
-		(*environment).GetFhevmData().verifiedCiphertexts[ct.getHash()] = new
+		environment.GetFhevmData().verifiedCiphertexts[ct.getHash()] = new
 		return new
 	}
 }
 
-func importCiphertextToEVM(environment *EVMEnvironment, ct *tfheCiphertext) *verifiedCiphertext {
-	return importCiphertextToEVMAtDepth(environment, ct, (*environment).GetDepth())
+func importCiphertextToEVM(environment EVMEnvironment, ct *tfheCiphertext) *verifiedCiphertext {
+	return importCiphertextToEVMAtDepth(environment, ct, environment.GetDepth())
 }
 
-func importCiphertext(environment *EVMEnvironment, ct *tfheCiphertext) *verifiedCiphertext {
+func importCiphertext(environment EVMEnvironment, ct *tfheCiphertext) *verifiedCiphertext {
 	return importCiphertextToEVM(environment, ct)
 }
 
-func importRandomCiphertext(environment *EVMEnvironment, t fheUintType) []byte {
-	nextCtHash := &(*environment).GetFhevmData().nextCiphertextHashOnGasEst
+func importRandomCiphertext(environment EVMEnvironment, t fheUintType) []byte {
+	nextCtHash := &environment.GetFhevmData().nextCiphertextHashOnGasEst
 	ctHashBytes := crypto.Keccak256(nextCtHash.Bytes())
 	handle := common.BytesToHash(ctHashBytes)
 	ct := new(tfheCiphertext)
