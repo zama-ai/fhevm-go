@@ -24,6 +24,7 @@ var ErrExecutionReverted = errors.New("execution reverted")
 var signatureFheAdd = makeKeccakSignature("fheAdd(uint256,uint256,bytes1)")
 var signatureCast = makeKeccakSignature("cast(uint256,bytes1)")
 var signatureDecrypt = makeKeccakSignature("decrypt(uint256)")
+var signatureFhePubKey = makeKeccakSignature("fhePubKey(bytes1)")
 
 func FheLibRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	logger := environment.GetLogger()
@@ -43,6 +44,9 @@ func FheLibRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	case signatureDecrypt:
 		bwCompatBytes := input[4:minInt(36, len(input))]
 		return decryptRequiredGas(environment, bwCompatBytes)
+	case signatureFhePubKey:
+		bwCompatBytes := input[4:minInt(5, len(input))]
+		return fhePubKeyRequiredGas(environment, bwCompatBytes)
 	default:
 		err := errors.New("precompile method not found")
 		logger.Error("fheLib precompile error", "err", err, "input", hex.EncodeToString(input))
@@ -68,6 +72,17 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	case signatureDecrypt:
 		bwCompatBytes := input[4:minInt(36, len(input))]
 		return decryptRun(environment, caller, addr, bwCompatBytes, readOnly)
+	case signatureFhePubKey:
+		bwCompatBytes := input[4:minInt(5, len(input))]
+		precompileBytes, err := fhePubKeyRun(environment, caller, addr, bwCompatBytes, readOnly)
+		if err != nil {
+			return precompileBytes, err
+		}
+		// pad according to abi specification, first add offset to the dynamic bytes argument
+		outputBytes := make([]byte, 32, len(precompileBytes)+32)
+		outputBytes[31] = 0x20
+		outputBytes = append(outputBytes, precompileBytes...)
+		return padArrayTo32Multiple(outputBytes), nil
 	default:
 		err := errors.New("precompile method not found")
 		logger.Error("fheLib precompile error", "err", err, "input", hex.EncodeToString(input))
@@ -139,6 +154,10 @@ func decryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		return 0
 	}
 	return fheDecryptGasCosts[ct.ciphertext.fheUintType]
+}
+
+func fhePubKeyRequiredGas(accessibleState EVMEnvironment, input []byte) uint64 {
+	return params.FhePubKeyGas
 }
 
 // Implementations
@@ -312,4 +331,22 @@ func castRun(environment EVMEnvironment, caller common.Address, addr common.Addr
 	}
 
 	return resHash.Bytes(), nil
+}
+
+var fhePubKeyHashPrecompile = common.BytesToAddress([]byte{93})
+var fhePubKeyHashSlot = common.Hash{}
+
+func fhePubKeyRun(accessibleState EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+	existing := accessibleState.GetState(fhePubKeyHashPrecompile, fhePubKeyHashSlot)
+	if existing != pksHash {
+		msg := "fhePubKey FHE public key hash doesn't match one stored in state"
+		accessibleState.GetLogger().Error(msg, "existing", existing.Hex(), "pksHash", pksHash.Hex())
+		return nil, errors.New(msg)
+	}
+	// If we have a single byte with the value of 1, return as an EVM array. Otherwise, returh the raw bytes.
+	if len(input) == 1 && input[0] == 1 {
+		return toEVMBytes(pksBytes), nil
+	} else {
+		return pksBytes, nil
+	}
 }

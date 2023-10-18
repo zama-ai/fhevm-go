@@ -129,3 +129,40 @@ func minInt(a int, b int) int {
 	}
 	return b
 }
+
+// Return a memory with a layout that matches the `bytes` EVM type, namely:
+//   - 32 byte integer in big-endian order as length
+//   - the actual bytes in the `bytes` value
+//   - add zero byte padding until nearest multiple of 32
+func toEVMBytes(input []byte) []byte {
+	arrLen := uint64(len(input))
+	lenBytes32 := uint256.NewInt(arrLen).Bytes32()
+	ret := make([]byte, 0, arrLen+32)
+	ret = append(ret, lenBytes32[:]...)
+	ret = append(ret, input...)
+	return ret
+}
+
+func InitFhevm(accessibleState EVMEnvironment) {
+	persistFhePubKeyHash(accessibleState)
+}
+
+func persistFhePubKeyHash(accessibleState EVMEnvironment) {
+	existing := accessibleState.GetState(fhePubKeyHashPrecompile, fhePubKeyHashSlot)
+	if newInt(existing[:]).IsZero() {
+		accessibleState.SetState(fhePubKeyHashPrecompile, fhePubKeyHashSlot, pksHash)
+	}
+}
+
+// apply padding to slice to the multiple of 32
+func padArrayTo32Multiple(input []byte) []byte {
+	modRes := len(input) % 32
+	if modRes > 0 {
+		padding := 32 - modRes
+		for padding > 0 {
+			padding--
+			input = append(input, 0x0)
+		}
+	}
+	return input
+}
