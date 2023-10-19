@@ -25,6 +25,7 @@ var signatureFheAdd = makeKeccakSignature("fheAdd(uint256,uint256,bytes1)")
 var signatureCast = makeKeccakSignature("cast(uint256,bytes1)")
 var signatureDecrypt = makeKeccakSignature("decrypt(uint256)")
 var signatureFhePubKey = makeKeccakSignature("fhePubKey(bytes1)")
+var signatureTrivialEncrypt = makeKeccakSignature("trivialEncrypt(uint256,bytes1)")
 
 func FheLibRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	logger := environment.GetLogger()
@@ -47,6 +48,9 @@ func FheLibRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	case signatureFhePubKey:
 		bwCompatBytes := input[4:minInt(5, len(input))]
 		return fhePubKeyRequiredGas(environment, bwCompatBytes)
+	case signatureTrivialEncrypt:
+		bwCompatBytes := input[4:minInt(37, len(input))]
+		return trivialEncryptRequiredGas(environment, bwCompatBytes)
 	default:
 		err := errors.New("precompile method not found")
 		logger.Error("fheLib precompile error", "err", err, "input", hex.EncodeToString(input))
@@ -83,6 +87,9 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		outputBytes[31] = 0x20
 		outputBytes = append(outputBytes, precompileBytes...)
 		return padArrayTo32Multiple(outputBytes), nil
+	case signatureTrivialEncrypt:
+		bwCompatBytes := input[4:minInt(37, len(input))]
+		return trivialEncryptRun(environment, caller, addr, bwCompatBytes, readOnly)
 	default:
 		err := errors.New("precompile method not found")
 		logger.Error("fheLib precompile error", "err", err, "input", hex.EncodeToString(input))
@@ -158,6 +165,22 @@ func decryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 
 func fhePubKeyRequiredGas(accessibleState EVMEnvironment, input []byte) uint64 {
 	return params.FhePubKeyGas
+}
+
+var fheTrivialEncryptGasCosts = map[fheUintType]uint64{
+	FheUint8:  params.FheUint8TrivialEncryptGas,
+	FheUint16: params.FheUint16TrivialEncryptGas,
+	FheUint32: params.FheUint32TrivialEncryptGas,
+}
+
+func trivialEncryptRequiredGas(accessibleState EVMEnvironment, input []byte) uint64 {
+	logger := accessibleState.GetLogger()
+	if len(input) != 33 {
+		logger.Error("trivialEncrypt RequiredGas() input len must be 33 bytes", "input", hex.EncodeToString(input), "len", len(input))
+		return 0
+	}
+	encryptToType := fheUintType(input[32])
+	return fheTrivialEncryptGasCosts[encryptToType]
 }
 
 // Implementations
@@ -349,4 +372,27 @@ func fhePubKeyRun(accessibleState EVMEnvironment, caller common.Address, addr co
 	} else {
 		return pksBytes, nil
 	}
+}
+
+func trivialEncryptRun(accessibleState EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+	logger := accessibleState.GetLogger()
+	if len(input) != 33 {
+		msg := "trivialEncrypt input len must be 33 bytes"
+		logger.Error(msg, "input", hex.EncodeToString(input), "len", len(input))
+		return nil, errors.New(msg)
+	}
+
+	valueToEncrypt := *new(big.Int).SetBytes(input[0:32])
+	encryptToType := fheUintType(input[32])
+
+	ct := new(tfheCiphertext).trivialEncrypt(valueToEncrypt, encryptToType)
+
+	ctHash := ct.getHash()
+	importCiphertext(accessibleState, ct)
+	if accessibleState.IsCommitting() {
+		logger.Info("trivialEncrypt success",
+			"ctHash", ctHash.Hex(),
+			"valueToEncrypt", valueToEncrypt.Uint64())
+	}
+	return ctHash.Bytes(), nil
 }
