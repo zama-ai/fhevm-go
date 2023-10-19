@@ -33,3 +33,10 @@ type FhevmData struct {
 
 	nextCiphertextHashOnGasEst uint256.Int
 }
+
+func NewFhevmData() FhevmData {
+	return FhevmData{
+		verifiedCiphertexts: make(map[common.Hash]*verifiedCiphertext),
+		optimisticRequires:  make([]*tfheCiphertext, 0),
+	}
+}

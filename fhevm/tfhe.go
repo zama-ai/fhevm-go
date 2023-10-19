@@ -18,7 +18,7 @@ package fhevm
 
 /*
 #cgo CFLAGS: -O3 -I../tfhe-rs/target/release
-#cgo LDFLAGS: -L../tfhe-rs/target/release -l:libtfhe.a -lm
+#cgo LDFLAGS: -L../tfhe-rs/target/release -ltfhe -lm
 
 #include <tfhe.h>
 
@@ -1432,10 +1432,10 @@ void* cast_32_16(void* ct, void* sks) {
 import "C"
 
 import (
+	_ "embed"
 	"errors"
 	"fmt"
 	"math/big"
-	"os"
 	"unsafe"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -1449,14 +1449,6 @@ func toBufferView(in []byte) C.BufferView {
 	}
 }
 
-func homeDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
-	return home
-}
-
 // Expanded TFHE ciphertext sizes by type, in bytes.
 var expandedFheCiphertextSize map[fheUintType]uint
 
@@ -1466,36 +1458,30 @@ var compactFheCiphertextSize map[fheUintType]uint
 var sks unsafe.Pointer
 var cks unsafe.Pointer
 var pks unsafe.Pointer
-var pksBytes []byte
 var pksHash common.Hash
 var networkKeysDir string
 var usersKeysDir string
+
+//go:embed test-fhevm-keys/sks
+var sksBytes []byte
+
+//go:embed test-fhevm-keys/pks
+var pksBytes []byte
+
+//go:embed test-fhevm-keys/cks
+var cksBytes []byte
 
 func init() {
 	expandedFheCiphertextSize = make(map[fheUintType]uint)
 	compactFheCiphertextSize = make(map[fheUintType]uint)
 
-	home := homeDir()
-	networkKeysDir = home + "/.evmosd/zama/keys/network-fhe-keys/"
-	usersKeysDir = home + "/.evmosd/zama/keys/users-fhe-keys/"
-
-	sksBytes, err := os.ReadFile(networkKeysDir + "sks")
-	if err != nil {
-		fmt.Println("WARNING: file sks not found.")
-		return
-	}
+	fmt.Println("TODO: fhevm keys are hardcoded into subnet evm, find ways to store keys in production")
 	sks = C.deserialize_server_key(toBufferView(sksBytes))
 
 	expandedFheCiphertextSize[FheUint8] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint8).serialize()))
 	expandedFheCiphertextSize[FheUint16] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint16).serialize()))
 	expandedFheCiphertextSize[FheUint32] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint32).serialize()))
 
-	pksBytes, err = os.ReadFile(networkKeysDir + "pks")
-	if err != nil {
-		pksBytes = nil
-		fmt.Println("WARNING: file pks not found.")
-		return
-	}
 	pksHash = crypto.Keccak256Hash(pksBytes)
 	pks = C.deserialize_compact_public_key(toBufferView(pksBytes))
 
@@ -1503,11 +1489,6 @@ func init() {
 	compactFheCiphertextSize[FheUint16] = uint(len(encryptAndSerializeCompact(0, FheUint16)))
 	compactFheCiphertextSize[FheUint32] = uint(len(encryptAndSerializeCompact(0, FheUint32)))
 
-	cksBytes, err := os.ReadFile(networkKeysDir + "cks")
-	if err != nil {
-		fmt.Println("WARNING: file cks not found.")
-		return
-	}
 	cks = C.deserialize_client_key(toBufferView(cksBytes))
 }
 
