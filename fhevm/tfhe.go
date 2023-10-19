@@ -413,6 +413,39 @@ void* scalar_div_fhe_uint32(void* ct, uint32_t pt, void* sks)
 	return result;
 }
 
+void* scalar_rem_fhe_uint8(void* ct, uint8_t pt, void* sks)
+{
+	FheUint8* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint8_scalar_rem(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_rem_fhe_uint16(void* ct, uint16_t pt, void* sks)
+{
+	FheUint16* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint16_scalar_rem(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_rem_fhe_uint32(void* ct, uint32_t pt, void* sks)
+{
+	FheUint32* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint32_scalar_rem(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* bitand_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
 	FheUint8* result = NULL;
@@ -1991,6 +2024,19 @@ func (lhs *tfheCiphertext) scalarDiv(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_div_fhe_uint32(lhs, rhs, sks)
+		})
+}
+
+func (lhs *tfheCiphertext) scalarRem(rhs uint64) (*tfheCiphertext, error) {
+	return lhs.executeBinaryScalarOperation(rhs,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
+			return C.scalar_rem_fhe_uint8(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
+			return C.scalar_rem_fhe_uint16(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
+			return C.scalar_rem_fhe_uint32(lhs, rhs, sks)
 		})
 }
 
