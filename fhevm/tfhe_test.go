@@ -353,6 +353,29 @@ func TfheScalarDiv(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
+func TfheScalarRem(t *testing.T, fheUintType fheUintType) {
+	var a, b big.Int
+	switch fheUintType {
+	case FheUint8:
+		a.SetUint64(4)
+		b.SetUint64(2)
+	case FheUint16:
+		a.SetUint64(49)
+		b.SetUint64(144)
+	case FheUint32:
+		a.SetUint64(70)
+		b.SetInt64(17)
+	}
+	expected := new(big.Int).Rem(&a, &b)
+	ctA := new(tfheCiphertext)
+	ctA.encrypt(a, fheUintType)
+	ctRes, _ := ctA.scalarRem(b.Uint64())
+	res, err := ctRes.decrypt()
+	if err != nil || res.Uint64() != expected.Uint64() {
+		t.Fatalf("%d != %d", expected.Uint64(), res.Uint64())
+	}
+}
+
 func TfheBitAnd(t *testing.T, fheUintType fheUintType) {
 	var a, b big.Int
 	switch fheUintType {
@@ -1214,6 +1237,18 @@ func TestTfheScalarDiv16(t *testing.T) {
 
 func TestTfheScalarDiv32(t *testing.T) {
 	TfheScalarDiv(t, FheUint32)
+}
+
+func TestTfheScalarRem8(t *testing.T) {
+	TfheScalarRem(t, FheUint8)
+}
+
+func TestTfheScalarRem16(t *testing.T) {
+	TfheScalarRem(t, FheUint16)
+}
+
+func TestTfheScalarRem32(t *testing.T) {
+	TfheScalarRem(t, FheUint32)
 }
 
 func TestTfheBitAnd8(t *testing.T) {
