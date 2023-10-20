@@ -17,8 +17,10 @@
 package fhevm
 
 /*
-#cgo CFLAGS: -O3 -I../tfhe-rs/target/release
-#cgo LDFLAGS: -L../tfhe-rs/target/release -ltfhe -lm
+#cgo linux CFLAGS: -O3 -I../tfhe-rs/target/release
+#cgo linux LDFLAGS: -L../tfhe-rs/target/release -l:libtfhe.a -lm
+#cgo darwin CFLAGS: -O3 -I../tfhe-rs/target/release ../tfhe-rs/target/release/libtfhe.a
+#cgo darwin LDFLAGS: -framework Security -lm
 
 #include <tfhe.h>
 
