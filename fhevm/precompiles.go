@@ -22,10 +22,15 @@ type PrecompiledContract interface {
 var ErrExecutionReverted = errors.New("execution reverted")
 
 var signatureFheAdd = makeKeccakSignature("fheAdd(uint256,uint256,bytes1)")
+var signatureFheSub = makeKeccakSignature("fheSub(uint256,uint256,bytes1)")
+var signatureFheMul = makeKeccakSignature("fheMul(uint256,uint256,bytes1)")
+var signatureFheLe = makeKeccakSignature("fheLe(uint256,uint256,bytes1)")
+var signatureFheNe = makeKeccakSignature("fheNe(uint256,uint256,bytes1)")
 var signatureCast = makeKeccakSignature("cast(uint256,bytes1)")
 var signatureDecrypt = makeKeccakSignature("decrypt(uint256)")
 var signatureFhePubKey = makeKeccakSignature("fhePubKey(bytes1)")
 var signatureTrivialEncrypt = makeKeccakSignature("trivialEncrypt(uint256,bytes1)")
+var signatureVerifyCiphertext = makeKeccakSignature("verifyCiphertext(bytes)")
 
 func FheLibRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	logger := environment.GetLogger()
@@ -39,6 +44,18 @@ func FheLibRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	case signatureFheAdd:
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheAddRequiredGas(environment, bwCompatBytes)
+	case signatureFheSub:
+		bwCompatBytes := input[4:minInt(69, len(input))]
+		return fheSubRequiredGas(environment, bwCompatBytes)
+	case signatureFheMul:
+		bwCompatBytes := input[4:minInt(69, len(input))]
+		return fheMulRequiredGas(environment, bwCompatBytes)
+	case signatureFheLe:
+		bwCompatBytes := input[4:minInt(69, len(input))]
+		return fheLeRequiredGas(environment, bwCompatBytes)
+	case signatureFheNe:
+		bwCompatBytes := input[4:minInt(69, len(input))]
+		return fheNeRequiredGas(environment, bwCompatBytes)
 	case signatureCast:
 		bwCompatBytes := input[4:minInt(37, len(input))]
 		return castRequiredGas(environment, bwCompatBytes)
@@ -51,6 +68,9 @@ func FheLibRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	case signatureTrivialEncrypt:
 		bwCompatBytes := input[4:minInt(37, len(input))]
 		return trivialEncryptRequiredGas(environment, bwCompatBytes)
+	case signatureVerifyCiphertext:
+		bwCompatBytes := input[4:]
+		return verifyCiphertextRequiredGas(environment, bwCompatBytes)
 	default:
 		err := errors.New("precompile method not found")
 		logger.Error("fheLib precompile error", "err", err, "input", hex.EncodeToString(input))
@@ -70,6 +90,18 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	case signatureFheAdd:
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheAddRun(environment, caller, addr, bwCompatBytes, readOnly)
+	case signatureFheSub:
+		bwCompatBytes := input[4:minInt(69, len(input))]
+		return fheSubRun(environment, caller, addr, bwCompatBytes, readOnly)
+	case signatureFheMul:
+		bwCompatBytes := input[4:minInt(69, len(input))]
+		return fheMulRun(environment, caller, addr, bwCompatBytes, readOnly)
+	case signatureFheLe:
+		bwCompatBytes := input[4:minInt(69, len(input))]
+		return fheLeRun(environment, caller, addr, bwCompatBytes, readOnly)
+	case signatureFheNe:
+		bwCompatBytes := input[4:minInt(69, len(input))]
+		return fheNeRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureCast:
 		bwCompatBytes := input[4:minInt(37, len(input))]
 		return castRun(environment, caller, addr, bwCompatBytes, readOnly)
@@ -90,6 +122,23 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	case signatureTrivialEncrypt:
 		bwCompatBytes := input[4:minInt(37, len(input))]
 		return trivialEncryptRun(environment, caller, addr, bwCompatBytes, readOnly)
+	case signatureVerifyCiphertext:
+		// first 32 bytes of the payload is offset, then 32 bytes are size of byte array
+		if len(input) <= 68 {
+			err := errors.New("verifyCiphertext(bytes) must contain at least 68 bytes for selector, byte offset and size")
+			logger.Error("fheLib precompile error", "err", err, "input", hex.EncodeToString(input))
+			return nil, err
+		}
+		bytesPaddingSize := 32
+		bytesSizeSlotSize := 32
+		// read only last 4 bytes of padded number for byte array size
+		sizeStart := 4 + bytesPaddingSize + bytesSizeSlotSize - 4
+		sizeEnd := sizeStart + 4
+		bytesSize := binary.BigEndian.Uint32(input[sizeStart:sizeEnd])
+		bytesStart := 4 + bytesPaddingSize + bytesSizeSlotSize
+		bytesEnd := bytesStart + int(bytesSize)
+		bwCompatBytes := input[bytesStart:minInt(bytesEnd, len(input))]
+		return verifyCiphertextRun(environment, caller, addr, bwCompatBytes, readOnly)
 	default:
 		err := errors.New("precompile method not found")
 		logger.Error("fheLib precompile error", "err", err, "input", hex.EncodeToString(input))
@@ -139,6 +188,84 @@ func fheAddRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	return fheAddSubGasCosts[lhs.ciphertext.fheUintType]
 }
 
+func fheSubRequiredGas(environment EVMEnvironment, input []byte) uint64 {
+	// Implement in terms of add, because add and sub costs are currently the same.
+	return fheAddRequiredGas(environment, input)
+}
+
+var fheMulGasCosts = map[fheUintType]uint64{
+	FheUint8:  params.FheUint8MulGas,
+	FheUint16: params.FheUint16MulGas,
+	FheUint32: params.FheUint32MulGas,
+}
+
+func fheMulRequiredGas(environment EVMEnvironment, input []byte) uint64 {
+	logger := environment.GetLogger()
+	isScalar, err := isScalarOp(input)
+	if err != nil {
+		logger.Error("fheMul RequiredGas() can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
+		return 0
+	}
+	var lhs, rhs *verifiedCiphertext
+	if !isScalar {
+		lhs, rhs, err = get2VerifiedOperands(environment, input)
+		if err != nil {
+			logger.Error("fheMul RequiredGas() ciphertext inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return 0
+		}
+		if lhs.ciphertext.fheUintType != rhs.ciphertext.fheUintType {
+			logger.Error("fheMul RequiredGas() operand type mismatch", "lhs", lhs.ciphertext.fheUintType, "rhs", rhs.ciphertext.fheUintType)
+			return 0
+		}
+	} else {
+		lhs, _, err = getScalarOperands(environment, input)
+		if err != nil {
+			logger.Error("fheMul RequiredGas() scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return 0
+		}
+	}
+	return fheMulGasCosts[lhs.ciphertext.fheUintType]
+}
+
+func fheNeRequiredGas(environment EVMEnvironment, input []byte) uint64 {
+	// Implement in terms of le, because comparison costs are currently the same.
+	return fheLeRequiredGas(environment, input)
+}
+
+var fheLeGasCosts = map[fheUintType]uint64{
+	FheUint8:  params.FheUint8LeGas,
+	FheUint16: params.FheUint16LeGas,
+	FheUint32: params.FheUint32LeGas,
+}
+
+func fheLeRequiredGas(environment EVMEnvironment, input []byte) uint64 {
+	logger := environment.GetLogger()
+	isScalar, err := isScalarOp(input)
+	if err != nil {
+		logger.Error("comparison RequiredGas() can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
+		return 0
+	}
+	var lhs, rhs *verifiedCiphertext
+	if !isScalar {
+		lhs, rhs, err = get2VerifiedOperands(environment, input)
+		if err != nil {
+			logger.Error("comparison RequiredGas() ciphertext inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return 0
+		}
+		if lhs.ciphertext.fheUintType != rhs.ciphertext.fheUintType {
+			logger.Error("comparison RequiredGas() operand type mismatch", "lhs", lhs.ciphertext.fheUintType, "rhs", rhs.ciphertext.fheUintType)
+			return 0
+		}
+	} else {
+		lhs, _, err = getScalarOperands(environment, input)
+		if err != nil {
+			logger.Error("comparison RequiredGas() scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return 0
+		}
+	}
+	return fheLeGasCosts[lhs.ciphertext.fheUintType]
+}
+
 func castRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	if len(input) != 33 {
 		environment.GetLogger().Error(
@@ -181,6 +308,23 @@ func trivialEncryptRequiredGas(accessibleState EVMEnvironment, input []byte) uin
 	}
 	encryptToType := fheUintType(input[32])
 	return fheTrivialEncryptGasCosts[encryptToType]
+}
+
+var fheVerifyGasCosts = map[fheUintType]uint64{
+	FheUint8:  params.FheUint8VerifyGas,
+	FheUint16: params.FheUint16VerifyGas,
+	FheUint32: params.FheUint32VerifyGas,
+}
+
+func verifyCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint64 {
+	if len(input) <= 1 {
+		environment.GetLogger().Error(
+			"verifyCiphertext RequiredGas() input needs to contain a ciphertext and one byte for its type",
+			"len", len(input))
+		return 0
+	}
+	ctType := fheUintType(input[len(input)-1])
+	return fheVerifyGasCosts[ctType]
 }
 
 // Implementations
@@ -242,6 +386,254 @@ func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 		resultHash := result.getHash()
 		logger.Info("fheAdd scalar success", "lhs", lhs.ciphertext.getHash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
+		return resultHash[:], nil
+	}
+}
+
+func fheSubRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+	logger := environment.GetLogger()
+
+	isScalar, err := isScalarOp(input)
+	if err != nil {
+		logger.Error("fheSub can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
+		return nil, err
+	}
+
+	if !isScalar {
+		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		if err != nil {
+			logger.Error("fheSub inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return nil, err
+		}
+		if lhs.ciphertext.fheUintType != rhs.ciphertext.fheUintType {
+			msg := "fheSub operand type mismatch"
+			logger.Error(msg, "lhs", lhs.ciphertext.fheUintType, "rhs", rhs.ciphertext.fheUintType)
+			return nil, errors.New(msg)
+		}
+
+		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+		if !environment.IsCommitting() && !environment.IsEthCall() {
+			return importRandomCiphertext(environment, lhs.ciphertext.fheUintType), nil
+		}
+
+		result, err := lhs.ciphertext.sub(rhs.ciphertext)
+		if err != nil {
+			logger.Error("fheSub failed", "err", err)
+			return nil, err
+		}
+		importCiphertext(environment, result)
+
+		resultHash := result.getHash()
+		logger.Info("fheSub success", "lhs", lhs.ciphertext.getHash().Hex(), "rhs", rhs.ciphertext.getHash().Hex(), "result", resultHash.Hex())
+		return resultHash[:], nil
+
+	} else {
+		lhs, rhs, err := getScalarOperands(environment, input)
+		if err != nil {
+			logger.Error("fheSub scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return nil, err
+		}
+
+		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+		if !environment.IsCommitting() && !environment.IsEthCall() {
+			return importRandomCiphertext(environment, lhs.ciphertext.fheUintType), nil
+		}
+
+		result, err := lhs.ciphertext.scalarSub(rhs.Uint64())
+		if err != nil {
+			logger.Error("fheSub failed", "err", err)
+			return nil, err
+		}
+		importCiphertext(environment, result)
+
+		resultHash := result.getHash()
+		logger.Info("fheSub scalar success", "lhs", lhs.ciphertext.getHash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
+		return resultHash[:], nil
+	}
+}
+
+func fheMulRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+	logger := environment.GetLogger()
+
+	isScalar, err := isScalarOp(input)
+	if err != nil {
+		logger.Error("fheMul can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
+		return nil, err
+	}
+
+	if !isScalar {
+		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		if err != nil {
+			logger.Error("fheMul inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return nil, err
+		}
+		if lhs.ciphertext.fheUintType != rhs.ciphertext.fheUintType {
+			msg := "fheMul operand type mismatch"
+			logger.Error(msg, "lhs", lhs.ciphertext.fheUintType, "rhs", rhs.ciphertext.fheUintType)
+			return nil, errors.New(msg)
+		}
+
+		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+		if !environment.IsCommitting() && !environment.IsEthCall() {
+			return importRandomCiphertext(environment, lhs.ciphertext.fheUintType), nil
+		}
+
+		result, err := lhs.ciphertext.mul(rhs.ciphertext)
+		if err != nil {
+			logger.Error("fheMul failed", "err", err)
+			return nil, err
+		}
+		importCiphertext(environment, result)
+
+		resultHash := result.getHash()
+		logger.Info("fheMul success", "lhs", lhs.ciphertext.getHash().Hex(), "rhs", rhs.ciphertext.getHash().Hex(), "result", resultHash.Hex())
+		return resultHash[:], nil
+
+	} else {
+		lhs, rhs, err := getScalarOperands(environment, input)
+		if err != nil {
+			logger.Error("fheMul scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return nil, err
+		}
+
+		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+		if !environment.IsCommitting() && !environment.IsEthCall() {
+			return importRandomCiphertext(environment, lhs.ciphertext.fheUintType), nil
+		}
+
+		result, err := lhs.ciphertext.scalarMul(rhs.Uint64())
+		if err != nil {
+			logger.Error("fheMul failed", "err", err)
+			return nil, err
+		}
+		importCiphertext(environment, result)
+
+		resultHash := result.getHash()
+		logger.Info("fheMul scalar success", "lhs", lhs.ciphertext.getHash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
+		return resultHash[:], nil
+	}
+}
+
+func fheLeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+	logger := environment.GetLogger()
+
+	isScalar, err := isScalarOp(input)
+	if err != nil {
+		logger.Error("fheLe can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
+		return nil, err
+	}
+
+	if !isScalar {
+		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		if err != nil {
+			logger.Error("fheLe inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return nil, err
+		}
+		if lhs.ciphertext.fheUintType != rhs.ciphertext.fheUintType {
+			msg := "fheLe operand type mismatch"
+			logger.Error(msg, "lhs", lhs.ciphertext.fheUintType, "rhs", rhs.ciphertext.fheUintType)
+			return nil, errors.New(msg)
+		}
+
+		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+		if !environment.IsCommitting() && !environment.IsEthCall() {
+			return importRandomCiphertext(environment, lhs.ciphertext.fheUintType), nil
+		}
+
+		result, err := lhs.ciphertext.le(rhs.ciphertext)
+		if err != nil {
+			logger.Error("fheLe failed", "err", err)
+			return nil, err
+		}
+		importCiphertext(environment, result)
+
+		resultHash := result.getHash()
+		logger.Info("fheLe success", "lhs", lhs.ciphertext.getHash().Hex(), "rhs", rhs.ciphertext.getHash().Hex(), "result", resultHash.Hex())
+		return resultHash[:], nil
+
+	} else {
+		lhs, rhs, err := getScalarOperands(environment, input)
+		if err != nil {
+			logger.Error("fheLe scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return nil, err
+		}
+
+		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+		if !environment.IsCommitting() && !environment.IsEthCall() {
+			return importRandomCiphertext(environment, lhs.ciphertext.fheUintType), nil
+		}
+
+		result, err := lhs.ciphertext.scalarLe(rhs.Uint64())
+		if err != nil {
+			logger.Error("fheLe failed", "err", err)
+			return nil, err
+		}
+		importCiphertext(environment, result)
+
+		resultHash := result.getHash()
+		logger.Info("fheLe scalar success", "lhs", lhs.ciphertext.getHash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
+		return resultHash[:], nil
+	}
+}
+
+func fheNeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+	logger := environment.GetLogger()
+
+	isScalar, err := isScalarOp(input)
+	if err != nil {
+		logger.Error("fheNe can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
+		return nil, err
+	}
+
+	if !isScalar {
+		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		if err != nil {
+			logger.Error("fheNe inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return nil, err
+		}
+		if lhs.ciphertext.fheUintType != rhs.ciphertext.fheUintType {
+			msg := "fheNe operand type mismatch"
+			logger.Error(msg, "lhs", lhs.ciphertext.fheUintType, "rhs", rhs.ciphertext.fheUintType)
+			return nil, errors.New(msg)
+		}
+
+		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+		if !environment.IsCommitting() && !environment.IsEthCall() {
+			return importRandomCiphertext(environment, lhs.ciphertext.fheUintType), nil
+		}
+
+		result, err := lhs.ciphertext.ne(rhs.ciphertext)
+		if err != nil {
+			logger.Error("fheNe failed", "err", err)
+			return nil, err
+		}
+		importCiphertext(environment, result)
+
+		resultHash := result.getHash()
+		logger.Info("fheNe success", "lhs", lhs.ciphertext.getHash().Hex(), "rhs", rhs.ciphertext.getHash().Hex(), "result", resultHash.Hex())
+		return resultHash[:], nil
+
+	} else {
+		lhs, rhs, err := getScalarOperands(environment, input)
+		if err != nil {
+			logger.Error("fheNe scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return nil, err
+		}
+
+		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+		if !environment.IsCommitting() && !environment.IsEthCall() {
+			return importRandomCiphertext(environment, lhs.ciphertext.fheUintType), nil
+		}
+
+		result, err := lhs.ciphertext.scalarNe(rhs.Uint64())
+		if err != nil {
+			logger.Error("fheNe failed", "err", err)
+			return nil, err
+		}
+		importCiphertext(environment, result)
+
+		resultHash := result.getHash()
+		logger.Info("fheNe scalar success", "lhs", lhs.ciphertext.getHash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
 		return resultHash[:], nil
 	}
 }
@@ -393,6 +785,54 @@ func trivialEncryptRun(accessibleState EVMEnvironment, caller common.Address, ad
 		logger.Info("trivialEncrypt success",
 			"ctHash", ctHash.Hex(),
 			"valueToEncrypt", valueToEncrypt.Uint64())
+	}
+	return ctHash.Bytes(), nil
+}
+
+func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+	logger := environment.GetLogger()
+	if len(input) <= 1 {
+		msg := "verifyCiphertext Run() input needs to contain a ciphertext and one byte for its type"
+		logger.Error(msg, "len", len(input))
+		return nil, errors.New(msg)
+	}
+
+	ctBytes := input[:len(input)-1]
+	ctTypeByte := input[len(input)-1]
+	if !isValidType(ctTypeByte) {
+		msg := "verifyCiphertext Run() ciphertext type is invalid"
+		logger.Error(msg, "type", ctTypeByte)
+		return nil, errors.New(msg)
+	}
+	ctType := fheUintType(ctTypeByte)
+
+	expectedSize, found := compactFheCiphertextSize[ctType]
+	if !found || expectedSize != uint(len(ctBytes)) {
+		msg := "verifyCiphertext Run() compact ciphertext size is invalid"
+		logger.Error(msg, "type", ctTypeByte, "size", len(ctBytes), "expectedSize", expectedSize)
+		return nil, errors.New(msg)
+	}
+
+	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+	if !environment.IsCommitting() && !environment.IsEthCall() {
+		return importRandomCiphertext(environment, ctType), nil
+	}
+
+	ct := new(tfheCiphertext)
+	err := ct.deserializeCompact(ctBytes, ctType)
+	if err != nil {
+		logger.Error("verifyCiphertext failed to deserialize input ciphertext",
+			"err", err,
+			"len", len(ctBytes),
+			"ctBytes64", hex.EncodeToString(ctBytes[:minInt(len(ctBytes), 64)]))
+		return nil, err
+	}
+	ctHash := ct.getHash()
+	importCiphertext(environment, ct)
+	if environment.IsCommitting() {
+		logger.Info("verifyCiphertext success",
+			"ctHash", ctHash.Hex(),
+			"ctBytes64", hex.EncodeToString(ctBytes[:minInt(len(ctBytes), 64)]))
 	}
 	return ctHash.Bytes(), nil
 }
