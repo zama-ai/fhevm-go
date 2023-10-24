@@ -13,6 +13,9 @@ var (
 	FheUint8DivGas      uint64 = 1370000
 	FheUint16DivGas     uint64 = 3500000
 	FheUint32DivGas     uint64 = 9120000
+	FheUint8RemGas      uint64 = 1370000 // TODO: check again rem gas
+	FheUint16RemGas     uint64 = 3500000
+	FheUint32RemGas     uint64 = 9120000
 	FheUint8BitwiseGas  uint64 = 20000
 	FheUint16BitwiseGas uint64 = 21000
 	FheUint32BitwiseGas uint64 = 22000
@@ -55,8 +58,10 @@ var (
 	FheUint8OptimisticRequireGas       uint64 = FheUint8RequireGas
 	FheUint8OptimisticRequireBitandGas uint64 = FheUint8BitwiseGas
 
-	// TODO: This will change once we have an FHE-based random generaration with different types.
-	FheRandGas uint64 = evm.NetSstoreCleanGas + evm.ColdSloadCostEIP2929
+	// TODO: These will change once we have an FHE-based random generaration.
+	FheUint8RandGas  uint64 = evm.NetSstoreInitGas + 1000
+	FheUint16RandGas uint64 = FheUint8RandGas + 1000
+	FheUint32RandGas uint64 = FheUint16RandGas + 1000
 
 	// TODO: The values here are chosen somewhat arbitrarily (at least the 8 bit ones). Also, we don't
 	// take into account whether a ciphertext existed (either "current" or "original") for the given handle.
