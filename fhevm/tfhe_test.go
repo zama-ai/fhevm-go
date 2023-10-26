@@ -18,13 +18,25 @@ package fhevm
 
 import (
 	"bytes"
+	"fmt"
 	"math"
 	"math/big"
+	"os"
 	"testing"
 )
 
-// TODO: Don't rely on global keys that are loaded from disk in init(). Instead,
-// generate keys on demand in the test.
+// generate keys if not present
+func setup() {
+	if !globalKeysPresent() {
+		fmt.Println("INFO: initializing global keys in tests")
+		initGlobalKeysWithNewKeys()
+	}
+}
+
+func TestMain(m *testing.M) {
+	setup()
+	os.Exit(m.Run())
+}
 
 func TfheEncryptDecrypt(t *testing.T, fheUintType fheUintType) {
 	var val big.Int
