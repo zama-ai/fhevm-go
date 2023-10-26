@@ -27,6 +27,37 @@ package fhevm
 #undef NDEBUG
 #include <assert.h>
 
+typedef struct FhevmKeys{
+	void *sks, *cks, *pks;
+} FhevmKeys;
+
+FhevmKeys generate_fhevm_keys(){
+	ConfigBuilder* builder;
+	Config *config;
+	ClientKey *cks;
+	ServerKey *sks;
+	CompactPublicKey *pks;
+
+	int r;
+	r = config_builder_all_disabled(&builder);
+	assert(r == 0);
+	r = config_builder_enable_custom_integers(&builder, SHORTINT_PARAM_MESSAGE_2_CARRY_2_KS_PBS);
+	assert(r == 0);
+	r = config_builder_build(builder, &config);
+	assert(r == 0);
+	r = generate_keys(config, &cks, &sks);
+	assert(r == 0);
+	r = compact_public_key_new(cks, &pks);
+	assert(r == 0);
+
+	FhevmKeys keys = {sks, cks, pks};
+	return keys;
+}
+
+int serialize_compact_public_key(void *pks, Buffer* out) {
+	return compact_public_key_serialize(pks, out);
+}
+
 void* deserialize_server_key(BufferView in) {
 	ServerKey* sks = NULL;
 	const int r = server_key_deserialize(in, &sks);
@@ -1471,6 +1502,8 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"os"
+	"path"
 	"unsafe"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -1490,41 +1523,91 @@ var expandedFheCiphertextSize map[fheUintType]uint
 // Compact TFHE ciphertext sizes by type, in bytes.
 var compactFheCiphertextSize map[fheUintType]uint
 
+// server key: evaluation key
 var sks unsafe.Pointer
+
+// client key: secret key
 var cks unsafe.Pointer
+
+// public key
 var pks unsafe.Pointer
 var pksHash common.Hash
-var networkKeysDir string
-var usersKeysDir string
 
-//go:embed test-fhevm-keys/sks
-var sksBytes []byte
+// Generate keys for the fhevm (sks, cks, psk)
+func generateFhevmKeys() (unsafe.Pointer, unsafe.Pointer, unsafe.Pointer) {
+	var keys = C.generate_fhevm_keys()
+	return keys.sks, keys.cks, keys.pks
+}
 
-//go:embed test-fhevm-keys/pks
-var pksBytes []byte
+func globalKeysPresent() bool {
+	return sks != nil && cks != nil && pks != nil
+}
 
-//go:embed test-fhevm-keys/cks
-var cksBytes []byte
+func initGlobalKeysWithNewKeys() {
+	sks, cks, pks = generateFhevmKeys()
+	initCiphertextSizes()
+}
 
-func init() {
+func initCiphertextSizes() {
 	expandedFheCiphertextSize = make(map[fheUintType]uint)
 	compactFheCiphertextSize = make(map[fheUintType]uint)
-
-	fmt.Println("TODO: fhevm keys are hardcoded into subnet evm, find ways to store keys in production")
-	sks = C.deserialize_server_key(toBufferView(sksBytes))
 
 	expandedFheCiphertextSize[FheUint8] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint8).serialize()))
 	expandedFheCiphertextSize[FheUint16] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint16).serialize()))
 	expandedFheCiphertextSize[FheUint32] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint32).serialize()))
 
-	pksHash = crypto.Keccak256Hash(pksBytes)
-	pks = C.deserialize_compact_public_key(toBufferView(pksBytes))
-
 	compactFheCiphertextSize[FheUint8] = uint(len(encryptAndSerializeCompact(0, FheUint8)))
 	compactFheCiphertextSize[FheUint16] = uint(len(encryptAndSerializeCompact(0, FheUint16)))
 	compactFheCiphertextSize[FheUint32] = uint(len(encryptAndSerializeCompact(0, FheUint32)))
+}
+
+func InitGlobalKeysFromFiles(keysDir string) error {
+	if _, err := os.Stat(keysDir); os.IsNotExist(err) {
+		return errors.New("init_keys: global keys directory doesn't exist (FHEVM_GO_KEYS_DIR)")
+	}
+	// read keys from files
+	var sksPath = path.Join(keysDir, "sks")
+	sksBytes, err := os.ReadFile(sksPath)
+	if err != nil {
+		return err
+	}
+	var cksPath = path.Join(keysDir, "cks")
+	cksBytes, err := os.ReadFile(cksPath)
+	if err != nil {
+		return err
+	}
+	var pksPath = path.Join(keysDir, "pks")
+	pksBytes, err := os.ReadFile(pksPath)
+	if err != nil {
+		return err
+	}
+
+	sks = C.deserialize_server_key(toBufferView(sksBytes))
+
+	pksHash = crypto.Keccak256Hash(pksBytes)
+	pks = C.deserialize_compact_public_key(toBufferView(pksBytes))
 
 	cks = C.deserialize_client_key(toBufferView(cksBytes))
+
+	initCiphertextSizes()
+
+	fmt.Println("INFO: global keys loaded from: " + keysDir)
+
+	return nil
+}
+
+// initialize keys automatically only if FHEVM_GO_KEYS_DIR is set
+func init() {
+	var keysDirPath, present = os.LookupEnv("FHEVM_GO_KEYS_DIR")
+	if present {
+		err := InitGlobalKeysFromFiles(keysDirPath)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("INFO: global keys are initialized automatically using FHEVM_GO_KEYS_DIR env variable")
+	} else {
+		fmt.Println("INFO: global keys aren't initialized automatically (FHEVM_GO_KEYS_DIR env variable not set)")
+	}
 }
 
 func serialize(ptr unsafe.Pointer, t fheUintType) ([]byte, error) {
@@ -1542,6 +1625,18 @@ func serialize(ptr unsafe.Pointer, t fheUintType) ([]byte, error) {
 	}
 	if ret != 0 {
 		return nil, errors.New("serialize: failed to serialize a ciphertext")
+	}
+	ser := C.GoBytes(unsafe.Pointer(out.pointer), C.int(out.length))
+	C.destroy_buffer(out)
+	return ser, nil
+}
+
+func serializePublicKey(pks unsafe.Pointer) ([]byte, error) {
+	out := &C.Buffer{}
+	var ret C.int
+	ret = C.serialize_compact_public_key(pks, out)
+	if ret != 0 {
+		return nil, errors.New("serialize: failed to serialize public key")
 	}
 	ser := C.GoBytes(unsafe.Pointer(out.pointer), C.int(out.length))
 	C.destroy_buffer(out)

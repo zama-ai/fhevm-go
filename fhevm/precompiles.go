@@ -2159,6 +2159,11 @@ func fhePubKeyRun(environment EVMEnvironment, caller common.Address, addr common
 		environment.GetLogger().Error(msg, "existing", existing.Hex(), "pksHash", pksHash.Hex())
 		return nil, errors.New(msg)
 	}
+	// serialize public key
+	pksBytes, err := serializePublicKey(pks)
+	if err != nil {
+		return nil, err
+	}
 	// If we have a single byte with the value of 1, return as an EVM array. Otherwise, returh the raw bytes.
 	if len(input) == 1 && input[0] == 1 {
 		return toEVMBytes(pksBytes), nil
