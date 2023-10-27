@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	crypto "github.com/ethereum/go-ethereum/crypto"
@@ -16,6 +17,10 @@ var zero = uint256.NewInt(0).Bytes32()
 func newInt(buf []byte) *uint256.Int {
 	i := uint256.NewInt(0)
 	return i.SetBytes(buf)
+}
+
+func contains(haystack []byte, needle []byte) bool {
+	return strings.Contains(string(haystack), string(needle))
 }
 
 // Ciphertext metadata is stored in protected storage, in a 32-byte slot.
@@ -258,10 +263,7 @@ func persistIfVerifiedCiphertext(flagHandleLocation common.Hash, handle common.H
 	env.SetState(protectedStorage, metadataKey, metadata.serialize())
 }
 
-func OpSstore(pc *uint64, env EVMEnvironment, scope ScopeContext) ([]byte, error) {
-	if env.IsReadOnly() {
-		return nil, ErrWriteProtection
-	}
+func OpSstore(pc *uint64, env EVMEnvironment, scope ScopeContext) []byte {
 	loc := scope.GetStack().Pop()
 	locHash := common.BytesToHash(loc.Bytes())
 	newVal := scope.GetStack().Pop()
@@ -286,5 +288,64 @@ func OpSstore(pc *uint64, env EVMEnvironment, scope ScopeContext) ([]byte, error
 	}
 	// Set the SSTORE's value in the actual contract.
 	env.SetState(scope.GetContract().Address(), loc.Bytes32(), newValHash)
-	return nil, nil
+	return nil
+}
+
+// If there are ciphertext handles in the arguments to a call, delegate them to the callee.
+// Return a map from ciphertext hash -> depthSet before delegation.
+func DelegateCiphertextHandlesInArgs(env EVMEnvironment, args []byte) (verified map[common.Hash]*depthSet) {
+	verified = make(map[common.Hash]*depthSet)
+	for key, verifiedCiphertext := range env.GetFhevmData().verifiedCiphertexts {
+		if contains(args, key.Bytes()) && isVerifiedAtCurrentDepth(env, verifiedCiphertext) {
+			if env.IsCommitting() {
+				env.GetLogger().Info("delegateCiphertextHandlesInArgs",
+					"handle", verifiedCiphertext.ciphertext.getHash().Hex(),
+					"fromDepth", env.GetDepth(),
+					"toDepth", env.GetDepth()+1)
+			}
+			verified[key] = verifiedCiphertext.verifiedDepths.clone()
+			verifiedCiphertext.verifiedDepths.add(env.GetDepth() + 1)
+		}
+	}
+	return
+}
+
+func RestoreVerifiedDepths(env EVMEnvironment, verified map[common.Hash]*depthSet) {
+	for k, v := range verified {
+		env.GetFhevmData().verifiedCiphertexts[k].verifiedDepths = v
+	}
+}
+
+func delegateCiphertextHandlesToCaller(env EVMEnvironment, ret []byte) {
+	for key, verifiedCiphertext := range env.GetFhevmData().verifiedCiphertexts {
+		if contains(ret, key.Bytes()) && isVerifiedAtCurrentDepth(env, verifiedCiphertext) {
+			if env.IsCommitting() {
+				env.GetLogger().Info("opReturn making ciphertext available to caller",
+					"handle", verifiedCiphertext.ciphertext.getHash().Hex(),
+					"fromDepth", env.GetDepth(),
+					"toDepth", env.GetDepth()-1)
+			}
+			// If a handle is returned, automatically make it available to the caller.
+			verifiedCiphertext.verifiedDepths.add(env.GetDepth() - 1)
+		}
+	}
+}
+
+func RemoveVerifiedCipherextsAtCurrentDepth(env EVMEnvironment) {
+	for _, verifiedCiphertext := range env.GetFhevmData().verifiedCiphertexts {
+		if env.IsCommitting() {
+			env.GetLogger().Info("Run removing ciphertext from depth",
+				"handle", verifiedCiphertext.ciphertext.getHash().Hex(),
+				"depth", env.GetDepth())
+		}
+		// Delete the current EVM depth from the set of verified depths.
+		verifiedCiphertext.verifiedDepths.del(env.GetDepth())
+	}
+}
+
+func OpReturn(pc *uint64, env EVMEnvironment, scope ScopeContext) []byte {
+	offset, size := scope.GetStack().Pop(), scope.GetStack().Pop()
+	ret := scope.GetMemory().GetPtr(int64(offset.Uint64()), int64(size.Uint64()))
+	delegateCiphertextHandlesToCaller(env, ret)
+	return ret
 }

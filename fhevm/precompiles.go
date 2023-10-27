@@ -25,8 +25,6 @@ type PrecompiledContract interface {
 	Run(environment *EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) (ret []byte, err error)
 }
 
-var ErrExecutionReverted = errors.New("execution reverted")
-
 var signatureFheAdd = makeKeccakSignature("fheAdd(uint256,uint256,bytes1)")
 var signatureCast = makeKeccakSignature("cast(uint256,bytes1)")
 var signatureDecrypt = makeKeccakSignature("decrypt(uint256)")

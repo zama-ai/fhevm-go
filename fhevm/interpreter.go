@@ -3,6 +3,7 @@ package fhevm
 import "github.com/ethereum/go-ethereum/common"
 
 type ScopeContext interface {
+	GetMemory() Memory
 	GetStack() Stack
 	GetContract() Contract
 }
