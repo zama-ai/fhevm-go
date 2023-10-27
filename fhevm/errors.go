@@ -4,7 +4,8 @@ import (
 	"errors"
 )
 
-// List of EVM execution errors needed by the fhEVM
+// List of EVM execution errors needed by the fhEVM.
+// TODO: initialize errors from erros passed by users. That would make fhevm-go errors match the EVM environment's errors.
 var (
-	ErrWriteProtection = errors.New("write protection")
+	ErrExecutionReverted = errors.New("execution reverted")
 )
