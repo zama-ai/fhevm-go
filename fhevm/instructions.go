@@ -263,7 +263,10 @@ func persistIfVerifiedCiphertext(flagHandleLocation common.Hash, handle common.H
 	env.SetState(protectedStorage, metadataKey, metadata.serialize())
 }
 
-func OpSstore(pc *uint64, env EVMEnvironment, scope ScopeContext) []byte {
+func OpSstore(pc *uint64, env EVMEnvironment, scope ScopeContext) ([]byte, error) {
+	if env.IsReadOnly() {
+		return nil, ErrWriteProtection
+	}
 	loc := scope.GetStack().Pop()
 	locHash := common.BytesToHash(loc.Bytes())
 	newVal := scope.GetStack().Pop()
@@ -288,7 +291,7 @@ func OpSstore(pc *uint64, env EVMEnvironment, scope ScopeContext) []byte {
 	}
 	// Set the SSTORE's value in the actual contract.
 	env.SetState(scope.GetContract().Address(), loc.Bytes32(), newValHash)
-	return nil
+	return nil, nil
 }
 
 // If there are ciphertext handles in the arguments to a call, delegate them to the callee.
