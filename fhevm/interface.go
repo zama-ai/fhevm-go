@@ -1,6 +1,8 @@
 package fhevm
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 )
@@ -9,6 +11,7 @@ type EVMEnvironment interface {
 	// StateDB related functions
 	GetState(common.Address, common.Hash) common.Hash
 	SetState(common.Address, common.Hash, common.Hash)
+	GetNonce(common.Address) uint64
 
 	// EVM call stack depth
 	GetDepth() int
@@ -20,6 +23,9 @@ type EVMEnvironment interface {
 	IsCommitting() bool
 	IsEthCall() bool
 	IsReadOnly() bool
+
+	CreateContract(caller common.Address, code []byte, gas uint64, value *big.Int, address common.Address) ([]byte, common.Address, uint64, error)
+	CreateContract2(caller common.Address, code []byte, codeHash common.Hash, gas uint64, value *big.Int, address common.Address) ([]byte, common.Address, uint64, error)
 
 	GetFhevmData() *FhevmData
 }
