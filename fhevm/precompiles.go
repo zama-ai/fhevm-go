@@ -12,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
-	"github.com/zama-ai/fhevm-go/params"
 	"golang.org/x/crypto/chacha20"
 	"golang.org/x/crypto/nacl/box"
 )
@@ -287,87 +286,87 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 }
 
 var fheAddSubGasCosts = map[fheUintType]uint64{
-	FheUint8:  params.FheUint8AddSubGas,
-	FheUint16: params.FheUint16AddSubGas,
-	FheUint32: params.FheUint32AddSubGas,
+	FheUint8:  FheUint8AddSubGas,
+	FheUint16: FheUint16AddSubGas,
+	FheUint32: FheUint32AddSubGas,
 }
 
 var fheDecryptGasCosts = map[fheUintType]uint64{
-	FheUint8:  params.FheUint8DecryptGas,
-	FheUint16: params.FheUint16DecryptGas,
-	FheUint32: params.FheUint32DecryptGas,
+	FheUint8:  FheUint8DecryptGas,
+	FheUint16: FheUint16DecryptGas,
+	FheUint32: FheUint32DecryptGas,
 }
 
 var fheBitwiseOpGasCosts = map[fheUintType]uint64{
-	FheUint8:  params.FheUint8BitwiseGas,
-	FheUint16: params.FheUint16BitwiseGas,
-	FheUint32: params.FheUint32BitwiseGas,
+	FheUint8:  FheUint8BitwiseGas,
+	FheUint16: FheUint16BitwiseGas,
+	FheUint32: FheUint32BitwiseGas,
 }
 
 var fheMulGasCosts = map[fheUintType]uint64{
-	FheUint8:  params.FheUint8MulGas,
-	FheUint16: params.FheUint16MulGas,
-	FheUint32: params.FheUint32MulGas,
+	FheUint8:  FheUint8MulGas,
+	FheUint16: FheUint16MulGas,
+	FheUint32: FheUint32MulGas,
 }
 
 var fheDivGasCosts = map[fheUintType]uint64{
-	FheUint8:  params.FheUint8DivGas,
-	FheUint16: params.FheUint16DivGas,
-	FheUint32: params.FheUint32DivGas,
+	FheUint8:  FheUint8DivGas,
+	FheUint16: FheUint16DivGas,
+	FheUint32: FheUint32DivGas,
 }
 
 var fheRemGasCosts = map[fheUintType]uint64{
-	FheUint8:  params.FheUint8RemGas,
-	FheUint16: params.FheUint16RemGas,
-	FheUint32: params.FheUint32RemGas,
+	FheUint8:  FheUint8RemGas,
+	FheUint16: FheUint16RemGas,
+	FheUint32: FheUint32RemGas,
 }
 
 var fheShiftGasCosts = map[fheUintType]uint64{
-	FheUint8:  params.FheUint8ShiftGas,
-	FheUint16: params.FheUint16ShiftGas,
-	FheUint32: params.FheUint32ShiftGas,
+	FheUint8:  FheUint8ShiftGas,
+	FheUint16: FheUint16ShiftGas,
+	FheUint32: FheUint32ShiftGas,
 }
 
 var fheLeGasCosts = map[fheUintType]uint64{
-	FheUint8:  params.FheUint8LeGas,
-	FheUint16: params.FheUint16LeGas,
-	FheUint32: params.FheUint32LeGas,
+	FheUint8:  FheUint8LeGas,
+	FheUint16: FheUint16LeGas,
+	FheUint32: FheUint32LeGas,
 }
 
 var fheMinMaxGasCosts = map[fheUintType]uint64{
-	FheUint8:  params.FheUint8MinMaxGas,
-	FheUint16: params.FheUint16MinMaxGas,
-	FheUint32: params.FheUint32MinMaxGas,
+	FheUint8:  FheUint8MinMaxGas,
+	FheUint16: FheUint16MinMaxGas,
+	FheUint32: FheUint32MinMaxGas,
 }
 
 var fheNegNotGasCosts = map[fheUintType]uint64{
-	FheUint8:  params.FheUint8NegNotGas,
-	FheUint16: params.FheUint16NegNotGas,
-	FheUint32: params.FheUint32NegNotGas,
+	FheUint8:  FheUint8NegNotGas,
+	FheUint16: FheUint16NegNotGas,
+	FheUint32: FheUint32NegNotGas,
 }
 
 var fheReencryptGasCosts = map[fheUintType]uint64{
-	FheUint8:  params.FheUint8ReencryptGas,
-	FheUint16: params.FheUint16ReencryptGas,
-	FheUint32: params.FheUint32ReencryptGas,
+	FheUint8:  FheUint8ReencryptGas,
+	FheUint16: FheUint16ReencryptGas,
+	FheUint32: FheUint32ReencryptGas,
 }
 
 var fheVerifyGasCosts = map[fheUintType]uint64{
-	FheUint8:  params.FheUint8VerifyGas,
-	FheUint16: params.FheUint16VerifyGas,
-	FheUint32: params.FheUint32VerifyGas,
+	FheUint8:  FheUint8VerifyGas,
+	FheUint16: FheUint16VerifyGas,
+	FheUint32: FheUint32VerifyGas,
 }
 
 var fheTrivialEncryptGasCosts = map[fheUintType]uint64{
-	FheUint8:  params.FheUint8TrivialEncryptGas,
-	FheUint16: params.FheUint16TrivialEncryptGas,
-	FheUint32: params.FheUint32TrivialEncryptGas,
+	FheUint8:  FheUint8TrivialEncryptGas,
+	FheUint16: FheUint16TrivialEncryptGas,
+	FheUint32: FheUint32TrivialEncryptGas,
 }
 
 var fheRandGasCosts = map[fheUintType]uint64{
-	FheUint8:  params.FheUint8RandGas,
-	FheUint16: params.FheUint16RandGas,
-	FheUint32: params.FheUint32RandGas,
+	FheUint8:  FheUint8RandGas,
+	FheUint16: FheUint16RandGas,
+	FheUint32: FheUint32RandGas,
 }
 
 // Gas costs
@@ -699,9 +698,9 @@ func optimisticRequireRequiredGas(environment EVMEnvironment, input []byte) uint
 		return 0
 	}
 	if len(environment.GetFhevmData().optimisticRequires) == 0 {
-		return params.FheUint8OptimisticRequireGas
+		return FheUint8OptimisticRequireGas
 	}
-	return params.FheUint8OptimisticRequireBitandGas
+	return FheUint8OptimisticRequireBitandGas
 }
 
 func castRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -711,7 +710,7 @@ func castRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 			"len", len(input))
 		return 0
 	}
-	return params.FheCastGas
+	return FheCastGas
 }
 
 func decryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -729,7 +728,7 @@ func decryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 }
 
 func fhePubKeyRequiredGas(environment EVMEnvironment, input []byte) uint64 {
-	return params.FhePubKeyGas
+	return FhePubKeyGas
 }
 
 func trivialEncryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {

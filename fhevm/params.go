@@ -1,21 +1,49 @@
-package params
+// BSD 3-Clause Clear License
 
-import evm "github.com/ethereum/go-ethereum/params"
+// Copyright © 2023 ZAMA.
+// All rights reserved.
+
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
+package fhevm
+
+// This file contains default gas costs of fhEVM-related operations.
+// Users can change the values based on specific requirements in their blockchain.
+
+// Base gas costs of existing EVM operations. Used for setting gas costs relative to them.
+// These constants are used just for readability.
+const EvmNetSstoreInitGas uint64 = 20000
+const ColdSloadCostEIP2929 uint64 = 2100
 
 var (
 	// FHE operation costs depend on tfhe-rs performance and hardware acceleration. These values will most certainly change.
-	FheUint8AddSubGas   uint64 = 83000
-	FheUint16AddSubGas  uint64 = 108000
-	FheUint32AddSubGas  uint64 = 130000
-	FheUint8MulGas      uint64 = 150000
-	FheUint16MulGas     uint64 = 200000
-	FheUint32MulGas     uint64 = 270000
-	FheUint8DivGas      uint64 = 1370000
-	FheUint16DivGas     uint64 = 3500000
-	FheUint32DivGas     uint64 = 9120000
-	FheUint8RemGas      uint64 = 1370000 // TODO: check again rem gas
-	FheUint16RemGas     uint64 = 3500000
-	FheUint32RemGas     uint64 = 9120000
+	FheUint8AddSubGas  uint64 = 83000
+	FheUint16AddSubGas uint64 = 108000
+	FheUint32AddSubGas uint64 = 130000
+	FheUint8MulGas     uint64 = 150000
+	FheUint16MulGas    uint64 = 200000
+	FheUint32MulGas    uint64 = 270000
+	// Div and Rem currently only support a plaintext divisor and below gas costs reflect that case only.
+	FheUint8DivGas      uint64 = 200000
+	FheUint16DivGas     uint64 = 250000
+	FheUint32DivGas     uint64 = 350000
+	FheUint8RemGas      uint64 = 200000
+	FheUint16RemGas     uint64 = 250000
+	FheUint32RemGas     uint64 = 350000
 	FheUint8BitwiseGas  uint64 = 20000
 	FheUint16BitwiseGas uint64 = 21000
 	FheUint32BitwiseGas uint64 = 22000
@@ -33,12 +61,12 @@ var (
 	FheUint32NegNotGas  uint64 = 130000
 
 	// TODO: Costs will depend on the complexity of doing reencryption/decryption by the oracle.
-	FheUint8ReencryptGas  uint64 = 1000
-	FheUint16ReencryptGas uint64 = 1100
-	FheUint32ReencryptGas uint64 = 1200
-	FheUint8DecryptGas    uint64 = 600
-	FheUint16DecryptGas   uint64 = 700
-	FheUint32DecryptGas   uint64 = 800
+	FheUint8ReencryptGas  uint64 = 320000
+	FheUint16ReencryptGas uint64 = 320400
+	FheUint32ReencryptGas uint64 = 320800
+	FheUint8DecryptGas    uint64 = 320000
+	FheUint16DecryptGas   uint64 = 320400
+	FheUint32DecryptGas   uint64 = 320800
 
 	// As of now, verification costs only cover ciphertext deserialization and assume there is no ZKPoK to verify.
 	FheUint8VerifyGas  uint64 = 200
@@ -46,9 +74,9 @@ var (
 	FheUint32VerifyGas uint64 = 400
 
 	// TODO: Cost will depend on the complexity of doing decryption by the oracle.
-	FheUint8RequireGas  uint64 = 170000
-	FheUint16RequireGas uint64 = 180000
-	FheUint32RequireGas uint64 = 190000
+	FheUint8RequireGas  uint64 = 320000
+	FheUint16RequireGas uint64 = 320400
+	FheUint32RequireGas uint64 = 320800
 
 	// TODO: As of now, only support FheUint8. All optimistic require predicates are
 	// downcast to FheUint8 at the solidity level. Eventually move to ebool.
@@ -59,19 +87,19 @@ var (
 	FheUint8OptimisticRequireBitandGas uint64 = FheUint8BitwiseGas
 
 	// TODO: These will change once we have an FHE-based random generaration.
-	FheUint8RandGas  uint64 = evm.NetSstoreInitGas + 1000
+	FheUint8RandGas  uint64 = EvmNetSstoreInitGas + 1000
 	FheUint16RandGas uint64 = FheUint8RandGas + 1000
 	FheUint32RandGas uint64 = FheUint16RandGas + 1000
 
 	// TODO: The values here are chosen somewhat arbitrarily (at least the 8 bit ones). Also, we don't
 	// take into account whether a ciphertext existed (either "current" or "original") for the given handle.
 	// Finally, costs are likely to change in the future.
-	FheUint8ProtectedStorageSstoreGas  uint64 = evm.NetSstoreInitGas + 2000
+	FheUint8ProtectedStorageSstoreGas  uint64 = EvmNetSstoreInitGas + 2000
 	FheUint16ProtectedStorageSstoreGas uint64 = FheUint8ProtectedStorageSstoreGas * 2
 	FheUint32ProtectedStorageSstoreGas uint64 = FheUint16ProtectedStorageSstoreGas * 2
 
 	// TODO: We don't take whether the slot is cold or warm into consideration.
-	FheUint8ProtectedStorageSloadGas  uint64 = evm.ColdSloadCostEIP2929 + 200
+	FheUint8ProtectedStorageSloadGas  uint64 = ColdSloadCostEIP2929 + 200
 	FheUint16ProtectedStorageSloadGas uint64 = FheUint8ProtectedStorageSloadGas * 2
 	FheUint32ProtectedStorageSloadGas uint64 = FheUint16ProtectedStorageSloadGas * 2
 
