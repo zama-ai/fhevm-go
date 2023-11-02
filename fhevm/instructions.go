@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
+	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	crypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
-	ps "github.com/zama-ai/fhevm-go/crypto"
+	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
 )
 
 var zero = uint256.NewInt(0).Bytes32()
@@ -152,7 +153,7 @@ func verifyIfCiphertextHandle(handle common.Hash, env EVMEnvironment, contractAd
 	}
 
 	metadataKey := crypto.Keccak256Hash(handle.Bytes())
-	protectedStorage := ps.CreateProtectedStorageContractAddress(contractAddress)
+	protectedStorage := fhevm_crypto.CreateProtectedStorageContractAddress(contractAddress)
 	metadataInt := newInt(env.GetState(protectedStorage, metadataKey).Bytes())
 	if !metadataInt.IsZero() {
 		metadata := newCiphertextMetadata(metadataInt.Bytes32())
@@ -274,7 +275,7 @@ func OpSstore(pc *uint64, env EVMEnvironment, scope ScopeContext) ([]byte, error
 	oldValHash := env.GetState(scope.GetContract().Address(), common.Hash(loc.Bytes32()))
 	// If the value is the same or if we are not going to commit, don't do anything to protected storage.
 	if newValHash != oldValHash && env.IsCommitting() {
-		protectedStorage := ps.CreateProtectedStorageContractAddress(scope.GetContract().Address())
+		protectedStorage := fhevm_crypto.CreateProtectedStorageContractAddress(scope.GetContract().Address())
 
 		// Define flag location as keccak256(keccak256(loc)) in protected storage. Used to mark the location as containing a handle.
 		// Note: We apply the hash function twice to make sure a flag location in protected storage cannot clash with a ciphertext
@@ -351,4 +352,15 @@ func OpReturn(pc *uint64, env EVMEnvironment, scope ScopeContext) []byte {
 	ret := scope.GetMemory().GetPtr(int64(offset.Uint64()), int64(size.Uint64()))
 	delegateCiphertextHandlesToCaller(env, ret)
 	return ret
+}
+
+func OpSelfdestruct(pc *uint64, env EVMEnvironment, scope ScopeContext) (beneficiary uint256.Int, balance *big.Int) {
+	beneficiary = scope.GetStack().Pop()
+	protectedStorage := fhevm_crypto.CreateProtectedStorageContractAddress(scope.GetContract().Address())
+	balance = env.GetBalance(scope.GetContract().Address())
+	balance.Add(balance, env.GetBalance(protectedStorage))
+	env.AddBalance(beneficiary.Bytes20(), balance)
+	env.Suicide(scope.GetContract().Address())
+	env.Suicide(protectedStorage)
+	return
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
-	ps "github.com/zama-ai/fhevm-go/crypto"
+	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
 )
 
 // A Logger interface for the EVM.
@@ -170,7 +170,7 @@ func padArrayTo32Multiple(input []byte) []byte {
 
 func Create(evm EVMEnvironment, caller common.Address, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
 	contractAddr = crypto.CreateAddress(caller, evm.GetNonce(caller))
-	protectedStorageAddr := ps.CreateProtectedStorageContractAddress(contractAddr)
+	protectedStorageAddr := fhevm_crypto.CreateProtectedStorageContractAddress(contractAddr)
 	_, _, leftOverGas, err = evm.CreateContract(caller, nil, gas, big.NewInt(0), protectedStorageAddr)
 	if err != nil {
 		ret = nil
@@ -184,7 +184,7 @@ func Create(evm EVMEnvironment, caller common.Address, code []byte, gas uint64, 
 func Create2(evm EVMEnvironment, caller common.Address, code []byte, gas uint64, endowment *big.Int, salt *uint256.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
 	codeHash := crypto.Keccak256Hash(code)
 	contractAddr = crypto.CreateAddress2(caller, salt.Bytes32(), codeHash.Bytes())
-	protectedStorageAddr := ps.CreateProtectedStorageContractAddress(contractAddr)
+	protectedStorageAddr := fhevm_crypto.CreateProtectedStorageContractAddress(contractAddr)
 	_, _, leftOverGas, err = evm.CreateContract2(caller, nil, common.Hash{}, gas, big.NewInt(0), protectedStorageAddr)
 	if err != nil {
 		ret = nil
