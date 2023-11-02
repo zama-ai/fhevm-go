@@ -12,6 +12,10 @@ type EVMEnvironment interface {
 	GetState(common.Address, common.Hash) common.Hash
 	SetState(common.Address, common.Hash, common.Hash)
 	GetNonce(common.Address) uint64
+	AddBalance(common.Address, *big.Int)
+	GetBalance(common.Address) *big.Int
+
+	Suicide(common.Address) bool
 
 	// EVM call stack depth
 	GetDepth() int
