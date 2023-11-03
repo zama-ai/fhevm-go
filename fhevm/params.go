@@ -110,4 +110,11 @@ var (
 	FheUint8TrivialEncryptGas  uint64 = 100
 	FheUint16TrivialEncryptGas uint64 = 200
 	FheUint32TrivialEncryptGas uint64 = 400
+
+	// A byte of data attached to a transaction has fractional cost: 1 / TxDataFractionalGasFactor.
+	TxDataFractionalGasFactor uint64 = 4
 )
+
+func TxDataFractionalGas(originalGas uint64) (fractionalGas uint64) {
+	return originalGas / TxDataFractionalGasFactor
+}
