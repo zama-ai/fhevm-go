@@ -111,7 +111,7 @@ func importCiphertext(environment EVMEnvironment, ct *tfheCiphertext) *verifiedC
 	return importCiphertextToEVM(environment, ct)
 }
 
-func importRandomCiphertext(environment EVMEnvironment, t fheUintType) []byte {
+func importRandomCiphertext(environment EVMEnvironment, t FheUintType) []byte {
 	nextCtHash := &environment.GetFhevmData().nextCiphertextHashOnGasEst
 	ctHashBytes := crypto.Keccak256(nextCtHash.Bytes())
 	handle := common.BytesToHash(ctHashBytes)

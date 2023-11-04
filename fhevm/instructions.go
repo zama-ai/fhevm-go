@@ -29,7 +29,7 @@ func contains(haystack []byte, needle []byte) bool {
 type ciphertextMetadata struct {
 	refCount    uint64
 	length      uint64
-	fheUintType fheUintType
+	fheUintType FheUintType
 }
 
 func (m ciphertextMetadata) serialize() [32]byte {
@@ -45,7 +45,7 @@ func (m *ciphertextMetadata) deserialize(buf [32]byte) *ciphertextMetadata {
 	u.SetBytes(buf[:])
 	m.refCount = u[0]
 	m.length = u[1]
-	m.fheUintType = fheUintType(u[2])
+	m.fheUintType = FheUintType(u[2])
 	return m
 }
 

@@ -18,102 +18,135 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
 package fhevm
 
-// This file contains default gas costs of fhEVM-related operations.
-// Users can change the values based on specific requirements in their blockchain.
-
-// Base gas costs of existing EVM operations. Used for setting gas costs relative to them.
-// These constants are used just for readability.
 const EvmNetSstoreInitGas uint64 = 20000
-const ColdSloadCostEIP2929 uint64 = 2100
 
-var (
-	// FHE operation costs depend on tfhe-rs performance and hardware acceleration. These values will most certainly change.
-	FheUint8AddSubGas  uint64 = 83000
-	FheUint16AddSubGas uint64 = 108000
-	FheUint32AddSubGas uint64 = 130000
-	FheUint8MulGas     uint64 = 150000
-	FheUint16MulGas    uint64 = 200000
-	FheUint32MulGas    uint64 = 270000
-	// Div and Rem currently only support a plaintext divisor and below gas costs reflect that case only.
-	FheUint8DivGas      uint64 = 200000
-	FheUint16DivGas     uint64 = 250000
-	FheUint32DivGas     uint64 = 350000
-	FheUint8RemGas      uint64 = 200000
-	FheUint16RemGas     uint64 = 250000
-	FheUint32RemGas     uint64 = 350000
-	FheUint8BitwiseGas  uint64 = 20000
-	FheUint16BitwiseGas uint64 = 21000
-	FheUint32BitwiseGas uint64 = 22000
-	FheUint8ShiftGas    uint64 = 105000
-	FheUint16ShiftGas   uint64 = 128000
-	FheUint32ShiftGas   uint64 = 160000
-	FheUint8LeGas       uint64 = 61000
-	FheUint16LeGas      uint64 = 83000
-	FheUint32LeGas      uint64 = 109000
-	FheUint8MinMaxGas   uint64 = 108000
-	FheUint16MinMaxGas  uint64 = 134000
-	FheUint32MinMaxGas  uint64 = 150000
-	FheUint8NegNotGas   uint64 = 83000
-	FheUint16NegNotGas  uint64 = 108000
-	FheUint32NegNotGas  uint64 = 130000
+func DefaultFhevmParams() FhevmParams {
+	return FhevmParams{
+		GasCosts: DefaultGasCosts(),
+	}
+}
 
-	// TODO: Costs will depend on the complexity of doing reencryption/decryption by the oracle.
-	FheUint8ReencryptGas  uint64 = 320000
-	FheUint16ReencryptGas uint64 = 320400
-	FheUint32ReencryptGas uint64 = 320800
-	FheUint8DecryptGas    uint64 = 320000
-	FheUint16DecryptGas   uint64 = 320400
-	FheUint32DecryptGas   uint64 = 320800
+type FhevmParams struct {
+	GasCosts GasCosts
+}
 
-	// As of now, verification costs only cover ciphertext deserialization and assume there is no ZKPoK to verify.
-	FheUint8VerifyGas  uint64 = 200
-	FheUint16VerifyGas uint64 = 300
-	FheUint32VerifyGas uint64 = 400
+type GasCosts struct {
+	FheCast             uint64
+	FhePubKey           uint64
+	FheAddSub           map[FheUintType]uint64
+	FheDecrypt          map[FheUintType]uint64
+	FheBitwiseOp        map[FheUintType]uint64
+	FheMul              map[FheUintType]uint64
+	FheDiv              map[FheUintType]uint64
+	FheRem              map[FheUintType]uint64
+	FheShift            map[FheUintType]uint64
+	FheLe               map[FheUintType]uint64
+	FheMinMax           map[FheUintType]uint64
+	FheNegNot           map[FheUintType]uint64
+	FheReencrypt        map[FheUintType]uint64
+	FheTrivialEncrypt   map[FheUintType]uint64
+	FheRand             map[FheUintType]uint64
+	FheVerify           map[FheUintType]uint64
+	FheOptRequire       map[FheUintType]uint64
+	FheOptRequireBitAnd map[FheUintType]uint64
+}
 
-	// TODO: Cost will depend on the complexity of doing decryption by the oracle.
-	FheUint8RequireGas  uint64 = 320000
-	FheUint16RequireGas uint64 = 320400
-	FheUint32RequireGas uint64 = 320800
+func DefaultGasCosts() GasCosts {
+	return GasCosts{
+		FheAddSub: map[FheUintType]uint64{
+			FheUint8:  83000,
+			FheUint16: 108000,
+			FheUint32: 130000,
+		},
+		FheDecrypt: map[FheUintType]uint64{
+			FheUint8:  600,
+			FheUint16: 700,
+			FheUint32: 800,
+		},
+		FheBitwiseOp: map[FheUintType]uint64{
+			FheUint8:  20000,
+			FheUint16: 21000,
+			FheUint32: 22000,
+		},
+		FheMul: map[FheUintType]uint64{
+			FheUint8:  150000,
+			FheUint16: 200000,
+			FheUint32: 270000,
+		},
+		FheDiv: map[FheUintType]uint64{
+			FheUint8:  1370000,
+			FheUint16: 3500000,
+			FheUint32: 9120000,
+		},
+		FheRem: map[FheUintType]uint64{
+			FheUint8:  1370000, // TODO: check again rem gas
+			FheUint16: 3500000,
+			FheUint32: 9120000,
+		},
+		FheShift: map[FheUintType]uint64{
+			FheUint8:  105000,
+			FheUint16: 128000,
+			FheUint32: 160000,
+		},
+		FheLe: map[FheUintType]uint64{
+			FheUint8:  61000,
+			FheUint16: 83000,
+			FheUint32: 109000,
+		},
+		FheMinMax: map[FheUintType]uint64{
+			FheUint8:  108000,
+			FheUint16: 134000,
+			FheUint32: 150000,
+		},
+		FheNegNot: map[FheUintType]uint64{
+			FheUint8:  83000,
+			FheUint16: 108000,
+			FheUint32: 130000,
+		},
+		// TODO: Costs will depend on the complexity of doing reencryption/decryption by the oracle.
+		FheReencrypt: map[FheUintType]uint64{
+			FheUint8:  1000,
+			FheUint16: 1100,
+			FheUint32: 1200,
+		},
+		// As of now, verification costs only cover ciphertext deserialization and assume there is no ZKPoK to verify.
+		FheVerify: map[FheUintType]uint64{
+			FheUint8:  200,
+			FheUint16: 300,
+			FheUint32: 400,
+		},
+		FheTrivialEncrypt: map[FheUintType]uint64{
+			FheUint8:  100,
+			FheUint16: 200,
+			FheUint32: 300,
+		},
+		// TODO: These will change once we have an FHE-based random generaration.
+		FheRand: map[FheUintType]uint64{
+			FheUint8:  EvmNetSstoreInitGas + 1000,
+			FheUint16: EvmNetSstoreInitGas + 2000,
+			FheUint32: EvmNetSstoreInitGas + 3000,
+		},
+		// TODO: As of now, only support FheUint8. All optimistic require predicates are
+		// downcast to FheUint8 at the solidity level. Eventually move to ebool.
+		// If there is at least one optimistic require, we need to decrypt it as it was a normal FHE require.
+		// For every subsequent optimistic require, we need to bitand it with the current require value - that
+		// works, because we assume requires have a value of 0 or 1.
+		FheOptRequire: map[FheUintType]uint64{
+			FheUint8:  170000,
+			FheUint16: 180000,
+			FheUint32: 190000,
+		},
+		FheOptRequireBitAnd: map[FheUintType]uint64{
+			FheUint8:  20000,
+			FheUint16: 20000,
+			FheUint32: 20000,
+		},
+	}
+}
 
-	// TODO: As of now, only support FheUint8. All optimistic require predicates are
-	// downcast to FheUint8 at the solidity level. Eventually move to ebool.
-	// If there is at least one optimistic require, we need to decrypt it as it was a normal FHE require.
-	// For every subsequent optimistic require, we need to bitand it with the current require value - that
-	// works, because we assume requires have a value of 0 or 1.
-	FheUint8OptimisticRequireGas       uint64 = FheUint8RequireGas
-	FheUint8OptimisticRequireBitandGas uint64 = FheUint8BitwiseGas
-
-	// TODO: These will change once we have an FHE-based random generaration.
-	FheUint8RandGas  uint64 = EvmNetSstoreInitGas + 1000
-	FheUint16RandGas uint64 = FheUint8RandGas + 1000
-	FheUint32RandGas uint64 = FheUint16RandGas + 1000
-
-	// TODO: The values here are chosen somewhat arbitrarily (at least the 8 bit ones). Also, we don't
-	// take into account whether a ciphertext existed (either "current" or "original") for the given handle.
-	// Finally, costs are likely to change in the future.
-	FheUint8ProtectedStorageSstoreGas  uint64 = EvmNetSstoreInitGas + 2000
-	FheUint16ProtectedStorageSstoreGas uint64 = FheUint8ProtectedStorageSstoreGas * 2
-	FheUint32ProtectedStorageSstoreGas uint64 = FheUint16ProtectedStorageSstoreGas * 2
-
-	// TODO: We don't take whether the slot is cold or warm into consideration.
-	FheUint8ProtectedStorageSloadGas  uint64 = ColdSloadCostEIP2929 + 200
-	FheUint16ProtectedStorageSloadGas uint64 = FheUint8ProtectedStorageSloadGas * 2
-	FheUint32ProtectedStorageSloadGas uint64 = FheUint16ProtectedStorageSloadGas * 2
-
-	FheCastGas uint64 = 100
-
-	FhePubKeyGas uint64 = 2
-
-	FheUint8TrivialEncryptGas  uint64 = 100
-	FheUint16TrivialEncryptGas uint64 = 200
-	FheUint32TrivialEncryptGas uint64 = 400
-
-	// A byte of data attached to a transaction has fractional cost: 1 / TxDataFractionalGasFactor.
-	TxDataFractionalGasFactor uint64 = 4
-)
+var TxDataFractionalGasFactor uint64 = 4
 
 func TxDataFractionalGas(originalGas uint64) (fractionalGas uint64) {
 	return originalGas / TxDataFractionalGasFactor
