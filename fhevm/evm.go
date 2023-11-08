@@ -87,7 +87,7 @@ func getScalarOperands(environment EVMEnvironment, input []byte) (lhs *verifiedC
 }
 
 func importCiphertextToEVMAtDepth(environment EVMEnvironment, ct *tfheCiphertext, depth int) *verifiedCiphertext {
-	existing, ok := environment.GetFhevmData().verifiedCiphertexts[ct.getHash()]
+	existing, ok := environment.FhevmData().verifiedCiphertexts[ct.getHash()]
 	if ok {
 		existing.verifiedDepths.add(depth)
 		return existing
@@ -98,7 +98,7 @@ func importCiphertextToEVMAtDepth(environment EVMEnvironment, ct *tfheCiphertext
 			verifiedDepths,
 			ct,
 		}
-		environment.GetFhevmData().verifiedCiphertexts[ct.getHash()] = new
+		environment.FhevmData().verifiedCiphertexts[ct.getHash()] = new
 		return new
 	}
 }
@@ -112,7 +112,7 @@ func importCiphertext(environment EVMEnvironment, ct *tfheCiphertext) *verifiedC
 }
 
 func importRandomCiphertext(environment EVMEnvironment, t FheUintType) []byte {
-	nextCtHash := &environment.GetFhevmData().nextCiphertextHashOnGasEst
+	nextCtHash := &environment.FhevmData().nextCiphertextHashOnGasEst
 	ctHashBytes := crypto.Keccak256(nextCtHash.Bytes())
 	handle := common.BytesToHash(ctHashBytes)
 	ct := new(tfheCiphertext)

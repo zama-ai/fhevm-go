@@ -31,7 +31,7 @@ type EVMEnvironment interface {
 	CreateContract(caller common.Address, code []byte, gas uint64, value *big.Int, address common.Address) ([]byte, common.Address, uint64, error)
 	CreateContract2(caller common.Address, code []byte, codeHash common.Hash, gas uint64, value *big.Int, address common.Address) ([]byte, common.Address, uint64, error)
 
-	GetFhevmData() *FhevmData
+	FhevmData() *FhevmData
 	FhevmParams() *FhevmParams
 }
 

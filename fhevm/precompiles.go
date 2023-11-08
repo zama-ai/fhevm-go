@@ -613,7 +613,7 @@ func optimisticRequireRequiredGas(environment EVMEnvironment, input []byte) uint
 			"type", ct.ciphertext.fheUintType)
 		return 0
 	}
-	if len(environment.GetFhevmData().optimisticRequires) == 0 {
+	if len(environment.FhevmData().optimisticRequires) == 0 {
 		return environment.FhevmParams().GasCosts.FheOptRequire[FheUint8]
 	}
 	return environment.FhevmParams().GasCosts.FheOptRequireBitAnd[FheUint8]
@@ -1950,7 +1950,7 @@ func optimisticRequireRun(environment EVMEnvironment, caller common.Address, add
 		logger.Error(msg, "type", ct.ciphertext.fheUintType)
 		return nil, errors.New(msg)
 	}
-	environment.GetFhevmData().optimisticRequires = append(environment.GetFhevmData().optimisticRequires, ct.ciphertext)
+	environment.FhevmData().optimisticRequires = append(environment.FhevmData().optimisticRequires, ct.ciphertext)
 	return nil, nil
 }
 
@@ -2001,7 +2001,7 @@ func decryptValue(ct *tfheCiphertext) (uint64, error) {
 // That works, because we assume their values are either 0 or 1. If there is at least
 // one 0, the result will be 0 (false).
 func evaluateRemainingOptimisticRequires(environment EVMEnvironment) (bool, error) {
-	requires := environment.GetFhevmData().optimisticRequires
+	requires := environment.FhevmData().optimisticRequires
 	len := len(requires)
 	defer func() { requires = make([]*tfheCiphertext, 0) }()
 	if len != 0 {
