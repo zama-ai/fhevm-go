@@ -13,7 +13,7 @@ import (
 	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
 )
 
-var zero = uint256.NewInt(0).Bytes32()
+var zero = common.BytesToHash(uint256.NewInt(0).Bytes())
 
 func newInt(buf []byte) *uint256.Int {
 	i := uint256.NewInt(0)
