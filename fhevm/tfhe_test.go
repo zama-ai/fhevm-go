@@ -38,7 +38,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TfheEncryptDecrypt(t *testing.T, fheUintType fheUintType) {
+func TfheEncryptDecrypt(t *testing.T, fheUintType FheUintType) {
 	var val big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -56,7 +56,7 @@ func TfheEncryptDecrypt(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheTrivialEncryptDecrypt(t *testing.T, fheUintType fheUintType) {
+func TfheTrivialEncryptDecrypt(t *testing.T, fheUintType FheUintType) {
 	var val big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -74,7 +74,7 @@ func TfheTrivialEncryptDecrypt(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheSerializeDeserialize(t *testing.T, fheUintType fheUintType) {
+func TfheSerializeDeserialize(t *testing.T, fheUintType FheUintType) {
 	var val big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -98,7 +98,7 @@ func TfheSerializeDeserialize(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheSerializeDeserializeCompact(t *testing.T, fheUintType fheUintType) {
+func TfheSerializeDeserializeCompact(t *testing.T, fheUintType FheUintType) {
 	var val uint32
 	switch fheUintType {
 	case FheUint8:
@@ -134,7 +134,7 @@ func TfheSerializeDeserializeCompact(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheTrivialSerializeDeserialize(t *testing.T, fheUintType fheUintType) {
+func TfheTrivialSerializeDeserialize(t *testing.T, fheUintType FheUintType) {
 	var val big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -158,7 +158,7 @@ func TfheTrivialSerializeDeserialize(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheDeserializeFailure(t *testing.T, fheUintType fheUintType) {
+func TfheDeserializeFailure(t *testing.T, fheUintType FheUintType) {
 	ct := new(tfheCiphertext)
 	input := make([]byte, 1)
 	input[0] = 42
@@ -168,7 +168,7 @@ func TfheDeserializeFailure(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheDeserializeCompact(t *testing.T, fheUintType fheUintType) {
+func TfheDeserializeCompact(t *testing.T, fheUintType FheUintType) {
 	var val uint32
 	switch fheUintType {
 	case FheUint8:
@@ -190,7 +190,7 @@ func TfheDeserializeCompact(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheDeserializeCompactFailure(t *testing.T, fheUintType fheUintType) {
+func TfheDeserializeCompactFailure(t *testing.T, fheUintType FheUintType) {
 	ct := new(tfheCiphertext)
 	err := ct.deserializeCompact(make([]byte, 10), fheUintType)
 	if err == nil {
@@ -198,7 +198,7 @@ func TfheDeserializeCompactFailure(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheAdd(t *testing.T, fheUintType fheUintType) {
+func TfheAdd(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -223,7 +223,7 @@ func TfheAdd(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheScalarAdd(t *testing.T, fheUintType fheUintType) {
+func TfheScalarAdd(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -246,7 +246,7 @@ func TfheScalarAdd(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheSub(t *testing.T, fheUintType fheUintType) {
+func TfheSub(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -271,7 +271,7 @@ func TfheSub(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheScalarSub(t *testing.T, fheUintType fheUintType) {
+func TfheScalarSub(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -294,7 +294,7 @@ func TfheScalarSub(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheMul(t *testing.T, fheUintType fheUintType) {
+func TfheMul(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -319,7 +319,7 @@ func TfheMul(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheScalarMul(t *testing.T, fheUintType fheUintType) {
+func TfheScalarMul(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -342,7 +342,7 @@ func TfheScalarMul(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheScalarDiv(t *testing.T, fheUintType fheUintType) {
+func TfheScalarDiv(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -365,7 +365,7 @@ func TfheScalarDiv(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheScalarRem(t *testing.T, fheUintType fheUintType) {
+func TfheScalarRem(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -388,7 +388,7 @@ func TfheScalarRem(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheBitAnd(t *testing.T, fheUintType fheUintType) {
+func TfheBitAnd(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -413,7 +413,7 @@ func TfheBitAnd(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheBitOr(t *testing.T, fheUintType fheUintType) {
+func TfheBitOr(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -438,7 +438,7 @@ func TfheBitOr(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheBitXor(t *testing.T, fheUintType fheUintType) {
+func TfheBitXor(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -463,7 +463,7 @@ func TfheBitXor(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheShl(t *testing.T, fheUintType fheUintType) {
+func TfheShl(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -488,7 +488,7 @@ func TfheShl(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheScalarShl(t *testing.T, fheUintType fheUintType) {
+func TfheScalarShl(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -511,7 +511,7 @@ func TfheScalarShl(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheShr(t *testing.T, fheUintType fheUintType) {
+func TfheShr(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -536,7 +536,7 @@ func TfheShr(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheScalarShr(t *testing.T, fheUintType fheUintType) {
+func TfheScalarShr(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -559,7 +559,7 @@ func TfheScalarShr(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheEq(t *testing.T, fheUintType fheUintType) {
+func TfheEq(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -590,7 +590,7 @@ func TfheEq(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheScalarEq(t *testing.T, fheUintType fheUintType) {
+func TfheScalarEq(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -619,7 +619,7 @@ func TfheScalarEq(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheNe(t *testing.T, fheUintType fheUintType) {
+func TfheNe(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -650,7 +650,7 @@ func TfheNe(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheScalarNe(t *testing.T, fheUintType fheUintType) {
+func TfheScalarNe(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -679,7 +679,7 @@ func TfheScalarNe(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheGe(t *testing.T, fheUintType fheUintType) {
+func TfheGe(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -708,7 +708,7 @@ func TfheGe(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheScalarGe(t *testing.T, fheUintType fheUintType) {
+func TfheScalarGe(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -730,7 +730,7 @@ func TfheScalarGe(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheGt(t *testing.T, fheUintType fheUintType) {
+func TfheGt(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -759,7 +759,7 @@ func TfheGt(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheScalarGt(t *testing.T, fheUintType fheUintType) {
+func TfheScalarGt(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -781,7 +781,7 @@ func TfheScalarGt(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheLe(t *testing.T, fheUintType fheUintType) {
+func TfheLe(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -810,7 +810,7 @@ func TfheLe(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheScalarLe(t *testing.T, fheUintType fheUintType) {
+func TfheScalarLe(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -832,7 +832,7 @@ func TfheScalarLe(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheLt(t *testing.T, fheUintType fheUintType) {
+func TfheLt(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -861,7 +861,7 @@ func TfheLt(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheScalarLt(t *testing.T, fheUintType fheUintType) {
+func TfheScalarLt(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -883,7 +883,7 @@ func TfheScalarLt(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheMin(t *testing.T, fheUintType fheUintType) {
+func TfheMin(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -912,7 +912,7 @@ func TfheMin(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheScalarMin(t *testing.T, fheUintType fheUintType) {
+func TfheScalarMin(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -934,7 +934,7 @@ func TfheScalarMin(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheMax(t *testing.T, fheUintType fheUintType) {
+func TfheMax(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -963,7 +963,7 @@ func TfheMax(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheScalarMax(t *testing.T, fheUintType fheUintType) {
+func TfheScalarMax(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
 	case FheUint8:
@@ -985,7 +985,7 @@ func TfheScalarMax(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheNeg(t *testing.T, fheUintType fheUintType) {
+func TfheNeg(t *testing.T, fheUintType FheUintType) {
 	var a big.Int
 	var expected uint64
 
@@ -1009,7 +1009,7 @@ func TfheNeg(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheNot(t *testing.T, fheUintType fheUintType) {
+func TfheNot(t *testing.T, fheUintType FheUintType) {
 	var a big.Int
 	var expected uint64
 	switch fheUintType {
@@ -1033,7 +1033,7 @@ func TfheNot(t *testing.T, fheUintType fheUintType) {
 	}
 }
 
-func TfheCast(t *testing.T, fheUintTypeFrom fheUintType, fheUintTypeTo fheUintType) {
+func TfheCast(t *testing.T, fheUintTypeFrom FheUintType, fheUintTypeTo FheUintType) {
 	var a big.Int
 	switch fheUintTypeFrom {
 	case FheUint8:

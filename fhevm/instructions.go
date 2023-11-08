@@ -29,7 +29,7 @@ func contains(haystack []byte, needle []byte) bool {
 type ciphertextMetadata struct {
 	refCount    uint64
 	length      uint64
-	fheUintType fheUintType
+	fheUintType FheUintType
 }
 
 func (m ciphertextMetadata) serialize() [32]byte {
@@ -45,7 +45,7 @@ func (m *ciphertextMetadata) deserialize(buf [32]byte) *ciphertextMetadata {
 	u.SetBytes(buf[:])
 	m.refCount = u[0]
 	m.length = u[1]
-	m.fheUintType = fheUintType(u[2])
+	m.fheUintType = FheUintType(u[2])
 	return m
 }
 
@@ -133,7 +133,7 @@ func isVerifiedAtCurrentDepth(environment EVMEnvironment, ct *verifiedCiphertext
 // Returns a pointer to the ciphertext if the given hash points to a verified ciphertext.
 // Else, it returns nil.
 func getVerifiedCiphertextFromEVM(environment EVMEnvironment, ciphertextHash common.Hash) *verifiedCiphertext {
-	ct, ok := environment.GetFhevmData().verifiedCiphertexts[ciphertextHash]
+	ct, ok := environment.FhevmData().verifiedCiphertexts[ciphertextHash]
 	if ok && isVerifiedAtCurrentDepth(environment, ct) {
 		return ct
 	}
@@ -141,7 +141,7 @@ func getVerifiedCiphertextFromEVM(environment EVMEnvironment, ciphertextHash com
 }
 
 func verifyIfCiphertextHandle(handle common.Hash, env EVMEnvironment, contractAddress common.Address) error {
-	ct, ok := env.GetFhevmData().verifiedCiphertexts[handle]
+	ct, ok := env.FhevmData().verifiedCiphertexts[handle]
 	if ok {
 		// If already existing in memory, skip storage and import the same ciphertext at the current depth.
 		//
@@ -299,7 +299,7 @@ func OpSstore(pc *uint64, env EVMEnvironment, scope ScopeContext) ([]byte, error
 // Return a map from ciphertext hash -> depthSet before delegation.
 func DelegateCiphertextHandlesInArgs(env EVMEnvironment, args []byte) (verified map[common.Hash]*depthSet) {
 	verified = make(map[common.Hash]*depthSet)
-	for key, verifiedCiphertext := range env.GetFhevmData().verifiedCiphertexts {
+	for key, verifiedCiphertext := range env.FhevmData().verifiedCiphertexts {
 		if contains(args, key.Bytes()) && isVerifiedAtCurrentDepth(env, verifiedCiphertext) {
 			if env.IsCommitting() {
 				env.GetLogger().Info("delegateCiphertextHandlesInArgs",
@@ -316,12 +316,12 @@ func DelegateCiphertextHandlesInArgs(env EVMEnvironment, args []byte) (verified 
 
 func RestoreVerifiedDepths(env EVMEnvironment, verified map[common.Hash]*depthSet) {
 	for k, v := range verified {
-		env.GetFhevmData().verifiedCiphertexts[k].verifiedDepths = v
+		env.FhevmData().verifiedCiphertexts[k].verifiedDepths = v
 	}
 }
 
 func delegateCiphertextHandlesToCaller(env EVMEnvironment, ret []byte) {
-	for key, verifiedCiphertext := range env.GetFhevmData().verifiedCiphertexts {
+	for key, verifiedCiphertext := range env.FhevmData().verifiedCiphertexts {
 		if contains(ret, key.Bytes()) && isVerifiedAtCurrentDepth(env, verifiedCiphertext) {
 			if env.IsCommitting() {
 				env.GetLogger().Info("opReturn making ciphertext available to caller",
@@ -336,7 +336,7 @@ func delegateCiphertextHandlesToCaller(env EVMEnvironment, ret []byte) {
 }
 
 func RemoveVerifiedCipherextsAtCurrentDepth(env EVMEnvironment) {
-	for _, verifiedCiphertext := range env.GetFhevmData().verifiedCiphertexts {
+	for _, verifiedCiphertext := range env.FhevmData().verifiedCiphertexts {
 		if env.IsCommitting() {
 			env.GetLogger().Info("Run removing ciphertext from depth",
 				"handle", verifiedCiphertext.ciphertext.getHash().Hex(),

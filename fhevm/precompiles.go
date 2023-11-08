@@ -285,90 +285,6 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-var fheAddSubGasCosts = map[fheUintType]uint64{
-	FheUint8:  FheUint8AddSubGas,
-	FheUint16: FheUint16AddSubGas,
-	FheUint32: FheUint32AddSubGas,
-}
-
-var fheDecryptGasCosts = map[fheUintType]uint64{
-	FheUint8:  FheUint8DecryptGas,
-	FheUint16: FheUint16DecryptGas,
-	FheUint32: FheUint32DecryptGas,
-}
-
-var fheBitwiseOpGasCosts = map[fheUintType]uint64{
-	FheUint8:  FheUint8BitwiseGas,
-	FheUint16: FheUint16BitwiseGas,
-	FheUint32: FheUint32BitwiseGas,
-}
-
-var fheMulGasCosts = map[fheUintType]uint64{
-	FheUint8:  FheUint8MulGas,
-	FheUint16: FheUint16MulGas,
-	FheUint32: FheUint32MulGas,
-}
-
-var fheDivGasCosts = map[fheUintType]uint64{
-	FheUint8:  FheUint8DivGas,
-	FheUint16: FheUint16DivGas,
-	FheUint32: FheUint32DivGas,
-}
-
-var fheRemGasCosts = map[fheUintType]uint64{
-	FheUint8:  FheUint8RemGas,
-	FheUint16: FheUint16RemGas,
-	FheUint32: FheUint32RemGas,
-}
-
-var fheShiftGasCosts = map[fheUintType]uint64{
-	FheUint8:  FheUint8ShiftGas,
-	FheUint16: FheUint16ShiftGas,
-	FheUint32: FheUint32ShiftGas,
-}
-
-var fheLeGasCosts = map[fheUintType]uint64{
-	FheUint8:  FheUint8LeGas,
-	FheUint16: FheUint16LeGas,
-	FheUint32: FheUint32LeGas,
-}
-
-var fheMinMaxGasCosts = map[fheUintType]uint64{
-	FheUint8:  FheUint8MinMaxGas,
-	FheUint16: FheUint16MinMaxGas,
-	FheUint32: FheUint32MinMaxGas,
-}
-
-var fheNegNotGasCosts = map[fheUintType]uint64{
-	FheUint8:  FheUint8NegNotGas,
-	FheUint16: FheUint16NegNotGas,
-	FheUint32: FheUint32NegNotGas,
-}
-
-var fheReencryptGasCosts = map[fheUintType]uint64{
-	FheUint8:  FheUint8ReencryptGas,
-	FheUint16: FheUint16ReencryptGas,
-	FheUint32: FheUint32ReencryptGas,
-}
-
-var fheVerifyGasCosts = map[fheUintType]uint64{
-	FheUint8:  FheUint8VerifyGas,
-	FheUint16: FheUint16VerifyGas,
-	FheUint32: FheUint32VerifyGas,
-}
-
-var fheTrivialEncryptGasCosts = map[fheUintType]uint64{
-	FheUint8:  FheUint8TrivialEncryptGas,
-	FheUint16: FheUint16TrivialEncryptGas,
-	FheUint32: FheUint32TrivialEncryptGas,
-}
-
-var fheRandGasCosts = map[fheUintType]uint64{
-	FheUint8:  FheUint8RandGas,
-	FheUint16: FheUint16RandGas,
-	FheUint32: FheUint32RandGas,
-}
-
 // Gas costs
 func fheAddSubRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	logger := environment.GetLogger()
@@ -396,7 +312,7 @@ func fheAddSubRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		}
 	}
 
-	return fheAddSubGasCosts[lhs.ciphertext.fheUintType]
+	return environment.FhevmParams().GasCosts.FheAddSub[lhs.ciphertext.fheUintType]
 }
 
 func fheMulRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -424,7 +340,7 @@ func fheMulRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 			return 0
 		}
 	}
-	return fheMulGasCosts[lhs.ciphertext.fheUintType]
+	return environment.FhevmParams().GasCosts.FheMul[lhs.ciphertext.fheUintType]
 }
 
 func fheLeRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -452,7 +368,7 @@ func fheLeRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 			return 0
 		}
 	}
-	return fheLeGasCosts[lhs.ciphertext.fheUintType]
+	return environment.FhevmParams().GasCosts.FheLe[lhs.ciphertext.fheUintType]
 }
 
 func fheLtRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -505,7 +421,7 @@ func fheShlRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 			return 0
 		}
 	}
-	return fheShiftGasCosts[lhs.ciphertext.fheUintType]
+	return environment.FhevmParams().GasCosts.FheShift[lhs.ciphertext.fheUintType]
 }
 
 func fheShrRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -538,7 +454,7 @@ func fheMinRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 			return 0
 		}
 	}
-	return fheMinMaxGasCosts[lhs.ciphertext.fheUintType]
+	return environment.FhevmParams().GasCosts.FheMinMax[lhs.ciphertext.fheUintType]
 }
 
 func fheMaxRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -557,7 +473,7 @@ func fheNegRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("fheNeg input not verified", "input", hex.EncodeToString(input))
 		return 0
 	}
-	return fheNegNotGasCosts[ct.ciphertext.fheUintType]
+	return environment.FhevmParams().GasCosts.FheNegNot[ct.ciphertext.fheUintType]
 }
 
 func fheNotRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -583,7 +499,7 @@ func fheDivRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 			return 0
 		}
 	}
-	return fheDivGasCosts[lhs.ciphertext.fheUintType]
+	return environment.FhevmParams().GasCosts.FheDiv[lhs.ciphertext.fheUintType]
 }
 
 func fheRemRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -604,7 +520,7 @@ func fheRemRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 			return 0
 		}
 	}
-	return fheRemGasCosts[lhs.ciphertext.fheUintType]
+	return environment.FhevmParams().GasCosts.FheRem[lhs.ciphertext.fheUintType]
 }
 
 func fheBitAndRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -631,7 +547,7 @@ func fheBitAndRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("Bitwise op RequiredGas() operand type mismatch", "lhs", lhs.ciphertext.fheUintType, "rhs", rhs.ciphertext.fheUintType)
 		return 0
 	}
-	return fheBitwiseOpGasCosts[lhs.ciphertext.fheUintType]
+	return environment.FhevmParams().GasCosts.FheBitwiseOp[lhs.ciphertext.fheUintType]
 }
 
 func fheBitOrRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -650,8 +566,8 @@ func fheRandRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("fheRand RequiredGas() input len must be at least 1 byte and be a valid FheUint type", "input", hex.EncodeToString(input), "len", len(input))
 		return 0
 	}
-	t := fheUintType(input[0])
-	return fheRandGasCosts[t]
+	t := FheUintType(input[0])
+	return environment.FhevmParams().GasCosts.FheRand[t]
 }
 
 func verifyCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -661,8 +577,8 @@ func verifyCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint6
 			"len", len(input))
 		return 0
 	}
-	ctType := fheUintType(input[len(input)-1])
-	return fheVerifyGasCosts[ctType]
+	ctType := FheUintType(input[len(input)-1])
+	return environment.FhevmParams().GasCosts.FheVerify[ctType]
 }
 
 func reencryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -676,7 +592,7 @@ func reencryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("reencrypt RequiredGas() input doesn't point to verified ciphertext", "input", hex.EncodeToString(input))
 		return 0
 	}
-	return fheReencryptGasCosts[ct.ciphertext.fheUintType]
+	return environment.FhevmParams().GasCosts.FheReencrypt[ct.ciphertext.fheUintType]
 }
 
 func optimisticRequireRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -697,10 +613,10 @@ func optimisticRequireRequiredGas(environment EVMEnvironment, input []byte) uint
 			"type", ct.ciphertext.fheUintType)
 		return 0
 	}
-	if len(environment.GetFhevmData().optimisticRequires) == 0 {
-		return FheUint8OptimisticRequireGas
+	if len(environment.FhevmData().optimisticRequires) == 0 {
+		return environment.FhevmParams().GasCosts.FheOptRequire[FheUint8]
 	}
-	return FheUint8OptimisticRequireBitandGas
+	return environment.FhevmParams().GasCosts.FheOptRequireBitAnd[FheUint8]
 }
 
 func castRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -710,7 +626,7 @@ func castRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 			"len", len(input))
 		return 0
 	}
-	return FheCastGas
+	return environment.FhevmParams().GasCosts.FheCast
 }
 
 func decryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -724,11 +640,11 @@ func decryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("decrypt RequiredGas() input doesn't point to verified ciphertext", "input", hex.EncodeToString(input))
 		return 0
 	}
-	return fheDecryptGasCosts[ct.ciphertext.fheUintType]
+	return environment.FhevmParams().GasCosts.FheDecrypt[ct.ciphertext.fheUintType]
 }
 
 func fhePubKeyRequiredGas(environment EVMEnvironment, input []byte) uint64 {
-	return FhePubKeyGas
+	return environment.FhevmParams().GasCosts.FhePubKey
 }
 
 func trivialEncryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -737,8 +653,8 @@ func trivialEncryptRequiredGas(environment EVMEnvironment, input []byte) uint64 
 		logger.Error("trivialEncrypt RequiredGas() input len must be 33 bytes", "input", hex.EncodeToString(input), "len", len(input))
 		return 0
 	}
-	encryptToType := fheUintType(input[32])
-	return fheTrivialEncryptGasCosts[encryptToType]
+	encryptToType := FheUintType(input[32])
+	return environment.FhevmParams().GasCosts.FheTrivialEncrypt[encryptToType]
 }
 
 // Implementations
@@ -1855,7 +1771,7 @@ func fheRandRun(environment EVMEnvironment, caller common.Address, addr common.A
 		return nil, errors.New(msg)
 	}
 
-	t := fheUintType(input[0])
+	t := FheUintType(input[0])
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() {
 		return importRandomCiphertext(environment, t), nil
@@ -1922,7 +1838,7 @@ func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr
 		logger.Error(msg, "type", ctTypeByte)
 		return nil, errors.New(msg)
 	}
-	ctType := fheUintType(ctTypeByte)
+	ctType := FheUintType(ctTypeByte)
 
 	expectedSize, found := compactFheCiphertextSize[ctType]
 	if !found || expectedSize != uint(len(ctBytes)) {
@@ -2034,7 +1950,7 @@ func optimisticRequireRun(environment EVMEnvironment, caller common.Address, add
 		logger.Error(msg, "type", ct.ciphertext.fheUintType)
 		return nil, errors.New(msg)
 	}
-	environment.GetFhevmData().optimisticRequires = append(environment.GetFhevmData().optimisticRequires, ct.ciphertext)
+	environment.FhevmData().optimisticRequires = append(environment.FhevmData().optimisticRequires, ct.ciphertext)
 	return nil, nil
 }
 
@@ -2085,7 +2001,7 @@ func decryptValue(ct *tfheCiphertext) (uint64, error) {
 // That works, because we assume their values are either 0 or 1. If there is at least
 // one 0, the result will be 0 (false).
 func evaluateRemainingOptimisticRequires(environment EVMEnvironment) (bool, error) {
-	requires := environment.GetFhevmData().optimisticRequires
+	requires := environment.FhevmData().optimisticRequires
 	len := len(requires)
 	defer func() { requires = make([]*tfheCiphertext, 0) }()
 	if len != 0 {
@@ -2122,7 +2038,7 @@ func castRun(environment EVMEnvironment, caller common.Address, addr common.Addr
 		logger.Error("invalid type to cast to")
 		return nil, errors.New("invalid type provided")
 	}
-	castToType := fheUintType(input[32])
+	castToType := FheUintType(input[32])
 
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() && !environment.IsEthCall() {
@@ -2180,7 +2096,7 @@ func trivialEncryptRun(environment EVMEnvironment, caller common.Address, addr c
 	}
 
 	valueToEncrypt := *new(big.Int).SetBytes(input[0:32])
-	encryptToType := fheUintType(input[32])
+	encryptToType := FheUintType(input[32])
 
 	ct := new(tfheCiphertext).trivialEncrypt(valueToEncrypt, encryptToType)
 

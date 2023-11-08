@@ -1518,10 +1518,10 @@ func toBufferView(in []byte) C.BufferView {
 }
 
 // Expanded TFHE ciphertext sizes by type, in bytes.
-var expandedFheCiphertextSize map[fheUintType]uint
+var expandedFheCiphertextSize map[FheUintType]uint
 
 // Compact TFHE ciphertext sizes by type, in bytes.
-var compactFheCiphertextSize map[fheUintType]uint
+var compactFheCiphertextSize map[FheUintType]uint
 
 // server key: evaluation key
 var sks unsafe.Pointer
@@ -1549,8 +1549,8 @@ func initGlobalKeysWithNewKeys() {
 }
 
 func initCiphertextSizes() {
-	expandedFheCiphertextSize = make(map[fheUintType]uint)
-	compactFheCiphertextSize = make(map[fheUintType]uint)
+	expandedFheCiphertextSize = make(map[FheUintType]uint)
+	compactFheCiphertextSize = make(map[FheUintType]uint)
 
 	expandedFheCiphertextSize[FheUint8] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint8).serialize()))
 	expandedFheCiphertextSize[FheUint16] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint16).serialize()))
@@ -1610,7 +1610,7 @@ func init() {
 	}
 }
 
-func serialize(ptr unsafe.Pointer, t fheUintType) ([]byte, error) {
+func serialize(ptr unsafe.Pointer, t FheUintType) ([]byte, error) {
 	out := &C.Buffer{}
 	var ret C.int
 	switch t {
@@ -1644,23 +1644,23 @@ func serializePublicKey(pks unsafe.Pointer) ([]byte, error) {
 }
 
 // Represents a TFHE ciphertext type, i.e. its bit capacity.
-type fheUintType uint8
+type FheUintType uint8
 
 const (
-	FheUint8  fheUintType = 0
-	FheUint16 fheUintType = 1
-	FheUint32 fheUintType = 2
+	FheUint8  FheUintType = 0
+	FheUint16 FheUintType = 1
+	FheUint32 FheUintType = 2
 )
 
 // Represents an expanded TFHE ciphertext.
 type tfheCiphertext struct {
 	serialization []byte
 	hash          *common.Hash
-	fheUintType   fheUintType
+	fheUintType   FheUintType
 }
 
 // Deserializes a TFHE ciphertext.
-func (ct *tfheCiphertext) deserialize(in []byte, t fheUintType) error {
+func (ct *tfheCiphertext) deserialize(in []byte, t FheUintType) error {
 	switch t {
 	case FheUint8:
 		ptr := C.deserialize_fhe_uint8(toBufferView((in)))
@@ -1692,7 +1692,7 @@ func (ct *tfheCiphertext) deserialize(in []byte, t fheUintType) error {
 // Deserializes a compact TFHE ciphetext.
 // Note: After the compact TFHE ciphertext has been serialized, subsequent calls to serialize()
 // will produce non-compact ciphertext serialziations.
-func (ct *tfheCiphertext) deserializeCompact(in []byte, t fheUintType) error {
+func (ct *tfheCiphertext) deserializeCompact(in []byte, t FheUintType) error {
 	switch t {
 	case FheUint8:
 		ptr := C.deserialize_compact_fhe_uint8(toBufferView((in)))
@@ -1737,7 +1737,7 @@ func (ct *tfheCiphertext) deserializeCompact(in []byte, t fheUintType) error {
 
 // Encrypts a value as a TFHE ciphertext, using the compact public FHE key.
 // The resulting ciphertext is automaticaly expanded.
-func (ct *tfheCiphertext) encrypt(value big.Int, t fheUintType) *tfheCiphertext {
+func (ct *tfheCiphertext) encrypt(value big.Int, t FheUintType) *tfheCiphertext {
 	var ptr unsafe.Pointer
 	var err error
 	switch t {
@@ -1770,7 +1770,7 @@ func (ct *tfheCiphertext) encrypt(value big.Int, t fheUintType) *tfheCiphertext 
 	return ct
 }
 
-func (ct *tfheCiphertext) trivialEncrypt(value big.Int, t fheUintType) *tfheCiphertext {
+func (ct *tfheCiphertext) trivialEncrypt(value big.Int, t FheUintType) *tfheCiphertext {
 	var ptr unsafe.Pointer
 	var err error
 	switch t {
@@ -2460,7 +2460,7 @@ func (lhs *tfheCiphertext) not() (*tfheCiphertext, error) {
 		})
 }
 
-func (ct *tfheCiphertext) castTo(castToType fheUintType) (*tfheCiphertext, error) {
+func (ct *tfheCiphertext) castTo(castToType FheUintType) (*tfheCiphertext, error) {
 	if ct.fheUintType == castToType {
 		return nil, errors.New("casting to same type is not supported")
 	}
@@ -2645,7 +2645,7 @@ func isValidType(t byte) bool {
 	return true
 }
 
-func encryptAndSerializeCompact(value uint32, fheUintType fheUintType) []byte {
+func encryptAndSerializeCompact(value uint32, fheUintType FheUintType) []byte {
 	out := &C.Buffer{}
 	switch fheUintType {
 	case FheUint8:
