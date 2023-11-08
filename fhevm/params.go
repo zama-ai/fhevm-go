@@ -20,7 +20,27 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 package fhevm
 
+// This file contains default gas costs of fhEVM-related operations.
+// Users can change the values based on specific requirements in their blockchain.
+
+// Base gas costs of existing EVM operations. Used for setting gas costs relative to them.
+// These constants are used just for readability.
 const EvmNetSstoreInitGas uint64 = 20000
+const ColdSloadCostEIP2929 uint64 = 2100
+
+var (
+	// TODO: The values here are chosen somewhat arbitrarily (at least the 8 bit ones). Also, we don't
+	// take into account whether a ciphertext existed (either "current" or "original") for the given handle.
+	// Finally, costs are likely to change in the future.
+	FheUint8ProtectedStorageSstoreGas  uint64 = EvmNetSstoreInitGas + 2000
+	FheUint16ProtectedStorageSstoreGas uint64 = FheUint8ProtectedStorageSstoreGas * 2
+	FheUint32ProtectedStorageSstoreGas uint64 = FheUint16ProtectedStorageSstoreGas * 2
+
+	// TODO: We don't take whether the slot is cold or warm into consideration.
+	FheUint8ProtectedStorageSloadGas  uint64 = ColdSloadCostEIP2929 + 200
+	FheUint16ProtectedStorageSloadGas uint64 = FheUint8ProtectedStorageSloadGas * 2
+	FheUint32ProtectedStorageSloadGas uint64 = FheUint16ProtectedStorageSloadGas * 2
+)
 
 func DefaultFhevmParams() FhevmParams {
 	return FhevmParams{
