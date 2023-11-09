@@ -8,10 +8,7 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
-	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
 	"golang.org/x/crypto/chacha20"
 	"golang.org/x/crypto/nacl/box"
 )
@@ -21,7 +18,7 @@ import (
 // contract.
 type PrecompiledContract interface {
 	RequiredGas(environment *EVMEnvironment, input []byte) uint64 // RequiredGas calculates the contract gas use
-	Run(environment *EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) (ret []byte, err error)
+	Run(environment *EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) (ret []byte, err error)
 }
 
 var signatureFheAdd = makeKeccakSignature("fheAdd(uint256,uint256,bytes1)")
@@ -154,7 +151,7 @@ func FheLibRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	}
 }
 
-func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func FheLibRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 	if len(input) < 4 {
 		err := errors.New("input must contain at least 4 bytes for method signature")
@@ -468,7 +465,7 @@ func fheNegRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("fheNeg input needs to contain one 256-bit sized value", "input", hex.EncodeToString(input))
 		return 0
 	}
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	ct := getVerifiedCiphertext(environment, BytesToHash(input[0:32]))
 	if ct == nil {
 		logger.Error("fheNeg input not verified", "input", hex.EncodeToString(input))
 		return 0
@@ -587,7 +584,7 @@ func reencryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("reencrypt RequiredGas() input len must be 64 bytes", "input", hex.EncodeToString(input), "len", len(input))
 		return 0
 	}
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	ct := getVerifiedCiphertext(environment, BytesToHash(input[0:32]))
 	if ct == nil {
 		logger.Error("reencrypt RequiredGas() input doesn't point to verified ciphertext", "input", hex.EncodeToString(input))
 		return 0
@@ -602,7 +599,7 @@ func optimisticRequireRequiredGas(environment EVMEnvironment, input []byte) uint
 			"input", hex.EncodeToString(input), "len", len(input))
 		return 0
 	}
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input))
+	ct := getVerifiedCiphertext(environment, BytesToHash(input))
 	if ct == nil {
 		logger.Error("optimisticRequire RequiredGas() input doesn't point to verified ciphertext",
 			"input", hex.EncodeToString(input))
@@ -635,7 +632,7 @@ func decryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("decrypt RequiredGas() input len must be 32 bytes", "input", hex.EncodeToString(input), "len", len(input))
 		return 0
 	}
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input))
+	ct := getVerifiedCiphertext(environment, BytesToHash(input))
 	if ct == nil {
 		logger.Error("decrypt RequiredGas() input doesn't point to verified ciphertext", "input", hex.EncodeToString(input))
 		return 0
@@ -658,7 +655,7 @@ func trivialEncryptRequiredGas(environment EVMEnvironment, input []byte) uint64 
 }
 
 // Implementations
-func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheAddRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -720,7 +717,7 @@ func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheSubRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheSubRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -782,7 +779,7 @@ func fheSubRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheMulRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheMulRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -844,7 +841,7 @@ func fheMulRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheLeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheLeRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -906,7 +903,7 @@ func fheLeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 	}
 }
 
-func fheLtRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheLtRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -968,7 +965,7 @@ func fheLtRun(environment EVMEnvironment, caller common.Address, addr common.Add
 	}
 }
 
-func fheEqRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheEqRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -1030,7 +1027,7 @@ func fheEqRun(environment EVMEnvironment, caller common.Address, addr common.Add
 	}
 }
 
-func fheGeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheGeRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -1092,7 +1089,7 @@ func fheGeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 	}
 }
 
-func fheGtRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheGtRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -1154,7 +1151,7 @@ func fheGtRun(environment EVMEnvironment, caller common.Address, addr common.Add
 	}
 }
 
-func fheShlRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheShlRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -1216,7 +1213,7 @@ func fheShlRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheShrRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheShrRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -1278,7 +1275,7 @@ func fheShrRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheNeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheNeRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -1340,7 +1337,7 @@ func fheNeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 	}
 }
 
-func fheMinRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheMinRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -1402,7 +1399,7 @@ func fheMinRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheMaxRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheMaxRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -1464,7 +1461,7 @@ func fheMaxRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheNegRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheNegRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	if len(input) != 32 {
@@ -1474,7 +1471,7 @@ func fheNegRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	}
 
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	ct := getVerifiedCiphertext(environment, BytesToHash(input[0:32]))
 	if ct == nil {
 		msg := "fheNeg input not verified"
 		logger.Error(msg, msg, "input", hex.EncodeToString(input))
@@ -1498,7 +1495,7 @@ func fheNegRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	return resultHash[:], nil
 }
 
-func fheNotRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheNotRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	if len(input) != 32 {
@@ -1508,7 +1505,7 @@ func fheNotRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	}
 
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	ct := getVerifiedCiphertext(environment, BytesToHash(input[0:32]))
 	if ct == nil {
 		msg := "fheNot input not verified"
 		logger.Error(msg, msg, "input", hex.EncodeToString(input))
@@ -1532,7 +1529,7 @@ func fheNotRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	return resultHash[:], nil
 }
 
-func fheDivRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheDivRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -1570,7 +1567,7 @@ func fheDivRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheRemRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheRemRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -1608,7 +1605,7 @@ func fheRemRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheBitAndRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheBitAndRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -1652,7 +1649,7 @@ func fheBitAndRun(environment EVMEnvironment, caller common.Address, addr common
 	return resultHash[:], nil
 }
 
-func fheBitOrRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheBitOrRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -1696,7 +1693,7 @@ func fheBitOrRun(environment EVMEnvironment, caller common.Address, addr common.
 	return resultHash[:], nil
 }
 
-func fheBitXorRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheBitXorRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -1758,7 +1755,7 @@ func init() {
 	}
 }
 
-func fheRandRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheRandRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 	if environment.IsEthCall() {
 		msg := "fheRand cannot be called via EthCall, because it needs to mutate internal state"
@@ -1778,7 +1775,7 @@ func fheRandRun(environment EVMEnvironment, caller common.Address, addr common.A
 	}
 
 	// Get the RNG nonce.
-	protectedStorage := fhevm_crypto.CreateProtectedStorageContractAddress(caller)
+	protectedStorage := CreateProtectedStorageContractAddress(caller)
 	currentRngNonceBytes := environment.GetState(protectedStorage, rngNonceKey).Bytes()
 
 	// Increment the RNG nonce by 1.
@@ -1787,10 +1784,10 @@ func fheRandRun(environment EVMEnvironment, caller common.Address, addr common.A
 	environment.SetState(protectedStorage, rngNonceKey, nextRngNonce.Bytes32())
 
 	// Compute the seed and use it to create a new cipher.
-	hasher := crypto.NewKeccakState()
+	hasher := NewKeccakState()
 	hasher.Write(globalRngSeed)
 	hasher.Write(caller.Bytes())
-	seed := common.Hash{}
+	seed := Hash{}
 	_, err := hasher.Read(seed[:])
 	if err != nil {
 		return nil, err
@@ -1823,7 +1820,7 @@ func fheRandRun(environment EVMEnvironment, caller common.Address, addr common.A
 	return ctHash[:], nil
 }
 
-func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func verifyCiphertextRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 	if len(input) <= 1 {
 		msg := "verifyCiphertext Run() input needs to contain a ciphertext and one byte for its type"
@@ -1888,7 +1885,7 @@ func encryptToUserKey(value *big.Int, pubKey []byte) ([]byte, error) {
 	return ct, nil
 }
 
-func reencryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func reencryptRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 	if !environment.IsEthCall() {
 		msg := "reencrypt only supported on EthCall"
@@ -1900,7 +1897,7 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 		logger.Error(msg, "input", hex.EncodeToString(input), "len", len(input))
 		return nil, errors.New(msg)
 	}
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	ct := getVerifiedCiphertext(environment, BytesToHash(input[0:32]))
 	if ct != nil {
 		// Make sure we don't decrypt before any optimistic requires are checked.
 		optReqResult, optReqErr := evaluateRemainingOptimisticRequires(environment)
@@ -1928,14 +1925,14 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 	return nil, errors.New(msg)
 }
 
-func optimisticRequireRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func optimisticRequireRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 	if len(input) != 32 {
 		msg := "optimisticRequire input len must be 32 bytes"
 		logger.Error(msg, "input", hex.EncodeToString(input), "len", len(input))
 		return nil, errors.New(msg)
 	}
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input))
+	ct := getVerifiedCiphertext(environment, BytesToHash(input))
 	if ct == nil {
 		msg := "optimisticRequire unverified handle"
 		logger.Error(msg, "input", hex.EncodeToString(input))
@@ -1954,14 +1951,14 @@ func optimisticRequireRun(environment EVMEnvironment, caller common.Address, add
 	return nil, nil
 }
 
-func decryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func decryptRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 	if len(input) != 32 {
 		msg := "decrypt input len must be 32 bytes"
 		logger.Error(msg, "input", hex.EncodeToString(input), "len", len(input))
 		return nil, errors.New(msg)
 	}
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input))
+	ct := getVerifiedCiphertext(environment, BytesToHash(input))
 	if ct == nil {
 		msg := "decrypt unverified handle"
 		logger.Error(msg, "input", hex.EncodeToString(input))
@@ -2020,7 +2017,7 @@ func evaluateRemainingOptimisticRequires(environment EVMEnvironment) (bool, erro
 	return true, nil
 }
 
-func castRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func castRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 	if len(input) != 33 {
 		msg := "cast Run() input needs to contain a ciphertext and one byte for its type"
@@ -2028,7 +2025,7 @@ func castRun(environment EVMEnvironment, caller common.Address, addr common.Addr
 		return nil, errors.New(msg)
 	}
 
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	ct := getVerifiedCiphertext(environment, BytesToHash(input[0:32]))
 	if ct == nil {
 		logger.Error("cast input not verified")
 		return nil, errors.New("unverified ciphertext handle")
@@ -2064,10 +2061,10 @@ func castRun(environment EVMEnvironment, caller common.Address, addr common.Addr
 	return resHash.Bytes(), nil
 }
 
-var fhePubKeyHashPrecompile = common.BytesToAddress([]byte{93})
-var fhePubKeyHashSlot = common.Hash{}
+var fhePubKeyHashPrecompile = BytesToAddress([]byte{93})
+var fhePubKeyHashSlot = Hash{}
 
-func fhePubKeyRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fhePubKeyRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	existing := environment.GetState(fhePubKeyHashPrecompile, fhePubKeyHashSlot)
 	if existing != pksHash {
 		msg := "fhePubKey FHE public key hash doesn't match one stored in state"
@@ -2087,7 +2084,7 @@ func fhePubKeyRun(environment EVMEnvironment, caller common.Address, addr common
 	}
 }
 
-func trivialEncryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func trivialEncryptRun(environment EVMEnvironment, caller Address, addr Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 	if len(input) != 33 {
 		msg := "trivialEncrypt input len must be 33 bytes"

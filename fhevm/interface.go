@@ -3,19 +3,18 @@ package fhevm
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 )
 
 type EVMEnvironment interface {
 	// StateDB related functions
-	GetState(common.Address, common.Hash) common.Hash
-	SetState(common.Address, common.Hash, common.Hash)
-	GetNonce(common.Address) uint64
-	AddBalance(common.Address, *big.Int)
-	GetBalance(common.Address) *big.Int
+	GetState(Address, Hash) Hash
+	SetState(Address, Hash, Hash)
+	GetNonce(Address) uint64
+	AddBalance(Address, *big.Int)
+	GetBalance(Address) *big.Int
 
-	Suicide(common.Address) bool
+	Suicide(Address) bool
 
 	// EVM call stack depth
 	GetDepth() int
@@ -28,8 +27,8 @@ type EVMEnvironment interface {
 	IsEthCall() bool
 	IsReadOnly() bool
 
-	CreateContract(caller common.Address, code []byte, gas uint64, value *big.Int, address common.Address) ([]byte, common.Address, uint64, error)
-	CreateContract2(caller common.Address, code []byte, codeHash common.Hash, gas uint64, value *big.Int, address common.Address) ([]byte, common.Address, uint64, error)
+	CreateContract(caller Address, code []byte, gas uint64, value *big.Int, address Address) ([]byte, Address, uint64, error)
+	CreateContract2(caller Address, code []byte, codeHash Hash, gas uint64, value *big.Int, address Address) ([]byte, Address, uint64, error)
 
 	FhevmData() *FhevmData
 	FhevmParams() *FhevmParams
@@ -37,7 +36,7 @@ type EVMEnvironment interface {
 
 type FhevmData struct {
 	// A map from a ciphertext hash to itself and stack depth at which it is verified
-	verifiedCiphertexts map[common.Hash]*verifiedCiphertext
+	verifiedCiphertexts map[Hash]*verifiedCiphertext
 
 	// All optimistic requires encountered up to that point in the txn execution
 	optimisticRequires []*tfheCiphertext
@@ -47,7 +46,7 @@ type FhevmData struct {
 
 func NewFhevmData() FhevmData {
 	return FhevmData{
-		verifiedCiphertexts: make(map[common.Hash]*verifiedCiphertext),
+		verifiedCiphertexts: make(map[Hash]*verifiedCiphertext),
 		optimisticRequires:  make([]*tfheCiphertext, 0),
 	}
 }

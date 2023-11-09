@@ -6,10 +6,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
-	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
 )
 
 // A Logger interface for the EVM.
@@ -42,7 +39,7 @@ func (*DefaultLogger) Error(msg string, keyvals ...interface{}) {
 }
 
 func makeKeccakSignature(input string) uint32 {
-	return binary.BigEndian.Uint32(crypto.Keccak256([]byte(input))[0:4])
+	return binary.BigEndian.Uint32(Keccak256([]byte(input))[0:4])
 }
 
 func isScalarOp(input []byte) (bool, error) {
@@ -53,7 +50,7 @@ func isScalarOp(input []byte) (bool, error) {
 	return isScalar, nil
 }
 
-func getVerifiedCiphertext(environment EVMEnvironment, ciphertextHash common.Hash) *verifiedCiphertext {
+func getVerifiedCiphertext(environment EVMEnvironment, ciphertextHash Hash) *verifiedCiphertext {
 	return getVerifiedCiphertextFromEVM(environment, ciphertextHash)
 }
 
@@ -61,11 +58,11 @@ func get2VerifiedOperands(environment EVMEnvironment, input []byte) (lhs *verifi
 	if len(input) != 65 {
 		return nil, nil, errors.New("input needs to contain two 256-bit sized values and 1 8-bit value")
 	}
-	lhs = getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	lhs = getVerifiedCiphertext(environment, BytesToHash(input[0:32]))
 	if lhs == nil {
 		return nil, nil, errors.New("unverified ciphertext handle")
 	}
-	rhs = getVerifiedCiphertext(environment, common.BytesToHash(input[32:64]))
+	rhs = getVerifiedCiphertext(environment, BytesToHash(input[32:64]))
 	if rhs == nil {
 		return nil, nil, errors.New("unverified ciphertext handle")
 	}
@@ -77,7 +74,7 @@ func getScalarOperands(environment EVMEnvironment, input []byte) (lhs *verifiedC
 	if len(input) != 65 {
 		return nil, nil, errors.New("input needs to contain two 256-bit sized values and 1 8-bit value")
 	}
-	lhs = getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	lhs = getVerifiedCiphertext(environment, BytesToHash(input[0:32]))
 	if lhs == nil {
 		return nil, nil, errors.New("unverified ciphertext handle")
 	}
@@ -113,8 +110,8 @@ func importCiphertext(environment EVMEnvironment, ct *tfheCiphertext) *verifiedC
 
 func importRandomCiphertext(environment EVMEnvironment, t FheUintType) []byte {
 	nextCtHash := &environment.FhevmData().nextCiphertextHashOnGasEst
-	ctHashBytes := crypto.Keccak256(nextCtHash.Bytes())
-	handle := common.BytesToHash(ctHashBytes)
+	ctHashBytes := Keccak256(nextCtHash.Bytes())
+	handle := BytesToHash(ctHashBytes)
 	ct := new(tfheCiphertext)
 	ct.fheUintType = t
 	ct.hash = &handle
@@ -168,27 +165,27 @@ func padArrayTo32Multiple(input []byte) []byte {
 	return input
 }
 
-func Create(evm EVMEnvironment, caller common.Address, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
-	contractAddr = crypto.CreateAddress(caller, evm.GetNonce(caller))
-	protectedStorageAddr := fhevm_crypto.CreateProtectedStorageContractAddress(contractAddr)
+func Create(evm EVMEnvironment, caller Address, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr Address, leftOverGas uint64, err error) {
+	contractAddr = CreateAddress(caller, evm.GetNonce(caller))
+	protectedStorageAddr := CreateProtectedStorageContractAddress(contractAddr)
 	_, _, leftOverGas, err = evm.CreateContract(caller, nil, gas, big.NewInt(0), protectedStorageAddr)
 	if err != nil {
 		ret = nil
-		contractAddr = common.Address{}
+		contractAddr = Address{}
 		return
 	}
 	// TODO: consider reverting changes to `protectedStorageAddr` if actual contract creation fails.
 	return evm.CreateContract(caller, code, leftOverGas, value, contractAddr)
 }
 
-func Create2(evm EVMEnvironment, caller common.Address, code []byte, gas uint64, endowment *big.Int, salt *uint256.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
-	codeHash := crypto.Keccak256Hash(code)
-	contractAddr = crypto.CreateAddress2(caller, salt.Bytes32(), codeHash.Bytes())
-	protectedStorageAddr := fhevm_crypto.CreateProtectedStorageContractAddress(contractAddr)
-	_, _, leftOverGas, err = evm.CreateContract2(caller, nil, common.Hash{}, gas, big.NewInt(0), protectedStorageAddr)
+func Create2(evm EVMEnvironment, caller Address, code []byte, gas uint64, endowment *big.Int, salt *uint256.Int) (ret []byte, contractAddr Address, leftOverGas uint64, err error) {
+	codeHash := Keccak256Hash(code)
+	contractAddr = CreateAddress2(caller, salt.Bytes32(), codeHash.Bytes())
+	protectedStorageAddr := CreateProtectedStorageContractAddress(contractAddr)
+	_, _, leftOverGas, err = evm.CreateContract2(caller, nil, Hash{}, gas, big.NewInt(0), protectedStorageAddr)
 	if err != nil {
 		ret = nil
-		contractAddr = common.Address{}
+		contractAddr = Address{}
 		return
 	}
 	// TODO: consider reverting changes to `protectedStorageAddr` if actual contract creation fails.

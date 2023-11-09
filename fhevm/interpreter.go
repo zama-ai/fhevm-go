@@ -1,7 +1,5 @@
 package fhevm
 
-import "github.com/ethereum/go-ethereum/common"
-
 type ScopeContext interface {
 	GetMemory() Memory
 	GetStack() Stack
@@ -50,13 +48,13 @@ type verifiedCiphertext struct {
 
 type PrivilegedMemory struct {
 	// A map from a ciphertext hash to itself and stack depths at which it is verified
-	VerifiedCiphertexts map[common.Hash]*verifiedCiphertext
+	VerifiedCiphertexts map[Hash]*verifiedCiphertext
 
 	// All optimistic requires encountered up to that point in the txn execution
 	OptimisticRequires []*tfheCiphertext
 }
 
 var PrivilegedMempory *PrivilegedMemory = &PrivilegedMemory{
-	make(map[common.Hash]*verifiedCiphertext),
+	make(map[Hash]*verifiedCiphertext),
 	make([]*tfheCiphertext, 0),
 }

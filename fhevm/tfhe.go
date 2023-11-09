@@ -1505,9 +1505,6 @@ import (
 	"os"
 	"path"
 	"unsafe"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func toBufferView(in []byte) C.BufferView {
@@ -1531,7 +1528,7 @@ var cks unsafe.Pointer
 
 // public key
 var pks unsafe.Pointer
-var pksHash common.Hash
+var pksHash Hash
 
 // Generate keys for the fhevm (sks, cks, psk)
 func generateFhevmKeys() (unsafe.Pointer, unsafe.Pointer, unsafe.Pointer) {
@@ -1584,7 +1581,7 @@ func InitGlobalKeysFromFiles(keysDir string) error {
 
 	sks = C.deserialize_server_key(toBufferView(sksBytes))
 
-	pksHash = crypto.Keccak256Hash(pksBytes)
+	pksHash = Keccak256Hash(pksBytes)
 	pks = C.deserialize_compact_public_key(toBufferView(pksBytes))
 
 	cks = C.deserialize_client_key(toBufferView(cksBytes))
@@ -1655,7 +1652,7 @@ const (
 // Represents an expanded TFHE ciphertext.
 type tfheCiphertext struct {
 	serialization []byte
-	hash          *common.Hash
+	hash          *Hash
 	fheUintType   FheUintType
 }
 
@@ -2626,11 +2623,11 @@ func (ct *tfheCiphertext) decrypt() (big.Int, error) {
 }
 
 func (ct *tfheCiphertext) computeHash() {
-	hash := common.BytesToHash(crypto.Keccak256(ct.serialization))
+	hash := BytesToHash(Keccak256(ct.serialization))
 	ct.hash = &hash
 }
 
-func (ct *tfheCiphertext) getHash() common.Hash {
+func (ct *tfheCiphertext) getHash() Hash {
 	if ct.hash != nil {
 		return *ct.hash
 	}

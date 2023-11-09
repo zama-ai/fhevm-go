@@ -7,10 +7,7 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
-	crypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
-	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
 )
 
 var zero = uint256.NewInt(0).Bytes32()
@@ -62,11 +59,11 @@ func minUint64(a, b uint64) uint64 {
 }
 
 // If references are still left, reduce refCount by 1. Otherwise, zero out the metadata and the ciphertext slots.
-func garbageCollectProtectedStorage(flagHandleLocation common.Hash, handle common.Hash, protectedStorage common.Address, env EVMEnvironment) {
+func garbageCollectProtectedStorage(flagHandleLocation Hash, handle Hash, protectedStorage Address, env EVMEnvironment) {
 	// The location of ciphertext metadata is at Keccak256(handle). Doing so avoids attacks from users trying to garbage
 	// collect arbitrary locations in protected storage. Hashing the handle makes it hard to find a preimage such that
 	// it ends up in arbitrary non-zero places in protected stroage.
-	metadataKey := crypto.Keccak256Hash(handle.Bytes())
+	metadataKey := Keccak256Hash(handle.Bytes())
 
 	existingMetadataHash := env.GetState(protectedStorage, metadataKey)
 	existingMetadataInt := newInt(existingMetadataHash.Bytes())
@@ -132,7 +129,7 @@ func isVerifiedAtCurrentDepth(environment EVMEnvironment, ct *verifiedCiphertext
 
 // Returns a pointer to the ciphertext if the given hash points to a verified ciphertext.
 // Else, it returns nil.
-func getVerifiedCiphertextFromEVM(environment EVMEnvironment, ciphertextHash common.Hash) *verifiedCiphertext {
+func getVerifiedCiphertextFromEVM(environment EVMEnvironment, ciphertextHash Hash) *verifiedCiphertext {
 	ct, ok := environment.FhevmData().verifiedCiphertexts[ciphertextHash]
 	if ok && isVerifiedAtCurrentDepth(environment, ct) {
 		return ct
@@ -140,7 +137,7 @@ func getVerifiedCiphertextFromEVM(environment EVMEnvironment, ciphertextHash com
 	return nil
 }
 
-func verifyIfCiphertextHandle(handle common.Hash, env EVMEnvironment, contractAddress common.Address) error {
+func verifyIfCiphertextHandle(handle Hash, env EVMEnvironment, contractAddress Address) error {
 	ct, ok := env.FhevmData().verifiedCiphertexts[handle]
 	if ok {
 		// If already existing in memory, skip storage and import the same ciphertext at the current depth.
@@ -152,8 +149,8 @@ func verifyIfCiphertextHandle(handle common.Hash, env EVMEnvironment, contractAd
 		return nil
 	}
 
-	metadataKey := crypto.Keccak256Hash(handle.Bytes())
-	protectedStorage := fhevm_crypto.CreateProtectedStorageContractAddress(contractAddress)
+	metadataKey := Keccak256Hash(handle.Bytes())
+	protectedStorage := CreateProtectedStorageContractAddress(contractAddress)
 	metadataInt := newInt(env.GetState(protectedStorage, metadataKey).Bytes())
 	if !metadataInt.IsZero() {
 		metadata := newCiphertextMetadata(metadataInt.Bytes32())
@@ -186,7 +183,7 @@ func verifyIfCiphertextHandle(handle common.Hash, env EVMEnvironment, contractAd
 
 func OpSload(pc *uint64, env EVMEnvironment, scope ScopeContext) ([]byte, error) {
 	loc := scope.GetStack().Peek()
-	hash := common.Hash(loc.Bytes32())
+	hash := Hash(loc.Bytes32())
 	val := env.GetState(scope.GetContract().Address(), hash)
 	if err := verifyIfCiphertextHandle(val, env, scope.GetContract().Address()); err != nil {
 		return nil, err
@@ -196,12 +193,12 @@ func OpSload(pc *uint64, env EVMEnvironment, scope ScopeContext) ([]byte, error)
 }
 
 // An arbitrary constant value to flag locations in protected storage.
-var flag = common.HexToHash("0xa145ffde0100a145ffde0100a145ffde0100a145ffde0100a145ffde0100fab3")
+var flag = HexToHash("0xa145ffde0100a145ffde0100a145ffde0100a145ffde0100a145ffde0100fab3")
 
 // If a verified ciphertext:
 // * if the ciphertext does not exist in protected storage, persist it with a refCount = 1
 // * if the ciphertexts exists in protected, bump its refCount by 1
-func persistIfVerifiedCiphertext(flagHandleLocation common.Hash, handle common.Hash, protectedStorage common.Address, env EVMEnvironment) {
+func persistIfVerifiedCiphertext(flagHandleLocation Hash, handle Hash, protectedStorage Address, env EVMEnvironment) {
 	verifiedCiphertext := getVerifiedCiphertextFromEVM(env, handle)
 	if verifiedCiphertext == nil {
 		return
@@ -209,7 +206,7 @@ func persistIfVerifiedCiphertext(flagHandleLocation common.Hash, handle common.H
 	logger := env.GetLogger()
 
 	// Try to read ciphertext metadata from protected storage.
-	metadataKey := crypto.Keccak256Hash(handle.Bytes())
+	metadataKey := Keccak256Hash(handle.Bytes())
 	metadataInt := newInt(env.GetState(protectedStorage, metadataKey).Bytes())
 	metadata := ciphertextMetadata{}
 
@@ -236,7 +233,7 @@ func persistIfVerifiedCiphertext(flagHandleLocation common.Hash, handle common.H
 		ctBytes := verifiedCiphertext.ciphertext.serialize()
 		for i, b := range ctBytes {
 			if i%32 == 0 && i != 0 {
-				env.SetState(protectedStorage, ciphertextSlot.Bytes32(), common.BytesToHash(ctPart32))
+				env.SetState(protectedStorage, ciphertextSlot.Bytes32(), BytesToHash(ctPart32))
 				ciphertextSlot.AddUint64(ciphertextSlot, 1)
 				ctPart32 = make([]byte, 32)
 				partIdx = 0
@@ -245,7 +242,7 @@ func persistIfVerifiedCiphertext(flagHandleLocation common.Hash, handle common.H
 			partIdx++
 		}
 		if len(ctPart32) != 0 {
-			env.SetState(protectedStorage, ciphertextSlot.Bytes32(), common.BytesToHash(ctPart32))
+			env.SetState(protectedStorage, ciphertextSlot.Bytes32(), BytesToHash(ctPart32))
 		}
 	} else {
 		// If metadata exists, bump the refcount by 1.
@@ -269,20 +266,20 @@ func OpSstore(pc *uint64, env EVMEnvironment, scope ScopeContext) ([]byte, error
 		return nil, ErrWriteProtection
 	}
 	loc := scope.GetStack().Pop()
-	locHash := common.BytesToHash(loc.Bytes())
+	locHash := BytesToHash(loc.Bytes())
 	newVal := scope.GetStack().Pop()
-	newValHash := common.BytesToHash(newVal.Bytes())
-	oldValHash := env.GetState(scope.GetContract().Address(), common.Hash(loc.Bytes32()))
+	newValHash := BytesToHash(newVal.Bytes())
+	oldValHash := env.GetState(scope.GetContract().Address(), Hash(loc.Bytes32()))
 	// If the value is the same or if we are not going to commit, don't do anything to protected storage.
 	if newValHash != oldValHash && env.IsCommitting() {
-		protectedStorage := fhevm_crypto.CreateProtectedStorageContractAddress(scope.GetContract().Address())
+		protectedStorage := CreateProtectedStorageContractAddress(scope.GetContract().Address())
 
 		// Define flag location as keccak256(keccak256(loc)) in protected storage. Used to mark the location as containing a handle.
 		// Note: We apply the hash function twice to make sure a flag location in protected storage cannot clash with a ciphertext
 		// metadata location that is keccak256(keccak256(ciphertext)). Since a location is 32 bytes, it cannot clash with a well-formed
 		// ciphertext. Therefore, there needs to be a hash collistion for a clash to happen. If hash is applied only once, there could
 		// be a collision, since malicous users could store at loc = keccak256(ciphertext), making the flag clash with metadata.
-		flagHandleLocation := crypto.Keccak256Hash(crypto.Keccak256Hash(locHash[:]).Bytes())
+		flagHandleLocation := Keccak256Hash(Keccak256Hash(locHash[:]).Bytes())
 
 		// Since the old value is no longer stored in actual contract storage, run garbage collection on protected storage.
 		garbageCollectProtectedStorage(flagHandleLocation, oldValHash, protectedStorage, env)
@@ -297,8 +294,8 @@ func OpSstore(pc *uint64, env EVMEnvironment, scope ScopeContext) ([]byte, error
 
 // If there are ciphertext handles in the arguments to a call, delegate them to the callee.
 // Return a map from ciphertext hash -> depthSet before delegation.
-func DelegateCiphertextHandlesInArgs(env EVMEnvironment, args []byte) (verified map[common.Hash]*depthSet) {
-	verified = make(map[common.Hash]*depthSet)
+func DelegateCiphertextHandlesInArgs(env EVMEnvironment, args []byte) (verified map[Hash]*depthSet) {
+	verified = make(map[Hash]*depthSet)
 	for key, verifiedCiphertext := range env.FhevmData().verifiedCiphertexts {
 		if contains(args, key.Bytes()) && isVerifiedAtCurrentDepth(env, verifiedCiphertext) {
 			if env.IsCommitting() {
@@ -314,7 +311,7 @@ func DelegateCiphertextHandlesInArgs(env EVMEnvironment, args []byte) (verified 
 	return
 }
 
-func RestoreVerifiedDepths(env EVMEnvironment, verified map[common.Hash]*depthSet) {
+func RestoreVerifiedDepths(env EVMEnvironment, verified map[Hash]*depthSet) {
 	for k, v := range verified {
 		env.FhevmData().verifiedCiphertexts[k].verifiedDepths = v
 	}
@@ -356,7 +353,7 @@ func OpReturn(pc *uint64, env EVMEnvironment, scope ScopeContext) []byte {
 
 func OpSelfdestruct(pc *uint64, env EVMEnvironment, scope ScopeContext) (beneficiary uint256.Int, balance *big.Int) {
 	beneficiary = scope.GetStack().Pop()
-	protectedStorage := fhevm_crypto.CreateProtectedStorageContractAddress(scope.GetContract().Address())
+	protectedStorage := CreateProtectedStorageContractAddress(scope.GetContract().Address())
 	balance = env.GetBalance(scope.GetContract().Address())
 	balance.Add(balance, env.GetBalance(protectedStorage))
 	env.AddBalance(beneficiary.Bytes20(), balance)
