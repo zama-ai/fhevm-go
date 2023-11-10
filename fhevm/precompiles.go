@@ -2003,7 +2003,7 @@ func decryptValue(ct *tfheCiphertext) (uint64, error) {
 func evaluateRemainingOptimisticRequires(environment EVMEnvironment) (bool, error) {
 	requires := environment.FhevmData().optimisticRequires
 	len := len(requires)
-	defer func() { requires = make([]*tfheCiphertext, 0) }()
+	defer func() { environment.FhevmData().optimisticRequires = make([]*tfheCiphertext, 0) }()
 	if len != 0 {
 		var cumulative *tfheCiphertext = requires[0]
 		var err error
