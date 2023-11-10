@@ -3152,3 +3152,232 @@ func TestFheRandEthCall(t *testing.T) {
 		t.Fatalf("fheRand expected 0 verified ciphertexts on EthCall")
 	}
 }
+
+func interpreterRunWithStopContract(environment *MockEVMEnvironment, interpreter *vm.EVMInterpreter, contract *vm.Contract, input []byte, readOnly bool) (ret []byte, err error) {
+	ret, _ = interpreter.Run(contract, input, readOnly)
+	// the following functions are meant to be ran from within interpreter.run so we increment depth to emulate that
+	environment.depth++
+	RemoveVerifiedCipherextsAtCurrentDepth(environment)
+	err = EvalRemOptReqWhenStopToken(environment)
+	environment.depth--
+	return ret, err
+}
+
+func newInterpreterFromEnvironment(environment *MockEVMEnvironment) *vm.EVMInterpreter {
+	cfg := vm.Config{}
+	evm := &vm.EVM{Config: cfg}
+	evm.Context = vm.BlockContext{}
+	evm.Context.Transfer = func(vm.StateDB, common.Address, common.Address, *big.Int) {}
+	evm.Context.CanTransfer = func(vm.StateDB, common.Address, *big.Int) bool { return true }
+	evm.StateDB = environment.stateDb
+	interpreter := vm.NewEVMInterpreter(evm)
+	return interpreter
+
+}
+
+func newStopOpcodeContract() *vm.Contract {
+	addr := vm.AccountRef{}
+	c := vm.NewContract(addr, addr, big.NewInt(0), 100000)
+	c.Code = make([]byte, 1)
+	c.Code[0] = byte(vm.STOP)
+	return c
+}
+
+func TestLibOneTrueOptimisticRequire(t *testing.T) {
+	var value uint64 = 1
+	signature := "optimisticRequire(uint256)"
+	hashRes := crypto.Keccak256([]byte(signature))
+	signatureBytes := hashRes[0:4]
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := common.Address{}
+	readOnly := false
+	input := make([]byte, 0)
+	hash := verifyCiphertextInTestMemory(environment, value, depth, FheUint8).getHash()
+	input = append(input, signatureBytes...)
+	input = append(input, hash.Bytes()...)
+	out, err := FheLibRun(environment, addr, addr, input, readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if len(out) != 0 {
+		t.Fatalf("require expected output len of 0, got %v", len(out))
+	}
+
+	interpreter := newInterpreterFromEnvironment(environment)
+	// Call the interpreter with a single STOP opcode and expect that the optimistic require doesn't revert.
+	out, err = interpreterRunWithStopContract(environment, interpreter, newStopOpcodeContract(), make([]byte, 0), readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if out != nil {
+		t.Fatalf("expected empty response")
+	}
+}
+
+func TestOneFalseOptimisticRequire(t *testing.T) {
+	var value uint64 = 0
+	depth := 0
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := common.Address{}
+	readOnly := false
+	hash := verifyCiphertextInTestMemory(environment, value, depth, FheUint8).getHash()
+	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if len(out) != 0 {
+		t.Fatalf("require expected output len of 0, got %v", len(out))
+	}
+	interpreter := newInterpreterFromEnvironment(environment)
+	// Call the interpreter with a single STOP opcode and expect that the optimistic require reverts.
+	out, err = interpreterRunWithStopContract(environment, interpreter, newStopOpcodeContract(), make([]byte, 0), readOnly)
+	if err == nil || err != ErrExecutionReverted {
+		t.Fatalf("require expected reversal on value 0")
+	} else if out != nil {
+		t.Fatalf("expected empty response")
+	}
+}
+
+func TestTwoTrueOptimisticRequires(t *testing.T) {
+	var value uint64 = 1
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := common.Address{}
+	readOnly := false
+	hash := verifyCiphertextInTestMemory(environment, value, depth, FheUint8).getHash()
+	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if len(out) != 0 {
+		t.Fatalf("require expected output len of 0, got %v", len(out))
+	}
+	hash = verifyCiphertextInTestMemory(environment, value, depth, FheUint8).getHash()
+	out, err = optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if len(out) != 0 {
+		t.Fatalf("require expected output len of 0, got %v", len(out))
+	}
+	interpreter := newInterpreterFromEnvironment(environment)
+	// Call the interpreter with a single STOP opcode and expect that the optimistic require doesn't revert.
+	out, err = interpreterRunWithStopContract(environment, interpreter, newStopOpcodeContract(), make([]byte, 0), readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if out != nil {
+		t.Fatalf("expected empty response")
+	}
+}
+
+func TestOptimisticRequireTwiceOnSameCiphertext(t *testing.T) {
+	var value uint64 = 1
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := common.Address{}
+	readOnly := false
+	ct := verifyCiphertextInTestMemory(environment, value, depth, FheUint8)
+	hash := ct.getHash()
+	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if len(out) != 0 {
+		t.Fatalf("require expected output len of 0, got %v", len(out))
+	}
+	out, err = optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if len(out) != 0 {
+		t.Fatalf("require expected output len of 0, got %v", len(out))
+	}
+	interpreter := newInterpreterFromEnvironment(environment)
+	// Call the interpreter with a single STOP opcode and expect that the optimistic require doesn't revert.
+	out, err = interpreterRunWithStopContract(environment, interpreter, newStopOpcodeContract(), make([]byte, 0), readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if out != nil {
+		t.Fatalf("expected empty response")
+	}
+}
+
+func TestOneFalseAndOneTrueOptimisticRequire(t *testing.T) {
+	depth := 0
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := common.Address{}
+	readOnly := false
+	hash := verifyCiphertextInTestMemory(environment, 0, depth, FheUint8).getHash()
+	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if len(out) != 0 {
+		t.Fatalf("require expected output len of 0, got %v", len(out))
+	}
+	hash = verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).getHash()
+	out, err = optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if len(out) != 0 {
+		t.Fatalf("require expected output len of 0, got %v", len(out))
+	}
+	interpreter := newInterpreterFromEnvironment(environment)
+	// Call the interpreter with a single STOP opcode and expect that the optimistic require reverts.
+	out, err = interpreterRunWithStopContract(environment, interpreter, newStopOpcodeContract(), make([]byte, 0), readOnly)
+	if err == nil || err != ErrExecutionReverted {
+		t.Fatalf("require expected reversal on value 0")
+	} else if out != nil {
+		t.Fatalf("expected empty response")
+	}
+}
+
+func TestDecryptWithFalseOptimisticRequire(t *testing.T) {
+	depth := 0
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := common.Address{}
+	readOnly := false
+	// Call optimistic require with a false value and expect it succeeds.
+	hash := verifyCiphertextInTestMemory(environment, 0, depth, FheUint8).getHash()
+	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if len(out) != 0 {
+		t.Fatalf("require expected output len of 0, got %v", len(out))
+	}
+	// Call decrypt and expect it to fail due to the optimistic require being false.
+	_, err = decryptRun(environment, addr, addr, hash.Bytes(), readOnly)
+	if err == nil {
+		t.Fatalf("expected decrypt fails due to false optimistic require")
+	}
+	// Make sure there are no more optimistic requires after the decrypt call.
+	if len(environment.FhevmData().optimisticRequires) != 0 {
+		t.Fatalf("expected that there are no optimistic requires after decrypt")
+	}
+}
+
+func TestDecryptWithTrueOptimisticRequire(t *testing.T) {
+	depth := 0
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := common.Address{}
+	readOnly := false
+	// Call optimistic require with a false value and expect it succeeds.
+	hash := verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).getHash()
+	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if len(out) != 0 {
+		t.Fatalf("require expected output len of 0, got %v", len(out))
+	}
+	// Call decrypt and expect it to succeed due to the optimistic require being true.
+	out, err = decryptRun(environment, addr, addr, hash.Bytes(), readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if len(out) != 32 {
+		t.Fatalf("decrypt expected output len of 32, got %v", len(out))
+	}
+	// Make sure there are no more optimistic requires after the decrypt call.
+	if len(environment.FhevmData().optimisticRequires) != 0 {
+		t.Fatalf("expected that there are no optimistic requires after decrypt")
+	}
+}
