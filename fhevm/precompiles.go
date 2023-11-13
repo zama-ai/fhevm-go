@@ -1956,6 +1956,12 @@ func optimisticRequireRun(environment EVMEnvironment, caller common.Address, add
 
 func decryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
+	// if not gas estimation and not view function fail if decryptions are disabled in transactions
+	if environment.IsCommitting() && !environment.IsEthCall() && environment.FhevmParams().DisableDecryptionsInTransaction {
+		msg := "decryptions during transaction are disabled"
+		logger.Error(msg, "input", hex.EncodeToString(input))
+		return nil, errors.New(msg)
+	}
 	if len(input) != 32 {
 		msg := "decrypt input len must be 32 bytes"
 		logger.Error(msg, "input", hex.EncodeToString(input), "len", len(input))

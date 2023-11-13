@@ -44,12 +44,14 @@ var (
 
 func DefaultFhevmParams() FhevmParams {
 	return FhevmParams{
-		GasCosts: DefaultGasCosts(),
+		GasCosts:                        DefaultGasCosts(),
+		DisableDecryptionsInTransaction: false,
 	}
 }
 
 type FhevmParams struct {
-	GasCosts GasCosts
+	GasCosts                        GasCosts
+	DisableDecryptionsInTransaction bool
 }
 
 type GasCosts struct {

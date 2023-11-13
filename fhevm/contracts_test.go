@@ -3381,3 +3381,22 @@ func TestDecryptWithTrueOptimisticRequire(t *testing.T) {
 		t.Fatalf("expected that there are no optimistic requires after decrypt")
 	}
 }
+
+func TestDecryptInTransactionDisabled(t *testing.T) {
+	depth := 0
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	environment.commit = true
+	environment.ethCall = false
+	environment.fhevmParams.DisableDecryptionsInTransaction = true
+	addr := common.Address{}
+	readOnly := false
+	hash := verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).getHash()
+	// Call decrypt and expect it to fail due to disabling of decryptions during commit
+	_, err := decryptRun(environment, addr, addr, hash.Bytes(), readOnly)
+	if err == nil {
+		t.Fatalf("expected to error out in test")
+	} else if err.Error() != "decryptions during transaction are disabled" {
+		t.Fatalf("unexpected error for disabling decryption transactions, got %s", err.Error())
+	}
+}

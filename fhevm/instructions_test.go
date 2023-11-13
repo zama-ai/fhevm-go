@@ -167,12 +167,13 @@ func uint256FromBig(b *big.Int) *uint256.Int {
 }
 
 type MockEVMEnvironment struct {
-	fhevmData *FhevmData
-	depth     int
-	stateDb   *state.StateDB
-	commit    bool
-	ethCall   bool
-	readOnly  bool
+	fhevmData   *FhevmData
+	depth       int
+	stateDb     *state.StateDB
+	commit      bool
+	ethCall     bool
+	readOnly    bool
+	fhevmParams FhevmParams
 }
 
 func (environment *MockEVMEnvironment) GetState(addr common.Address, hash common.Hash) common.Hash {
@@ -232,7 +233,7 @@ func (environment *MockEVMEnvironment) FhevmData() *FhevmData {
 }
 
 func (environment *MockEVMEnvironment) FhevmParams() *FhevmParams {
-	return &FhevmParams{}
+	return &environment.fhevmParams
 }
 
 func (environment *MockEVMEnvironment) EVMEnvironment() EVMEnvironment {
@@ -243,7 +244,7 @@ func newTestEVMEnvironment() *MockEVMEnvironment {
 	fhevmData := NewFhevmData()
 	db := rawdb.NewMemoryDatabase()
 	state, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
-	return &MockEVMEnvironment{fhevmData: &fhevmData, stateDb: state, commit: true}
+	return &MockEVMEnvironment{fhevmData: &fhevmData, stateDb: state, commit: true, fhevmParams: DefaultFhevmParams()}
 }
 
 func TestProtectedStorageSstoreSload(t *testing.T) {
