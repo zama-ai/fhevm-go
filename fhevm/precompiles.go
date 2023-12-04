@@ -2,18 +2,23 @@ package fhevm
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
+	kms "github.com/zama-ai/fhevm-go/kms"
 	"golang.org/x/crypto/chacha20"
 	"golang.org/x/crypto/nacl/box"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // PrecompiledContract is the basic interface for native Go contracts. The implementation
@@ -1909,17 +1914,41 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 		} else if !optReqResult {
 			return nil, ErrExecutionReverted
 		}
-		decryptedValue, err := ct.ciphertext.decrypt()
-		if err != nil {
-			logger.Error("reencrypt decryption failed", "err", err)
-			return nil, err
+
+		// TODO: generate merkle proof for some data (handle? ciphertext bytes?)
+		proof := &kms.Proof{
+			Height:              666,
+			MerklePatriciaProof: []byte{},
 		}
+
 		pubKey := input[32:64]
-		reencryptedValue, err := encryptToUserKey(&decryptedValue, pubKey)
+
+		reencryptionRequest := &kms.ReencryptionRequest{
+			Ciphertext: ct.ciphertext.serialization,
+			Proof:      proof,
+			PublicKey:  pubKey,
+		}
+
+		conn, err := grpc.Dial(kms.KmsEndpointAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			logger.Error("reencrypt failed to encrypt to user key", "err", err)
+			return nil, errors.New("kms unreachable")
+		}
+		defer conn.Close()
+
+		ep := kms.NewKmsEndpointClient(conn)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		res, err := ep.Reencrypt(ctx, reencryptionRequest)
+		if err != nil {
 			return nil, err
 		}
+
+		// TODO: decide if `res.Signature` should be verified here
+
+		var reencryptedValue = res.ReencryptedCiphertext
+
 		logger.Info("reencrypt success", "input", hex.EncodeToString(input), "callerAddr", caller)
 		return toEVMBytes(reencryptedValue), nil
 	}
