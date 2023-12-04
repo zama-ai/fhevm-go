@@ -1389,7 +1389,7 @@ func TestLibCast(t *testing.T) {
 	input = append(input, byte(FheUint32))
 	_, err := FheLibRun(environment, addr, addr, input, readOnly)
 	if err != nil {
-		t.Fatalf("Reencrypt error: %s", err.Error())
+		t.Fatalf("Cast error: %s", err.Error())
 	}
 }
 
