@@ -2,6 +2,7 @@ package fhevm
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/vm"
 )
 
 type ScopeContext interface {
@@ -67,17 +68,32 @@ var PrivilegedMempory *PrivilegedMemory = &PrivilegedMemory{
 //
 // This function is meant to be integrated as part of vm.EVMInterpreter.Run in the case
 // there was an errStopToken
-func EvalRemOptReqWhenStopToken(env EVMEnvironment) (err error) {
-	err = nil
+func EvalRemOptReqWhenStopToken(env EVMEnvironment, depth int) (err error) {
 	// If we are finishing execution (about to go to from depth 1 to depth 0), evaluate
 	// any remaining optimistic requires.
-	if env.GetDepth() == 1 {
+	if depth == 1 {
 		result, evalErr := evaluateRemainingOptimisticRequires(env)
 		if evalErr != nil {
-			err = evalErr
+			return evalErr
 		} else if !result {
-			err = ErrExecutionReverted
+			return ErrExecutionReverted
 		}
 	}
-	return err
+	return nil
+}
+
+// Function meant to be run instead of vm.EVMInterpreter.Run inside an fhEVM
+//
+// It makes sure to remove ciphertexts used at current depth during interpreter execution, but also evaluate remaining optimistic requires if necessary
+func InterpreterRun(environment EVMEnvironment, interpreter *vm.EVMInterpreter, contract *vm.Contract, input []byte, readOnly bool) (ret []byte, err error) {
+	ret, err = interpreter.Run(contract, input, readOnly)
+	// the following functions are meant to be ran from within interpreter.Run so we increment depth to emulate that
+	depth := environment.GetDepth() + 1
+	RemoveVerifiedCipherextsAtCurrentDepth(environment, depth)
+	// if contract is not empty and err is nil, then an errStopToken was cleared inside interpreter.Run
+	if len(contract.Code) != 0 && err == nil {
+		err = EvalRemOptReqWhenStopToken(environment, depth)
+		return ret, err
+	}
+	return ret, err
 }

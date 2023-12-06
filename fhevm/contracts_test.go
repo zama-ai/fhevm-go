@@ -3153,16 +3153,6 @@ func TestFheRandEthCall(t *testing.T) {
 	}
 }
 
-func interpreterRunWithStopContract(environment *MockEVMEnvironment, interpreter *vm.EVMInterpreter, contract *vm.Contract, input []byte, readOnly bool) (ret []byte, err error) {
-	ret, _ = interpreter.Run(contract, input, readOnly)
-	// the following functions are meant to be ran from within interpreter.run so we increment depth to emulate that
-	environment.depth++
-	RemoveVerifiedCipherextsAtCurrentDepth(environment)
-	err = EvalRemOptReqWhenStopToken(environment)
-	environment.depth--
-	return ret, err
-}
-
 func newInterpreterFromEnvironment(environment *MockEVMEnvironment) *vm.EVMInterpreter {
 	cfg := vm.Config{}
 	evm := &vm.EVM{Config: cfg}
@@ -3206,7 +3196,7 @@ func TestLibOneTrueOptimisticRequire(t *testing.T) {
 
 	interpreter := newInterpreterFromEnvironment(environment)
 	// Call the interpreter with a single STOP opcode and expect that the optimistic require doesn't revert.
-	out, err = interpreterRunWithStopContract(environment, interpreter, newStopOpcodeContract(), make([]byte, 0), readOnly)
+	out, err = InterpreterRun(environment, interpreter, newStopOpcodeContract(), make([]byte, 0), readOnly)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if out != nil {
@@ -3230,7 +3220,7 @@ func TestOneFalseOptimisticRequire(t *testing.T) {
 	}
 	interpreter := newInterpreterFromEnvironment(environment)
 	// Call the interpreter with a single STOP opcode and expect that the optimistic require reverts.
-	out, err = interpreterRunWithStopContract(environment, interpreter, newStopOpcodeContract(), make([]byte, 0), readOnly)
+	out, err = InterpreterRun(environment, interpreter, newStopOpcodeContract(), make([]byte, 0), readOnly)
 	if err == nil || err != ErrExecutionReverted {
 		t.Fatalf("require expected reversal on value 0")
 	} else if out != nil {
@@ -3261,7 +3251,7 @@ func TestTwoTrueOptimisticRequires(t *testing.T) {
 	}
 	interpreter := newInterpreterFromEnvironment(environment)
 	// Call the interpreter with a single STOP opcode and expect that the optimistic require doesn't revert.
-	out, err = interpreterRunWithStopContract(environment, interpreter, newStopOpcodeContract(), make([]byte, 0), readOnly)
+	out, err = InterpreterRun(environment, interpreter, newStopOpcodeContract(), make([]byte, 0), readOnly)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if out != nil {
@@ -3292,7 +3282,7 @@ func TestOptimisticRequireTwiceOnSameCiphertext(t *testing.T) {
 	}
 	interpreter := newInterpreterFromEnvironment(environment)
 	// Call the interpreter with a single STOP opcode and expect that the optimistic require doesn't revert.
-	out, err = interpreterRunWithStopContract(environment, interpreter, newStopOpcodeContract(), make([]byte, 0), readOnly)
+	out, err = InterpreterRun(environment, interpreter, newStopOpcodeContract(), make([]byte, 0), readOnly)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if out != nil {
@@ -3322,7 +3312,7 @@ func TestOneFalseAndOneTrueOptimisticRequire(t *testing.T) {
 	}
 	interpreter := newInterpreterFromEnvironment(environment)
 	// Call the interpreter with a single STOP opcode and expect that the optimistic require reverts.
-	out, err = interpreterRunWithStopContract(environment, interpreter, newStopOpcodeContract(), make([]byte, 0), readOnly)
+	out, err = InterpreterRun(environment, interpreter, newStopOpcodeContract(), make([]byte, 0), readOnly)
 	if err == nil || err != ErrExecutionReverted {
 		t.Fatalf("require expected reversal on value 0")
 	} else if out != nil {

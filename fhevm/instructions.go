@@ -335,15 +335,15 @@ func delegateCiphertextHandlesToCaller(env EVMEnvironment, ret []byte) {
 	}
 }
 
-func RemoveVerifiedCipherextsAtCurrentDepth(env EVMEnvironment) {
+func RemoveVerifiedCipherextsAtCurrentDepth(env EVMEnvironment, depth int) {
 	for _, verifiedCiphertext := range env.FhevmData().verifiedCiphertexts {
 		if env.IsCommitting() {
 			env.GetLogger().Info("Run removing ciphertext from depth",
 				"handle", verifiedCiphertext.ciphertext.getHash().Hex(),
-				"depth", env.GetDepth())
+				"depth", depth)
 		}
 		// Delete the current EVM depth from the set of verified depths.
-		verifiedCiphertext.verifiedDepths.del(env.GetDepth())
+		verifiedCiphertext.verifiedDepths.del(depth)
 	}
 }
 
