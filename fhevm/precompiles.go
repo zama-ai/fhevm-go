@@ -2019,7 +2019,7 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 
 		// TODO: generate merkle proof for some data (handle? ciphertext bytes?)
 		proof := &kms.Proof{
-			Height:              666,
+			Height:              5,
 			MerklePatriciaProof: []byte{},
 		}
 
@@ -2051,7 +2051,7 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 
 		var reencryptedValue = res.ReencryptedCiphertext
 
-		logger.Info("reencrypt success", "input", hex.EncodeToString(input), "callerAddr", caller)
+		logger.Info("reencrypt success", "input", hex.EncodeToString(input), "callerAddr", caller, "reencryptedValue", reencryptedValue)
 		return toEVMBytes(reencryptedValue), nil
 	}
 	msg := "reencrypt unverified ciphertext handle"

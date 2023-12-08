@@ -18,7 +18,8 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-const KmsEndpointAddr = "localhost:50051"
+// URL of the KMS gRPC endpoint
+const KmsEndpointAddr = "kms.zama.ai:50051"
 
 const (
 	KmsEndpoint_Decrypt_FullMethodName   = "/kms.KmsEndpoint/Decrypt"
