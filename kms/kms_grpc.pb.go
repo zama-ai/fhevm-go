@@ -22,14 +22,18 @@ const _ = grpc.SupportPackageIsVersion7
 const KmsEndpointAddr = "kms.zama.ai:50051"
 
 const (
-	KmsEndpoint_Decrypt_FullMethodName   = "/kms.KmsEndpoint/Decrypt"
-	KmsEndpoint_Reencrypt_FullMethodName = "/kms.KmsEndpoint/Reencrypt"
+	KmsEndpoint_ValidateAndDecrypt_FullMethodName   = "/kms.KmsEndpoint/Validate_and_decrypt"
+	KmsEndpoint_ValidateAndReencrypt_FullMethodName = "/kms.KmsEndpoint/Validate_and_reencrypt"
+	KmsEndpoint_Decrypt_FullMethodName              = "/kms.KmsEndpoint/Decrypt"
+	KmsEndpoint_Reencrypt_FullMethodName            = "/kms.KmsEndpoint/Reencrypt"
 )
 
 // KmsEndpointClient is the client API for KmsEndpoint service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KmsEndpointClient interface {
+	ValidateAndDecrypt(ctx context.Context, in *DecryptionRequest, opts ...grpc.CallOption) (*DecryptionResponse, error)
+	ValidateAndReencrypt(ctx context.Context, in *ReencryptionRequest, opts ...grpc.CallOption) (*ReencryptionResponse, error)
 	Decrypt(ctx context.Context, in *DecryptionRequest, opts ...grpc.CallOption) (*DecryptionResponse, error)
 	Reencrypt(ctx context.Context, in *ReencryptionRequest, opts ...grpc.CallOption) (*ReencryptionResponse, error)
 }
@@ -40,6 +44,24 @@ type kmsEndpointClient struct {
 
 func NewKmsEndpointClient(cc grpc.ClientConnInterface) KmsEndpointClient {
 	return &kmsEndpointClient{cc}
+}
+
+func (c *kmsEndpointClient) ValidateAndDecrypt(ctx context.Context, in *DecryptionRequest, opts ...grpc.CallOption) (*DecryptionResponse, error) {
+	out := new(DecryptionResponse)
+	err := c.cc.Invoke(ctx, KmsEndpoint_ValidateAndDecrypt_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kmsEndpointClient) ValidateAndReencrypt(ctx context.Context, in *ReencryptionRequest, opts ...grpc.CallOption) (*ReencryptionResponse, error) {
+	out := new(ReencryptionResponse)
+	err := c.cc.Invoke(ctx, KmsEndpoint_ValidateAndReencrypt_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *kmsEndpointClient) Decrypt(ctx context.Context, in *DecryptionRequest, opts ...grpc.CallOption) (*DecryptionResponse, error) {
@@ -64,6 +86,8 @@ func (c *kmsEndpointClient) Reencrypt(ctx context.Context, in *ReencryptionReque
 // All implementations must embed UnimplementedKmsEndpointServer
 // for forward compatibility
 type KmsEndpointServer interface {
+	ValidateAndDecrypt(context.Context, *DecryptionRequest) (*DecryptionResponse, error)
+	ValidateAndReencrypt(context.Context, *ReencryptionRequest) (*ReencryptionResponse, error)
 	Decrypt(context.Context, *DecryptionRequest) (*DecryptionResponse, error)
 	Reencrypt(context.Context, *ReencryptionRequest) (*ReencryptionResponse, error)
 	mustEmbedUnimplementedKmsEndpointServer()
@@ -73,6 +97,12 @@ type KmsEndpointServer interface {
 type UnimplementedKmsEndpointServer struct {
 }
 
+func (UnimplementedKmsEndpointServer) ValidateAndDecrypt(context.Context, *DecryptionRequest) (*DecryptionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ValidateAndDecrypt not implemented")
+}
+func (UnimplementedKmsEndpointServer) ValidateAndReencrypt(context.Context, *ReencryptionRequest) (*ReencryptionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ValidateAndReencrypt not implemented")
+}
 func (UnimplementedKmsEndpointServer) Decrypt(context.Context, *DecryptionRequest) (*DecryptionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Decrypt not implemented")
 }
@@ -90,6 +120,42 @@ type UnsafeKmsEndpointServer interface {
 
 func RegisterKmsEndpointServer(s grpc.ServiceRegistrar, srv KmsEndpointServer) {
 	s.RegisterService(&KmsEndpoint_ServiceDesc, srv)
+}
+
+func _KmsEndpoint_ValidateAndDecrypt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DecryptionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KmsEndpointServer).ValidateAndDecrypt(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KmsEndpoint_ValidateAndDecrypt_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KmsEndpointServer).ValidateAndDecrypt(ctx, req.(*DecryptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KmsEndpoint_ValidateAndReencrypt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReencryptionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KmsEndpointServer).ValidateAndReencrypt(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KmsEndpoint_ValidateAndReencrypt_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KmsEndpointServer).ValidateAndReencrypt(ctx, req.(*ReencryptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _KmsEndpoint_Decrypt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -135,6 +201,14 @@ var KmsEndpoint_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "kms.KmsEndpoint",
 	HandlerType: (*KmsEndpointServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Validate_and_decrypt",
+			Handler:    _KmsEndpoint_ValidateAndDecrypt_Handler,
+		},
+		{
+			MethodName: "Validate_and_reencrypt",
+			Handler:    _KmsEndpoint_ValidateAndReencrypt_Handler,
+		},
 		{
 			MethodName: "Decrypt",
 			Handler:    _KmsEndpoint_Decrypt_Handler,

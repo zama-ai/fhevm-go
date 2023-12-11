@@ -2010,25 +2010,36 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
 	if ct != nil {
 		// Make sure we don't decrypt before any optimistic requires are checked.
-		optReqResult, optReqErr := evaluateRemainingOptimisticRequires(environment)
-		if optReqErr != nil {
-			return nil, optReqErr
-		} else if !optReqResult {
-			return nil, ErrExecutionReverted
-		}
+		// optReqResult, optReqErr := evaluateRemainingOptimisticRequires(environment)
+		// if optReqErr != nil {
+		// 	return nil, optReqErr
+		// } else if !optReqResult {
+		// 	return nil, ErrExecutionReverted
+		// }
 
-		// TODO: generate merkle proof for some data (handle? ciphertext bytes?)
-		proof := &kms.Proof{
-			Height:              5,
-			MerklePatriciaProof: []byte{},
+		var fheType kms.FheType
+		switch ct.ciphertext.fheUintType {
+		case FheUint8:
+			fheType = kms.FheType_Euint8
+		case FheUint16:
+			fheType = kms.FheType_Euint16
+		case FheUint32:
+			fheType = kms.FheType_Euint32
 		}
 
 		pubKey := input[32:64]
 
+		// TODO: generate merkle proof for some data
+		proof := &kms.Proof{
+			Height:              3,
+			MerklePatriciaProof: []byte{},
+		}
+
 		reencryptionRequest := &kms.ReencryptionRequest{
+			FheType:    fheType,
 			Ciphertext: ct.ciphertext.serialization,
+			Request:    pubKey, // TODO: change according to the structure of `Request`
 			Proof:      proof,
-			PublicKey:  pubKey,
 		}
 
 		conn, err := grpc.Dial(kms.KmsEndpointAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
