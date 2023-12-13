@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/holiman/uint256"
 )
 
 func init() {
@@ -1188,9 +1189,63 @@ func FheLibRand(t *testing.T, fheUintType FheUintType) {
 	}
 
 	hash := common.BytesToHash(out)
-	_, err = environment.FhevmData().verifiedCiphertexts[hash].ciphertext.decrypt()
+	decrypted, err := environment.FhevmData().verifiedCiphertexts[hash].ciphertext.decrypt()
 	if err != nil {
 		t.Fatalf(err.Error())
+	}
+	if !decrypted.IsUint64() {
+		t.Fatalf("decrypted value is not 64 bit")
+	}
+	switch fheUintType {
+	case FheUint8:
+		if decrypted.Uint64() > 0xFF {
+			t.Fatalf("random value is bigger than 0xFF (8 bits)")
+		}
+	case FheUint16:
+		if decrypted.Uint64() > 0xFFFF {
+			t.Fatalf("random value is bigger than 0xFFFF (16 bits)")
+		}
+	case FheUint32:
+		if decrypted.Uint64() > 0xFFFFFFFF {
+			t.Fatalf("random value is bigger than 0xFFFFFFFF (32 bits)")
+		}
+	}
+}
+
+func FheLibRandBounded(t *testing.T, fheUintType FheUintType, upperBound64 uint64) {
+	signature := "fheRandBounded(uint256,bytes1)"
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := common.Address{}
+	readOnly := false
+	hashRes := crypto.Keccak256([]byte(signature))
+	signatureBytes := hashRes[0:4]
+	upperBound := uint256.NewInt(upperBound64).Bytes32()
+	input := make([]byte, 0)
+	input = append(input, signatureBytes...)
+	input = append(input, upperBound[:]...)
+	input = append(input, byte(fheUintType))
+	out, err := FheLibRun(environment, addr, addr, input, readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else if len(out) != 32 {
+		t.Fatalf("fheRandBounded expected output len of 32, got %v", len(out))
+	}
+	if len(environment.FhevmData().verifiedCiphertexts) != 1 {
+		t.Fatalf("fheRand expected 1 verified ciphertext")
+	}
+
+	hash := common.BytesToHash(out)
+	decrypted, err := environment.FhevmData().verifiedCiphertexts[hash].ciphertext.decrypt()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if !decrypted.IsUint64() {
+		t.Fatalf("decrypted value is not 64 bit")
+	}
+	if decrypted.Uint64() >= upperBound64 {
+		t.Fatalf("random value bigger or equal to the upper bound")
 	}
 }
 
@@ -2552,6 +2607,26 @@ func TestFheLibRand8(t *testing.T) {
 	FheLibRand(t, FheUint8)
 }
 
+func TestFheLibRand16(t *testing.T) {
+	FheLibRand(t, FheUint16)
+}
+
+func TestFheLibRand32(t *testing.T) {
+	FheLibRand(t, FheUint32)
+}
+
+func TestFheLibRandBounded8(t *testing.T) {
+	FheLibRandBounded(t, FheUint8, 8)
+}
+
+func TestFheLibRandBounded16(t *testing.T) {
+	FheLibRandBounded(t, FheUint16, 16)
+}
+
+func TestFheLibRandBounded32(t *testing.T) {
+	FheLibRandBounded(t, FheUint32, 32)
+}
+
 func TestFheLibTrivialEncrypt8(t *testing.T) {
 	LibTrivialEncrypt(t, FheUint8)
 }
@@ -3137,6 +3212,74 @@ func TestFheRandInvalidType(t *testing.T) {
 	}
 }
 
+func TestFheRandBoundedInvalidType(t *testing.T) {
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := common.Address{}
+	readOnly := false
+	input := make([]byte, 0)
+	upperBound := uint256.NewInt(4).Bytes32()
+	input = append(input, upperBound[:]...)
+	input = append(input, byte(254))
+	_, err := fheRandBoundedRun(environment, addr, addr, input, readOnly)
+	if err == nil {
+		t.Fatalf("fheRandBounded expected failure on invalid type")
+	}
+	if len(environment.FhevmData().verifiedCiphertexts) != 0 {
+		t.Fatalf("fheRandBounded expected 0 verified ciphertexts on invalid type")
+	}
+}
+
+func FheRandBoundedInvalidBound(t *testing.T, fheUintType FheUintType, bound *uint256.Int) {
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := common.Address{}
+	readOnly := false
+	input := make([]byte, 0)
+	upperBound := bound.Bytes32()
+	input = append(input, upperBound[:]...)
+	input = append(input, byte(fheUintType))
+	_, err := fheRandBoundedRun(environment, addr, addr, input, readOnly)
+	if err == nil {
+		t.Fatalf("fheRandBounded expected failure on invalid bound")
+	}
+	if len(environment.FhevmData().verifiedCiphertexts) != 0 {
+		t.Fatalf("fheRandBounded expected 0 verified ciphertexts on invalid bound")
+	}
+}
+
+func TestFheRandBoundedInvalidBound8(t *testing.T) {
+	FheRandBoundedInvalidBound(t, FheUint8, uint256.NewInt(0))
+	FheRandBoundedInvalidBound(t, FheUint8, uint256.NewInt(3))
+	FheRandBoundedInvalidBound(t, FheUint8, uint256.NewInt(98))
+	FheRandBoundedInvalidBound(t, FheUint8, uint256.NewInt(0xFF))
+	moreThan64Bits := uint256.NewInt(0xFFFFFFFFFFFFFFFF)
+	moreThan64Bits.Add(moreThan64Bits, uint256.NewInt(1))
+	FheRandBoundedInvalidBound(t, FheUint8, moreThan64Bits)
+}
+
+func TestFheRandBoundedInvalidBound16(t *testing.T) {
+	FheRandBoundedInvalidBound(t, FheUint16, uint256.NewInt(0))
+	FheRandBoundedInvalidBound(t, FheUint16, uint256.NewInt(999))
+	FheRandBoundedInvalidBound(t, FheUint16, uint256.NewInt(448))
+	FheRandBoundedInvalidBound(t, FheUint16, uint256.NewInt(0xFFFF))
+	moreThan64Bits := uint256.NewInt(0xFFFFFFFFFFFFFFFF)
+	moreThan64Bits.Add(moreThan64Bits, uint256.NewInt(1))
+	FheRandBoundedInvalidBound(t, FheUint16, moreThan64Bits)
+}
+
+func TestFheRandBoundedInvalidBound32(t *testing.T) {
+	FheRandBoundedInvalidBound(t, FheUint32, uint256.NewInt(0))
+	FheRandBoundedInvalidBound(t, FheUint32, uint256.NewInt(111999))
+	FheRandBoundedInvalidBound(t, FheUint32, uint256.NewInt(448884))
+	FheRandBoundedInvalidBound(t, FheUint32, uint256.NewInt(0xFFFFFFFF))
+	moreThan64Bits := uint256.NewInt(0xFFFFFFFFFFFFFFFF)
+	moreThan64Bits.Add(moreThan64Bits, uint256.NewInt(1))
+	FheRandBoundedInvalidBound(t, FheUint32, moreThan64Bits)
+}
+
 func TestFheRandEthCall(t *testing.T) {
 	depth := 1
 	environment := newTestEVMEnvironment()
@@ -3150,6 +3293,26 @@ func TestFheRandEthCall(t *testing.T) {
 	}
 	if len(environment.FhevmData().verifiedCiphertexts) != 0 {
 		t.Fatalf("fheRand expected 0 verified ciphertexts on EthCall")
+	}
+}
+
+func TestFheRandBoundedEthCall(t *testing.T) {
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	environment.ethCall = true
+	addr := common.Address{}
+	readOnly := true
+	input := make([]byte, 0)
+	upperBound := uint256.NewInt(4).Bytes32()
+	input = append(input, upperBound[:]...)
+	input = append(input, byte(FheUint8))
+	_, err := fheRandBoundedRun(environment, addr, addr, input, readOnly)
+	if err == nil {
+		t.Fatalf("fheRandBounded expected failure on EthCall")
+	}
+	if len(environment.FhevmData().verifiedCiphertexts) != 0 {
+		t.Fatalf("fheRandBounded expected 0 verified ciphertexts on EthCall")
 	}
 }
 

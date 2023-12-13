@@ -1563,7 +1563,7 @@ func initCiphertextSizes() {
 
 func InitGlobalKeysFromFiles(keysDir string) error {
 	if _, err := os.Stat(keysDir); os.IsNotExist(err) {
-		return errors.New("init_keys: global keys directory doesn't exist (FHEVM_GO_KEYS_DIR)")
+		return fmt.Errorf("init_keys: global keys directory doesn't exist (FHEVM_GO_KEYS_DIR): %s", keysDir)
 	}
 	// read keys from files
 	var sksPath = path.Join(keysDir, "sks")

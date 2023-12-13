@@ -6,7 +6,9 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"math/big"
+	"math/bits"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -49,6 +51,7 @@ var signatureFheBitAnd = makeKeccakSignature("fheBitAnd(uint256,uint256,bytes1)"
 var signatureFheBitOr = makeKeccakSignature("fheBitOr(uint256,uint256,bytes1)")
 var signatureFheBitXor = makeKeccakSignature("fheBitXor(uint256,uint256,bytes1)")
 var signatureFheRand = makeKeccakSignature("fheRand(bytes1)")
+var signatureFheRandBounded = makeKeccakSignature("fheRandBounded(uint256,bytes1)")
 var signatureVerifyCiphertext = makeKeccakSignature("verifyCiphertext(bytes)")
 var signatureReencrypt = makeKeccakSignature("reencrypt(uint256,uint256)")
 var signatureOptimisticRequire = makeKeccakSignature("optimisticRequire(uint256)")
@@ -62,90 +65,94 @@ func FheLibRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	}
 	// first 4 bytes are for the function signature
 	signature := binary.BigEndian.Uint32(input[0:4])
+	bwCompatStart := minInt(4, len(input)-1)
 	switch signature {
 	case signatureFheAdd:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheAddSubRequiredGas(environment, bwCompatBytes)
 	case signatureCast:
-		bwCompatBytes := input[4:minInt(37, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(37, len(input))]
 		return castRequiredGas(environment, bwCompatBytes)
 	case signatureDecrypt:
-		bwCompatBytes := input[4:minInt(36, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(36, len(input))]
 		return decryptRequiredGas(environment, bwCompatBytes)
 	case signatureFhePubKey:
-		bwCompatBytes := input[4:minInt(5, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(5, len(input))]
 		return fhePubKeyRequiredGas(environment, bwCompatBytes)
 	case signatureTrivialEncrypt:
-		bwCompatBytes := input[4:minInt(37, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(37, len(input))]
 		return trivialEncryptRequiredGas(environment, bwCompatBytes)
 	case signatureFheSub:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheAddSubRequiredGas(environment, bwCompatBytes)
 	case signatureFheMul:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheMulRequiredGas(environment, bwCompatBytes)
 	case signatureFheLe:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheLeRequiredGas(environment, bwCompatBytes)
 	case signatureFheLt:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheLtRequiredGas(environment, bwCompatBytes)
 	case signatureFheEq:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheEqRequiredGas(environment, bwCompatBytes)
 	case signatureFheGe:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheGeRequiredGas(environment, bwCompatBytes)
 	case signatureFheGt:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheGtRequiredGas(environment, bwCompatBytes)
 	case signatureFheShl:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheShlRequiredGas(environment, bwCompatBytes)
 	case signatureFheShr:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheShrRequiredGas(environment, bwCompatBytes)
 	case signatureFheNe:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheNeRequiredGas(environment, bwCompatBytes)
 	case signatureFheMin:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheMinRequiredGas(environment, bwCompatBytes)
 	case signatureFheMax:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheMaxRequiredGas(environment, bwCompatBytes)
 	case signatureFheNeg:
-		bwCompatBytes := input[4:minInt(36, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(36, len(input))]
 		return fheNegRequiredGas(environment, bwCompatBytes)
 	case signatureFheNot:
-		bwCompatBytes := input[4:minInt(36, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(36, len(input))]
 		return fheNotRequiredGas(environment, bwCompatBytes)
 	case signatureFheDiv:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheDivRequiredGas(environment, bwCompatBytes)
 	case signatureFheRem:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheRemRequiredGas(environment, bwCompatBytes)
 	case signatureFheBitAnd:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheBitAndRequiredGas(environment, bwCompatBytes)
 	case signatureFheBitOr:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheBitOrRequiredGas(environment, bwCompatBytes)
 	case signatureFheBitXor:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheBitXorRequiredGas(environment, bwCompatBytes)
 	case signatureFheRand:
-		bwCompatBytes := input[4:minInt(5, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(5, len(input))]
 		return fheRandRequiredGas(environment, bwCompatBytes)
+	case signatureFheRandBounded:
+		bwCompatBytes := input[bwCompatStart:minInt(37, len(input))]
+		return fheRandBoundedRequiredGas(environment, bwCompatBytes)
 	case signatureVerifyCiphertext:
-		bwCompatBytes := input[4:]
+		bwCompatBytes := input[bwCompatStart:]
 		return verifyCiphertextRequiredGas(environment, bwCompatBytes)
 	case signatureReencrypt:
-		bwCompatBytes := input[4:minInt(68, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(68, len(input))]
 		return reencryptRequiredGas(environment, bwCompatBytes)
 	case signatureOptimisticRequire:
-		bwCompatBytes := input[4:minInt(36, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(36, len(input))]
 		return optimisticRequireRequiredGas(environment, bwCompatBytes)
 	default:
 		err := errors.New("precompile method not found")
@@ -163,18 +170,19 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 	// first 4 bytes are for the function signature
 	signature := binary.BigEndian.Uint32(input[0:4])
+	bwCompatStart := minInt(4, len(input)-1)
 	switch signature {
 	case signatureFheAdd:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheAddRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureCast:
-		bwCompatBytes := input[4:minInt(37, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(37, len(input))]
 		return castRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureDecrypt:
-		bwCompatBytes := input[4:minInt(36, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(36, len(input))]
 		return decryptRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFhePubKey:
-		bwCompatBytes := input[4:minInt(5, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(5, len(input))]
 		precompileBytes, err := fhePubKeyRun(environment, caller, addr, bwCompatBytes, readOnly)
 		if err != nil {
 			return precompileBytes, err
@@ -185,68 +193,71 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		outputBytes = append(outputBytes, precompileBytes...)
 		return padArrayTo32Multiple(outputBytes), nil
 	case signatureTrivialEncrypt:
-		bwCompatBytes := input[4:minInt(37, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(37, len(input))]
 		return trivialEncryptRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheSub:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheSubRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheMul:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheMulRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheLe:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheLeRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheLt:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheLtRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheEq:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheEqRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheGe:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheGeRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheGt:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheGtRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheShl:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheShlRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheShr:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheShrRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheNe:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheNeRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheMin:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheMinRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheMax:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheMaxRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheNeg:
-		bwCompatBytes := input[4:minInt(36, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(36, len(input))]
 		return fheNegRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheNot:
-		bwCompatBytes := input[4:minInt(36, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(36, len(input))]
 		return fheNotRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheDiv:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheDivRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheRem:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheRemRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheBitAnd:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheBitAndRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheBitOr:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheBitOrRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheBitXor:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(69, len(input))]
 		return fheBitXorRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheRand:
-		bwCompatBytes := input[4:minInt(5, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(5, len(input))]
 		return fheRandRun(environment, caller, addr, bwCompatBytes, readOnly)
+	case signatureFheRandBounded:
+		bwCompatBytes := input[bwCompatStart:minInt(37, len(input))]
+		return fheRandBoundedRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureVerifyCiphertext:
 		// first 32 bytes of the payload is offset, then 32 bytes are size of byte array
 		if len(input) <= 68 {
@@ -265,7 +276,7 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		bwCompatBytes := input[bytesStart:minInt(bytesEnd, len(input))]
 		return verifyCiphertextRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureReencrypt:
-		bwCompatBytes := input[4:minInt(68, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(68, len(input))]
 		precompileBytes, err := reencryptRun(environment, caller, addr, bwCompatBytes, readOnly)
 		if err != nil {
 			return precompileBytes, err
@@ -276,7 +287,7 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		outputBytes = append(outputBytes, precompileBytes...)
 		return padArrayTo32Multiple(outputBytes), nil
 	case signatureOptimisticRequire:
-		bwCompatBytes := input[4:minInt(36, len(input))]
+		bwCompatBytes := input[bwCompatStart:minInt(36, len(input))]
 		return optimisticRequireRun(environment, caller, addr, bwCompatBytes, readOnly)
 	default:
 		err := errors.New("precompile method not found")
@@ -568,6 +579,35 @@ func fheRandRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	}
 	t := FheUintType(input[0])
 	return environment.FhevmParams().GasCosts.FheRand[t]
+}
+
+func randUpperBound(input []byte) (FheUintType, *uint256.Int, error) {
+	if len(input) != 33 || !isValidType(input[32]) {
+		return FheUint8, nil, fmt.Errorf("randUpperBound() invalid input len or type")
+	}
+	t := FheUintType(input[32])
+	bound := uint256.NewInt(0)
+	bound.SetBytes32(input)
+	// For now, we only support bounds of up to 64 bits.
+	if !bound.IsUint64() {
+		return FheUint8, nil, fmt.Errorf("randUpperBound() only supports bounds up to 64 bits")
+	}
+	bound64 := bound.Uint64()
+	oneBits := bits.OnesCount64(bound64)
+	if oneBits != 1 {
+		return FheUint8, nil, fmt.Errorf("randUpperBound() bound not a power of 2: %d", bound64)
+	}
+	return t, bound, nil
+}
+
+func fheRandBoundedRequiredGas(environment EVMEnvironment, input []byte) uint64 {
+	logger := environment.GetLogger()
+	randType, _, err := randUpperBound(input)
+	if err != nil {
+		logger.Error("fheRandBounded RequiredGas() bound error", "input", hex.EncodeToString(input), "err", err)
+		return 0
+	}
+	return environment.FhevmParams().GasCosts.FheRand[randType]
 }
 
 func verifyCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -1758,23 +1798,10 @@ func init() {
 	}
 }
 
-func fheRandRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
-	logger := environment.GetLogger()
-	if environment.IsEthCall() {
-		msg := "fheRand cannot be called via EthCall, because it needs to mutate internal state"
-		logger.Error(msg)
-		return nil, errors.New(msg)
-	}
-	if len(input) != 1 || !isValidType(input[0]) {
-		msg := "fheRand input len must be at least 1 byte and be a valid FheUint type"
-		logger.Error(msg, "input", hex.EncodeToString(input), "len", len(input))
-		return nil, errors.New(msg)
-	}
-
-	t := FheUintType(input[0])
+func generateRandom(environment EVMEnvironment, caller common.Address, resultType FheUintType, upperBound *uint64) ([]byte, error) {
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() {
-		return importRandomCiphertext(environment, t), nil
+		return importRandomCiphertext(environment, resultType), nil
 	}
 
 	// Get the RNG nonce.
@@ -1809,11 +1836,15 @@ func fheRandRun(environment EVMEnvironment, caller common.Address, addr common.A
 	cipher.XORKeyStream(randBytes, randBytes)
 
 	// Trivially encrypt the random integer.
+	// Apply the `upperBound`, if set.
 	randUint64 := binary.BigEndian.Uint64(randBytes)
+	if upperBound != nil {
+		randUint64 %= *upperBound
+	}
 	randCt := new(tfheCiphertext)
 	randBigInt := big.NewInt(0)
 	randBigInt.SetUint64(randUint64)
-	randCt.trivialEncrypt(*randBigInt, t)
+	randCt.trivialEncrypt(*randBigInt, resultType)
 	importCiphertext(environment, randCt)
 
 	if err != nil {
@@ -1821,6 +1852,40 @@ func fheRandRun(environment EVMEnvironment, caller common.Address, addr common.A
 	}
 	ctHash := randCt.getHash()
 	return ctHash[:], nil
+}
+
+func fheRandRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+	logger := environment.GetLogger()
+	if environment.IsEthCall() {
+		msg := "fheRand cannot be called via EthCall, because it needs to mutate internal state"
+		logger.Error(msg)
+		return nil, errors.New(msg)
+	}
+	if len(input) != 1 || !isValidType(input[0]) {
+		msg := "fheRand input len must be at least 1 byte and be a valid FheUint type"
+		logger.Error(msg, "input", hex.EncodeToString(input), "len", len(input))
+		return nil, errors.New(msg)
+	}
+	resultType := FheUintType(input[0])
+	var noUpperBound *uint64 = nil
+	return generateRandom(environment, caller, resultType, noUpperBound)
+}
+
+func fheRandBoundedRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+	logger := environment.GetLogger()
+	if environment.IsEthCall() {
+		msg := "fheRandBoundedRun cannot be called via EthCall, because it needs to mutate internal state"
+		logger.Error(msg)
+		return nil, errors.New(msg)
+	}
+	randType, bound, err := randUpperBound(input)
+	if err != nil {
+		msg := "fheRandBounded bound error"
+		logger.Error(msg, "input", hex.EncodeToString(input), "err", err)
+		return nil, errors.New(msg)
+	}
+	bound64 := bound.Uint64()
+	return generateRandom(environment, caller, randType, &bound64)
 }
 
 func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
