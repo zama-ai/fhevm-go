@@ -2062,7 +2062,7 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 
 		var reencryptedValue = res.ReencryptedCiphertext
 
-		logger.Info("reencrypt success", "input", hex.EncodeToString(input), "callerAddr", caller, "reencryptedValue", reencryptedValue)
+		logger.Info("reencrypt success", "input", hex.EncodeToString(input), "callerAddr", caller, "reencryptedValue", reencryptedValue, "len", len(reencryptedValue))
 		return toEVMBytes(reencryptedValue), nil
 	}
 	msg := "reencrypt unverified ciphertext handle"
