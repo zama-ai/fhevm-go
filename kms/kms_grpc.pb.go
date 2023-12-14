@@ -8,6 +8,8 @@ package kms
 
 import (
 	context "context"
+	"os"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -19,7 +21,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 // URL of the KMS gRPC endpoint
-const KmsEndpointAddr = "kms.zama.ai:50051"
+var KmsEndpointAddr = os.Getenv("KMS_ENDPOINT_ADDR")
 
 const (
 	KmsEndpoint_ValidateAndDecrypt_FullMethodName   = "/kms.KmsEndpoint/Validate_and_decrypt"
