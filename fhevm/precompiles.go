@@ -1798,6 +1798,31 @@ func init() {
 	}
 }
 
+// Applies the upperBound (if set) to the rand value and returns the result.
+// bitsInRand is the amount of random bits that are contained in rand.
+// bitsInRand and upperBound must be powers of 2.
+func applyUpperBound(rand uint64, bitsInRand int, upperBound *uint64) uint64 {
+	if upperBound == nil {
+		return rand
+	} else if *upperBound == 0 {
+		panic("sliceRandom called with upperBound of 0")
+	}
+	// Len64() returns the amount of bits needed to represent upperBound. Subtract 1 to get the
+	// amount of bits requested by the given upperBound as we want to return a value in the [0, upperBound) range.
+	// Note that upperBound is assumed to be a power of 2.
+	//
+	// For example, if upperBound = 128, then bits = 8 - 1 = 7 random bits to be returned.
+	// To get that amount of random bits from rand, subtract bits from bitsInRand, i.e.
+	// shift = 32 - 7 = 25. Shifting rand 25 positions would leave 7 of its random bits.
+	bits := bits.Len64(*upperBound) - 1
+	shift := bitsInRand - bits
+	// If the shift ends up negative or 0, just return rand without any shifts.
+	if shift <= 0 {
+		return rand
+	}
+	return rand >> shift
+}
+
 func generateRandom(environment EVMEnvironment, caller common.Address, resultType FheUintType, upperBound *uint64) ([]byte, error) {
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() {
@@ -1832,18 +1857,32 @@ func generateRandom(environment EVMEnvironment, caller common.Address, resultTyp
 	}
 
 	// XOR a byte array of 0s with the stream from the cipher and receive the result in the same array.
-	randBytes := make([]byte, 8)
-	cipher.XORKeyStream(randBytes, randBytes)
+	// Apply upperBound, if set.
+	var randUint uint64
+	switch resultType {
+	case FheUint8:
+		randBytes := make([]byte, 1)
+		cipher.XORKeyStream(randBytes, randBytes)
+		randUint = uint64(randBytes[0])
+		randUint = uint64(applyUpperBound(randUint, 8, upperBound))
+	case FheUint16:
+		randBytes := make([]byte, 2)
+		cipher.XORKeyStream(randBytes, randBytes)
+		randUint = uint64(binary.BigEndian.Uint16(randBytes))
+		randUint = uint64(applyUpperBound(randUint, 16, upperBound))
+	case FheUint32:
+		randBytes := make([]byte, 4)
+		cipher.XORKeyStream(randBytes, randBytes)
+		randUint = uint64(binary.BigEndian.Uint32(randBytes))
+		randUint = uint64(applyUpperBound(randUint, 32, upperBound))
+	default:
+		return nil, fmt.Errorf("generateRandom() invalid type requested: %d", resultType)
+	}
 
 	// Trivially encrypt the random integer.
-	// Apply the `upperBound`, if set.
-	randUint64 := binary.BigEndian.Uint64(randBytes)
-	if upperBound != nil {
-		randUint64 %= *upperBound
-	}
 	randCt := new(tfheCiphertext)
 	randBigInt := big.NewInt(0)
-	randBigInt.SetUint64(randUint64)
+	randBigInt.SetUint64(randUint)
 	randCt.trivialEncrypt(*randBigInt, resultType)
 	importCiphertext(environment, randCt)
 
