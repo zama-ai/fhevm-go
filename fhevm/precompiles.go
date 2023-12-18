@@ -581,28 +581,28 @@ func fheRandRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	return environment.FhevmParams().GasCosts.FheRand[t]
 }
 
-func randUpperBound(input []byte) (FheUintType, *uint256.Int, error) {
+func parseRandUpperBoundInput(input []byte) (randType FheUintType, upperBound *uint256.Int, err error) {
 	if len(input) != 33 || !isValidType(input[32]) {
-		return FheUint8, nil, fmt.Errorf("randUpperBound() invalid input len or type")
+		return FheUint8, nil, fmt.Errorf("parseRandUpperBoundInput() invalid input len or type")
 	}
-	t := FheUintType(input[32])
-	bound := uint256.NewInt(0)
-	bound.SetBytes32(input)
+	randType = FheUintType(input[32])
+	upperBound = uint256.NewInt(0)
+	upperBound.SetBytes32(input)
 	// For now, we only support bounds of up to 64 bits.
-	if !bound.IsUint64() {
-		return FheUint8, nil, fmt.Errorf("randUpperBound() only supports bounds up to 64 bits")
+	if !upperBound.IsUint64() {
+		return FheUint8, nil, fmt.Errorf("parseRandUpperBoundInput() only supports bounds up to 64 bits")
 	}
-	bound64 := bound.Uint64()
-	oneBits := bits.OnesCount64(bound64)
+	upperBound64 := upperBound.Uint64()
+	oneBits := bits.OnesCount64(upperBound64)
 	if oneBits != 1 {
-		return FheUint8, nil, fmt.Errorf("randUpperBound() bound not a power of 2: %d", bound64)
+		return FheUint8, nil, fmt.Errorf("parseRandUpperBoundInput() bound not a power of 2: %d", upperBound64)
 	}
-	return t, bound, nil
+	return randType, upperBound, nil
 }
 
 func fheRandBoundedRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	logger := environment.GetLogger()
-	randType, _, err := randUpperBound(input)
+	randType, _, err := parseRandUpperBoundInput(input)
 	if err != nil {
 		logger.Error("fheRandBounded RequiredGas() bound error", "input", hex.EncodeToString(input), "err", err)
 		return 0
@@ -1917,7 +1917,7 @@ func fheRandBoundedRun(environment EVMEnvironment, caller common.Address, addr c
 		logger.Error(msg)
 		return nil, errors.New(msg)
 	}
-	randType, bound, err := randUpperBound(input)
+	randType, bound, err := parseRandUpperBoundInput(input)
 	if err != nil {
 		msg := "fheRandBounded bound error"
 		logger.Error(msg, "input", hex.EncodeToString(input), "err", err)
