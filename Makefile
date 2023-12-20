@@ -8,7 +8,7 @@ test: build-tfhe-rs-capi
 
 .PHONY: build-tfhe-rs-capi
 build-tfhe-rs-capi:
-	cd tfhe-rs && make build_c_api_experimental_deterministic_fft \
+	cd tfhe-rs && RUSTFLAGS="" make build_c_api_experimental_deterministic_fft \
 	&& cd target/release && rm -f *.dylib *.dll *.so
 
 .PHONY: clean
