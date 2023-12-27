@@ -1574,7 +1574,7 @@ func InitGlobalKeysFromFiles(keysDir string) error {
 	var cksPath = path.Join(keysDir, "cks")
 	cksBytes, err := os.ReadFile(cksPath)
 	if err != nil {
-		return err
+		fmt.Println("INFO: cks not loaded from: " + keysDir)
 	}
 	var pksPath = path.Join(keysDir, "pks")
 	pksBytes, err := os.ReadFile(pksPath)
@@ -1587,7 +1587,11 @@ func InitGlobalKeysFromFiles(keysDir string) error {
 	pksHash = crypto.Keccak256Hash(pksBytes)
 	pks = C.deserialize_compact_public_key(toBufferView(pksBytes))
 
-	cks = C.deserialize_client_key(toBufferView(cksBytes))
+	// cks will be handled by the KMS from now on
+	// TODO: completely remove after KMS is well tested
+	if len(cksBytes) > 0 {
+		cks = C.deserialize_client_key(toBufferView(cksBytes))
+	}
 
 	initCiphertextSizes()
 

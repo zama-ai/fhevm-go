@@ -2127,11 +2127,52 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 	} else if !optReqResult {
 		return nil, ErrExecutionReverted
 	}
-	plaintext, err := decryptValue(ct.ciphertext)
+
+	var fheType kms.FheType
+	switch ct.ciphertext.fheUintType {
+	case FheUint8:
+		fheType = kms.FheType_Euint8
+	case FheUint16:
+		fheType = kms.FheType_Euint16
+	case FheUint32:
+		fheType = kms.FheType_Euint32
+	}
+
+	pubKey := input[32:64]
+
+	// TODO: generate merkle proof for some data
+	proof := &kms.Proof{
+		Height:              4,
+		MerklePatriciaProof: []byte{},
+	}
+
+	decryptionRequest := &kms.DecryptionRequest{
+		FheType:    fheType,
+		Ciphertext: ct.ciphertext.serialization,
+		Request:    pubKey, // TODO: change according to the structure of `Request`
+		Proof:      proof,
+	}
+
+	conn, err := grpc.Dial(kms.KmsEndpointAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, errors.New("kms unreachable")
+	}
+	defer conn.Close()
+
+	ep := kms.NewKmsEndpointClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	res, err := ep.Decrypt(ctx, decryptionRequest)
 	if err != nil {
 		logger.Error("decrypt failed", "err", err)
 		return nil, err
 	}
+
+	var plaintext = uint64(res.Plaintext)
+	logger.Info("decrypt success", "plaintext", plaintext)
+
 	// Always return a 32-byte big-endian integer.
 	ret := make([]byte, 32)
 	bigIntValue := big.NewInt(0)
