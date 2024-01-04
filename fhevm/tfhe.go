@@ -1296,6 +1296,39 @@ void* not_fhe_uint32(void* ct, void* sks) {
 	return result;
 }
 
+void* if_then_else_fhe_uint8(void* condition, void* ct1, void* ct2, void* sks)
+{
+	FheUint8* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint8_if_then_else(condition, ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* if_then_else_fhe_uint16(void* condition, void* ct1, void* ct2, void* sks)
+{
+	FheUint16* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint16_if_then_else(condition, ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* if_then_else_fhe_uint32(void* condition, void* ct1, void* ct2, void* sks)
+{
+	FheUint32* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint32_if_then_else(condition, ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 int decrypt_fhe_uint8(void* cks, void* ct, uint8_t* res)
 {
 	*res = 0;
@@ -1966,6 +1999,113 @@ func (lhs *tfheCiphertext) executeBinaryCiphertextOperation(rhs *tfheCiphertext,
 	return res, nil
 }
 
+
+func (first *tfheCiphertext) executeTernaryCiphertextOperation(lhs *tfheCiphertext, rhs *tfheCiphertext,
+	op8 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
+	op16 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
+	op32 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer) (*tfheCiphertext, error) {
+	if lhs.fheUintType != rhs.fheUintType {
+		return nil, errors.New("ternary operations are only well-defined for identical types")
+	}
+
+	res := new(tfheCiphertext)
+	res.fheUintType = lhs.fheUintType
+	res_ser := &C.Buffer{}
+	switch lhs.fheUintType {
+	case FheUint8:
+		lhs_ptr := C.deserialize_fhe_uint8(toBufferView((lhs.serialization)))
+		if lhs_ptr == nil {
+			return nil, errors.New("8 bit binary op deserialization failed")
+		}
+		rhs_ptr := C.deserialize_fhe_uint8(toBufferView((rhs.serialization)))
+		if rhs_ptr == nil {
+			C.destroy_fhe_uint8(lhs_ptr)
+			return nil, errors.New("8 bit binary op deserialization failed")
+		}
+		first_ptr := C.deserialize_fhe_uint8(toBufferView((first.serialization)))
+		if first_ptr == nil {
+			C.destroy_fhe_uint8(lhs_ptr)
+			C.destroy_fhe_uint8(rhs_ptr)
+			return nil, errors.New("8 bit binary op deserialization failed")
+		}
+		res_ptr := op8(first_ptr, lhs_ptr, rhs_ptr)
+		C.destroy_fhe_uint8(lhs_ptr)
+		C.destroy_fhe_uint8(rhs_ptr)
+		if res_ptr == nil {
+			return nil, errors.New("8 bit binary op failed")
+		}
+		ret := C.serialize_fhe_uint8(res_ptr, res_ser)
+		C.destroy_fhe_uint8(res_ptr)
+		if ret != 0 {
+			return nil, errors.New("8 bit binary op serialization failed")
+		}
+		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
+		C.destroy_buffer(res_ser)
+	case FheUint16:
+		lhs_ptr := C.deserialize_fhe_uint16(toBufferView((lhs.serialization)))
+		if lhs_ptr == nil {
+			return nil, errors.New("16 bit binary op deserialization failed")
+		}
+		rhs_ptr := C.deserialize_fhe_uint16(toBufferView((rhs.serialization)))
+		if rhs_ptr == nil {
+			C.destroy_fhe_uint16(lhs_ptr)
+			return nil, errors.New("16 bit binary op deserialization failed")
+		}
+		first_ptr := C.deserialize_fhe_uint8(toBufferView((first.serialization)))
+		if first_ptr == nil {
+			C.destroy_fhe_uint8(lhs_ptr)
+			C.destroy_fhe_uint8(rhs_ptr)
+			return nil, errors.New("8 bit binary op deserialization failed")
+		}
+		res_ptr := op16(first_ptr, lhs_ptr, rhs_ptr)
+		C.destroy_fhe_uint16(lhs_ptr)
+		C.destroy_fhe_uint16(rhs_ptr)
+		if res_ptr == nil {
+			return nil, errors.New("16 bit binary op failed")
+		}
+		ret := C.serialize_fhe_uint16(res_ptr, res_ser)
+		C.destroy_fhe_uint16(res_ptr)
+		if ret != 0 {
+			return nil, errors.New("16 bit binary op serialization failed")
+		}
+		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
+		C.destroy_buffer(res_ser)
+	case FheUint32:
+		lhs_ptr := C.deserialize_fhe_uint32(toBufferView((lhs.serialization)))
+		if lhs_ptr == nil {
+			return nil, errors.New("32 bit binary op deserialization failed")
+		}
+		rhs_ptr := C.deserialize_fhe_uint32(toBufferView((rhs.serialization)))
+		if rhs_ptr == nil {
+			C.destroy_fhe_uint32(lhs_ptr)
+			return nil, errors.New("32 bit binary op deserialization failed")
+		}
+		first_ptr := C.deserialize_fhe_uint8(toBufferView((first.serialization)))
+		if first_ptr == nil {
+			C.destroy_fhe_uint8(lhs_ptr)
+			C.destroy_fhe_uint8(rhs_ptr)
+			return nil, errors.New("8 bit binary op deserialization failed")
+		}
+		res_ptr := op32(first_ptr, lhs_ptr, rhs_ptr)
+		C.destroy_fhe_uint32(lhs_ptr)
+		C.destroy_fhe_uint32(rhs_ptr)
+		if res_ptr == nil {
+			return nil, errors.New("32 bit binary op failed")
+		}
+		ret := C.serialize_fhe_uint32(res_ptr, res_ser)
+		C.destroy_fhe_uint32(res_ptr)
+		if ret != 0 {
+			return nil, errors.New("32 bit binary op serialization failed")
+		}
+		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
+		C.destroy_buffer(res_ser)
+	default:
+		panic("binary op unexpected ciphertext type")
+	}
+	res.computeHash()
+	return res, nil
+}
+
 func (lhs *tfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 	op8 func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer,
 	op16 func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer,
@@ -2461,6 +2601,19 @@ func (lhs *tfheCiphertext) not() (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer) unsafe.Pointer {
 			return C.not_fhe_uint32(lhs, sks)
+		})
+}
+
+func (condition *tfheCiphertext) ifThenElse(lhs *tfheCiphertext, rhs *tfheCiphertext) (*tfheCiphertext, error) {
+	return condition.executeTernaryCiphertextOperation(lhs, rhs,
+		func(condition unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.if_then_else_fhe_uint8(condition, lhs, rhs, sks)
+		},
+		func(condition unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.if_then_else_fhe_uint16(condition, lhs, rhs, sks)
+		},
+		func(condition unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.if_then_else_fhe_uint32(condition, lhs, rhs, sks)
 		})
 }
 

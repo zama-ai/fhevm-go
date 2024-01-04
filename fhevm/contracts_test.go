@@ -65,6 +65,14 @@ func toPrecompileInput(isScalar bool, hashes ...common.Hash) []byte {
 	return ret
 }
 
+func toPrecompileInputNoScalar(isScalar bool, hashes ...common.Hash) []byte {
+	ret := make([]byte, 0)
+	for _, hash := range hashes {
+		ret = append(ret, hash.Bytes()...)
+	}
+	return ret
+}
+
 var scalarBytePadding = make([]byte, 31)
 
 func toLibPrecompileInput(method string, isScalar bool, hashes ...common.Hash) []byte {
@@ -1249,6 +1257,44 @@ func FheLibRandBounded(t *testing.T, fheUintType FheUintType, upperBound64 uint6
 	}
 }
 
+func FheLibIfThenElse(t *testing.T, fheUintType FheUintType, condition uint64) {
+	var second, third uint64
+	switch fheUintType {
+	case FheUint8:
+		second = 2
+		third = 1
+	case FheUint16:
+		second = 4283
+		third = 1337
+	case FheUint32:
+		second = 1333337
+		third = 133337
+	}
+	signature := "fheIfThenElse(uint256,uint256,uint256)"
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := common.Address{}
+	readOnly := false
+	firstHash := verifyCiphertextInTestMemory(environment, condition, depth, FheUint8).getHash()
+	secondHash := verifyCiphertextInTestMemory(environment, second, depth, fheUintType).getHash()
+	thirdHash := verifyCiphertextInTestMemory(environment, third, depth, fheUintType).getHash()
+	input := toLibPrecompileInputNoScalar(signature, firstHash, secondHash, thirdHash)
+	out, err := FheLibRun(environment, addr, addr, input, readOnly)
+	if err != nil {
+		t.Fatalf("VALUE %v", len(input))
+		// t.Fatalf(err.Error())
+	}
+	res := getVerifiedCiphertextFromEVM(environment, common.BytesToHash(out))
+	if res == nil {
+		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
+	}
+	decrypted, err := res.ciphertext.decrypt()
+	if err != nil || condition == 1 && decrypted.Uint64() != second || condition == 0 &&  decrypted.Uint64() != third {
+		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 1)
+	}
+}
+
 func LibTrivialEncrypt(t *testing.T, fheUintType FheUintType) {
 	var value big.Int
 	switch fheUintType {
@@ -2352,6 +2398,44 @@ func FheNot(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
+
+func FheIfThenElse(t *testing.T, fheUintType FheUintType, condition uint64) {
+	var lhs, rhs uint64
+	switch fheUintType {
+	case FheUint8:
+		lhs = 2
+		rhs = 1
+	case FheUint16:
+		lhs = 4283
+		rhs = 1337
+	case FheUint32:
+		lhs = 1333337
+		rhs = 133337
+	}
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := common.Address{}
+	readOnly := false
+	conditionHash := verifyCiphertextInTestMemory(environment, condition, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	rhsHash := verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+	
+	input1 := toPrecompileInputNoScalar(false, conditionHash, lhsHash, rhsHash)
+	out, err := fheIfThenElseRun(environment, addr, addr, input1, readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	res := getVerifiedCiphertextFromEVM(environment, common.BytesToHash(out))
+	if res == nil {
+		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
+	}
+	decrypted, err := res.ciphertext.decrypt()
+	if err != nil || condition == 1 && decrypted.Uint64() != lhs || condition == 0 && decrypted.Uint64() != rhs {
+		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 0)
+	}
+}
+
 func Decrypt(t *testing.T, fheUintType FheUintType) {
 	var value uint64
 	switch fheUintType {
@@ -2625,6 +2709,21 @@ func TestFheLibRandBounded16(t *testing.T) {
 
 func TestFheLibRandBounded32(t *testing.T) {
 	FheLibRandBounded(t, FheUint32, 32)
+}
+
+func TestFheLibIfThenElse8(t *testing.T) {
+	FheLibIfThenElse(t, FheUint8, 1)
+	FheLibIfThenElse(t, FheUint8, 0)
+}
+
+func TestFheLibIfThenElse16(t *testing.T) {
+	FheLibIfThenElse(t, FheUint16, 1)
+	FheLibIfThenElse(t, FheUint16, 0)
+}
+
+func TestFheLibIfThenElse32(t *testing.T) {
+	FheLibIfThenElse(t, FheUint32, 1)
+	FheLibIfThenElse(t, FheUint32, 0)
 }
 
 func TestFheLibTrivialEncrypt8(t *testing.T) {
@@ -3077,6 +3176,21 @@ func TestFheNot16(t *testing.T) {
 
 func TestFheNot32(t *testing.T) {
 	FheNot(t, FheUint32, false)
+}
+
+func TestFheIfThenElse8(t *testing.T) {
+	FheIfThenElse(t, FheUint8, 1)
+	FheIfThenElse(t, FheUint8, 0)
+}
+
+func TestFheIfThenElse16(t *testing.T) {
+	FheIfThenElse(t, FheUint16, 1)
+	FheIfThenElse(t, FheUint16, 0)
+}
+
+func TestFheIfThenElse32(t *testing.T) {
+	FheIfThenElse(t, FheUint32, 1)
+	FheIfThenElse(t, FheUint32, 0)
 }
 
 func TestFheScalarMax8(t *testing.T) {

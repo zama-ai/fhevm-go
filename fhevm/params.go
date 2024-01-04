@@ -70,6 +70,7 @@ type GasCosts struct {
 	FheReencrypt        map[FheUintType]uint64
 	FheTrivialEncrypt   map[FheUintType]uint64
 	FheRand             map[FheUintType]uint64
+	FheIfThenElse       map[FheUintType]uint64
 	FheVerify           map[FheUintType]uint64
 	FheOptRequire       map[FheUintType]uint64
 	FheOptRequireBitAnd map[FheUintType]uint64
@@ -149,6 +150,11 @@ func DefaultGasCosts() GasCosts {
 			FheUint8:  EvmNetSstoreInitGas + 1000,
 			FheUint16: EvmNetSstoreInitGas + 2000,
 			FheUint32: EvmNetSstoreInitGas + 3000,
+		},
+		FheIfThenElse: map[FheUintType]uint64{
+			FheUint8:  61000,
+			FheUint16: 83000,
+			FheUint32: 109000,
 		},
 		// TODO: As of now, only support FheUint8. All optimistic require predicates are
 		// downcast to FheUint8 at the solidity level. Eventually move to ebool.
