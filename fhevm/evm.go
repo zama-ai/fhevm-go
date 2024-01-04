@@ -73,6 +73,26 @@ func get2VerifiedOperands(environment EVMEnvironment, input []byte) (lhs *verifi
 	return
 }
 
+func get3VerifiedOperands(environment EVMEnvironment, input []byte) (first *verifiedCiphertext, second *verifiedCiphertext, third *verifiedCiphertext, err error) {
+	if len(input) != 96 {
+		return nil, nil, nil, errors.New("input needs to contain three 256-bit sized values")
+	}
+	first = getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	if first == nil {
+		return nil, nil, nil, errors.New("unverified ciphertext handle")
+	}
+	second = getVerifiedCiphertext(environment, common.BytesToHash(input[32:64]))
+	if second == nil {
+		return nil, nil, nil, errors.New("unverified ciphertext handle")
+	}
+	third = getVerifiedCiphertext(environment, common.BytesToHash(input[64:96]))
+	if third == nil {
+		return nil, nil, nil, errors.New("unverified ciphertext handle")
+	}
+	err = nil
+	return
+}
+
 func getScalarOperands(environment EVMEnvironment, input []byte) (lhs *verifiedCiphertext, rhs *big.Int, err error) {
 	if len(input) != 65 {
 		return nil, nil, errors.New("input needs to contain two 256-bit sized values and 1 8-bit value")

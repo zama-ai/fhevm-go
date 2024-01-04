@@ -52,6 +52,7 @@ var signatureFheBitOr = makeKeccakSignature("fheBitOr(uint256,uint256,bytes1)")
 var signatureFheBitXor = makeKeccakSignature("fheBitXor(uint256,uint256,bytes1)")
 var signatureFheRand = makeKeccakSignature("fheRand(bytes1)")
 var signatureFheRandBounded = makeKeccakSignature("fheRandBounded(uint256,bytes1)")
+var signatureFheIfThenElse = makeKeccakSignature("fheIfThenElse(uint256,uint256,uint256)")
 var signatureVerifyCiphertext = makeKeccakSignature("verifyCiphertext(bytes)")
 var signatureReencrypt = makeKeccakSignature("reencrypt(uint256,uint256)")
 var signatureOptimisticRequire = makeKeccakSignature("optimisticRequire(uint256)")
@@ -144,6 +145,9 @@ func FheLibRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	case signatureFheRandBounded:
 		bwCompatBytes := input[4:minInt(37, len(input))]
 		return fheRandBoundedRequiredGas(environment, bwCompatBytes)
+	case signatureFheIfThenElse:
+		bwCompatBytes := input[4:minInt(100, len(input))]
+		return fheIfThenElseRequiredGas(environment, bwCompatBytes)
 	case signatureVerifyCiphertext:
 		bwCompatBytes := input[4:]
 		return verifyCiphertextRequiredGas(environment, bwCompatBytes)
@@ -256,6 +260,9 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	case signatureFheRandBounded:
 		bwCompatBytes := input[4:minInt(37, len(input))]
 		return fheRandBoundedRun(environment, caller, addr, bwCompatBytes, readOnly)
+	case signatureFheIfThenElse:
+		bwCompatBytes := input[4:minInt(100, len(input))]
+		return fheIfThenElseRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureVerifyCiphertext:
 		// first 32 bytes of the payload is offset, then 32 bytes are size of byte array
 		if len(input) <= 68 {
@@ -606,6 +613,24 @@ func fheRandBoundedRequiredGas(environment EVMEnvironment, input []byte) uint64 
 		return 0
 	}
 	return environment.FhevmParams().GasCosts.FheRand[randType]
+}
+
+func fheIfThenElseRequiredGas(environment EVMEnvironment, input []byte) uint64 {
+	logger := environment.GetLogger()
+	first, second, third, err := get3VerifiedOperands(environment, input)
+	if err != nil {
+		logger.Error("IfThenElse op RequiredGas() inputs not verified", "err", err, "input", hex.EncodeToString(input))
+		return 0
+	}
+	if first.ciphertext.fheUintType != FheUint8 {
+		logger.Error("IfThenElse op RequiredGas() invalid type for condition", "first", first.ciphertext.fheUintType)
+		return 0
+	}
+	if second.ciphertext.fheUintType != third.ciphertext.fheUintType {
+		logger.Error("IfThenElse op RequiredGas() operand type mismatch", "second", second.ciphertext.fheUintType, "third", third.ciphertext.fheUintType)
+		return 0
+	}
+	return environment.FhevmParams().GasCosts.FheIfThenElse[second.ciphertext.fheUintType]
 }
 
 func verifyCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -1923,6 +1948,38 @@ func fheRandBoundedRun(environment EVMEnvironment, caller common.Address, addr c
 	}
 	bound64 := bound.Uint64()
 	return generateRandom(environment, caller, randType, &bound64)
+}
+
+
+func fheIfThenElseRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+	logger := environment.GetLogger()
+	first, second, third, err := get3VerifiedOperands(environment, input)
+	if err != nil {
+		logger.Error("fheIfThenElse inputs not verified", "err", err, "input", hex.EncodeToString(input))
+		return nil, err
+	}
+
+	if second.ciphertext.fheUintType != third.ciphertext.fheUintType {
+		msg := "fheIfThenElse operand type mismatch"
+		logger.Error(msg, "second", second.ciphertext.fheUintType, "third", third.ciphertext.fheUintType)
+		return nil, errors.New(msg)
+	}
+
+	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+	if !environment.IsCommitting() && !environment.IsEthCall() {
+		return importRandomCiphertext(environment, second.ciphertext.fheUintType), nil
+	}
+
+	result, err := first.ciphertext.ifThenElse(second.ciphertext, third.ciphertext)
+	if err != nil {
+		logger.Error("fheLe failed", "err", err)
+		return nil, err
+	}
+	importCiphertext(environment, result)
+
+	resultHash := result.getHash()
+	logger.Info("fheIfThenElse success", "first", first.ciphertext.getHash().Hex(), "second", second.ciphertext.getHash().Hex(), "third", third.ciphertext.getHash().Hex(), "result", resultHash.Hex())
+	return resultHash[:], nil
 }
 
 func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
