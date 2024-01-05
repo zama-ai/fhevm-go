@@ -1955,7 +1955,6 @@ func fheRandBoundedRun(environment EVMEnvironment, caller common.Address, addr c
 	return generateRandom(environment, caller, randType, &bound64)
 }
 
-
 func fheIfThenElseRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 	first, second, third, err := get3VerifiedOperands(environment, input)
@@ -2172,6 +2171,7 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 		logger.Error(msg, "input", hex.EncodeToString(input))
 		return nil, errors.New(msg)
 	}
+
 	// If we are doing gas estimation, skip decryption and make sure we return the maximum possible value.
 	// We need that, because non-zero bytes cost more than zero bytes in some contexts (e.g. SSTORE or memory operations).
 	if !environment.IsCommitting() && !environment.IsEthCall() {
@@ -2185,8 +2185,27 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 		return nil, ErrExecutionReverted
 	}
 
+	plaintext, err := decryptValue(environment, ct.ciphertext)
+	if err != nil {
+		logger.Error("decrypt failed", "err", err)
+		return nil, err
+	}
+
+	logger.Info("decrypt success", "plaintext", plaintext)
+
+	// Always return a 32-byte big-endian integer.
+	ret := make([]byte, 32)
+	bigIntValue := big.NewInt(0)
+	bigIntValue.SetUint64(plaintext)
+	bigIntValue.FillBytes(ret)
+	return ret, nil
+}
+
+func decryptValue(environment EVMEnvironment, ct *tfheCiphertext) (uint64, error) {
+
+	logger := environment.GetLogger()
 	var fheType kms.FheType
-	switch ct.ciphertext.fheUintType {
+	switch ct.fheUintType {
 	case FheUint8:
 		fheType = kms.FheType_Euint8
 	case FheUint16:
@@ -2203,14 +2222,14 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 
 	decryptionRequest := &kms.DecryptionRequest{
 		FheType:    fheType,
-		Ciphertext: ct.ciphertext.serialization,
+		Ciphertext: ct.serialization,
 		Request:    []byte{}, // TODO: change according to the structure of `Request`
 		Proof:      proof,
 	}
 
 	conn, err := grpc.Dial(kms.KmsEndpointAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, errors.New("kms unreachable")
+		return 0, errors.New("kms unreachable")
 	}
 	defer conn.Close()
 
@@ -2222,23 +2241,10 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 	res, err := ep.Decrypt(ctx, decryptionRequest)
 	if err != nil {
 		logger.Error("decrypt failed", "err", err)
-		return nil, err
+		return 0, err
 	}
 
-	var plaintext = uint64(res.Plaintext)
-	logger.Info("decrypt success", "plaintext", plaintext)
-
-	// Always return a 32-byte big-endian integer.
-	ret := make([]byte, 32)
-	bigIntValue := big.NewInt(0)
-	bigIntValue.SetUint64(plaintext)
-	bigIntValue.FillBytes(ret)
-	return ret, nil
-}
-
-func decryptValue(ct *tfheCiphertext) (uint64, error) {
-	v, err := ct.decrypt()
-	return v.Uint64(), err
+	return uint64(res.Plaintext), err
 }
 
 // If there are optimistic requires, check them by doing bitwise AND on all of them.
@@ -2258,7 +2264,7 @@ func evaluateRemainingOptimisticRequires(environment EVMEnvironment) (bool, erro
 				return false, err
 			}
 		}
-		result, err := decryptValue(cumulative)
+		result, err := decryptValue(environment, cumulative)
 		return result != 0, err
 	}
 	return true, nil
