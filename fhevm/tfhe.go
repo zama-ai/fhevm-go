@@ -1572,7 +1572,7 @@ func generateFhevmKeys() (unsafe.Pointer, unsafe.Pointer, unsafe.Pointer) {
 	return keys.sks, keys.cks, keys.pks
 }
 
-func globalKeysPresent() bool {
+func allGlobalKeysPresent() bool {
 	return sks != nil && cks != nil && pks != nil
 }
 
@@ -1604,11 +1604,6 @@ func InitGlobalKeysFromFiles(keysDir string) error {
 	if err != nil {
 		return err
 	}
-	var cksPath = path.Join(keysDir, "cks")
-	cksBytes, err := os.ReadFile(cksPath)
-	if err != nil {
-		fmt.Println("INFO: cks not loaded from: " + keysDir)
-	}
 	var pksPath = path.Join(keysDir, "pks")
 	pksBytes, err := os.ReadFile(pksPath)
 	if err != nil {
@@ -1619,12 +1614,6 @@ func InitGlobalKeysFromFiles(keysDir string) error {
 
 	pksHash = crypto.Keccak256Hash(pksBytes)
 	pks = C.deserialize_compact_public_key(toBufferView(pksBytes))
-
-	// cks will be handled by the KMS from now on
-	// TODO: completely remove after KMS is well tested
-	if len(cksBytes) > 0 {
-		cks = C.deserialize_client_key(toBufferView(cksBytes))
-	}
 
 	initCiphertextSizes()
 
@@ -1998,7 +1987,6 @@ func (lhs *tfheCiphertext) executeBinaryCiphertextOperation(rhs *tfheCiphertext,
 	res.computeHash()
 	return res, nil
 }
-
 
 func (first *tfheCiphertext) executeTernaryCiphertextOperation(lhs *tfheCiphertext, rhs *tfheCiphertext,
 	op8 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
@@ -2743,6 +2731,9 @@ func (ct *tfheCiphertext) castTo(castToType FheUintType) (*tfheCiphertext, error
 }
 
 func (ct *tfheCiphertext) decrypt() (big.Int, error) {
+	if cks == nil {
+		return *new(big.Int).SetUint64(0), errors.New("cks is not initialized")
+	}
 	var value uint64
 	var ret C.int
 	switch ct.fheUintType {

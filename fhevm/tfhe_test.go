@@ -27,7 +27,7 @@ import (
 
 // generate keys if not present
 func setup() {
-	if !globalKeysPresent() {
+	if !allGlobalKeysPresent() {
 		fmt.Println("INFO: initializing global keys in tests")
 		initGlobalKeysWithNewKeys()
 	}
