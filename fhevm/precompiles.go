@@ -2195,8 +2195,6 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 		fheType = kms.FheType_Euint32
 	}
 
-	pubKey := input[32:64]
-
 	// TODO: generate merkle proof for some data
 	proof := &kms.Proof{
 		Height:              4,
@@ -2206,7 +2204,7 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 	decryptionRequest := &kms.DecryptionRequest{
 		FheType:    fheType,
 		Ciphertext: ct.ciphertext.serialization,
-		Request:    pubKey, // TODO: change according to the structure of `Request`
+		Request:    []byte{}, // TODO: change according to the structure of `Request`
 		Proof:      proof,
 	}
 
