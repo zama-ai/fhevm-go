@@ -2,6 +2,7 @@ package fhevm
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
@@ -9,13 +10,17 @@ import (
 	"fmt"
 	"math/big"
 	"math/bits"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
+	kms "github.com/zama-ai/fhevm-go/kms"
 	"golang.org/x/crypto/chacha20"
 	"golang.org/x/crypto/nacl/box"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // PrecompiledContract is the basic interface for native Go contracts. The implementation
@@ -52,6 +57,7 @@ var signatureFheBitOr = makeKeccakSignature("fheBitOr(uint256,uint256,bytes1)")
 var signatureFheBitXor = makeKeccakSignature("fheBitXor(uint256,uint256,bytes1)")
 var signatureFheRand = makeKeccakSignature("fheRand(bytes1)")
 var signatureFheRandBounded = makeKeccakSignature("fheRandBounded(uint256,bytes1)")
+var signatureFheIfThenElse = makeKeccakSignature("fheIfThenElse(uint256,uint256,uint256)")
 var signatureVerifyCiphertext = makeKeccakSignature("verifyCiphertext(bytes)")
 var signatureReencrypt = makeKeccakSignature("reencrypt(uint256,uint256)")
 var signatureOptimisticRequire = makeKeccakSignature("optimisticRequire(uint256)")
@@ -144,6 +150,9 @@ func FheLibRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	case signatureFheRandBounded:
 		bwCompatBytes := input[4:minInt(37, len(input))]
 		return fheRandBoundedRequiredGas(environment, bwCompatBytes)
+	case signatureFheIfThenElse:
+		bwCompatBytes := input[4:minInt(100, len(input))]
+		return fheIfThenElseRequiredGas(environment, bwCompatBytes)
 	case signatureVerifyCiphertext:
 		bwCompatBytes := input[4:]
 		return verifyCiphertextRequiredGas(environment, bwCompatBytes)
@@ -256,6 +265,9 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	case signatureFheRandBounded:
 		bwCompatBytes := input[4:minInt(37, len(input))]
 		return fheRandBoundedRun(environment, caller, addr, bwCompatBytes, readOnly)
+	case signatureFheIfThenElse:
+		bwCompatBytes := input[4:minInt(100, len(input))]
+		return fheIfThenElseRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureVerifyCiphertext:
 		// first 32 bytes of the payload is offset, then 32 bytes are size of byte array
 		if len(input) <= 68 {
@@ -606,6 +618,24 @@ func fheRandBoundedRequiredGas(environment EVMEnvironment, input []byte) uint64 
 		return 0
 	}
 	return environment.FhevmParams().GasCosts.FheRand[randType]
+}
+
+func fheIfThenElseRequiredGas(environment EVMEnvironment, input []byte) uint64 {
+	logger := environment.GetLogger()
+	first, second, third, err := get3VerifiedOperands(environment, input)
+	if err != nil {
+		logger.Error("IfThenElse op RequiredGas() inputs not verified", "err", err, "input", hex.EncodeToString(input))
+		return 0
+	}
+	if first.ciphertext.fheUintType != FheUint8 {
+		logger.Error("IfThenElse op RequiredGas() invalid type for condition", "first", first.ciphertext.fheUintType)
+		return 0
+	}
+	if second.ciphertext.fheUintType != third.ciphertext.fheUintType {
+		logger.Error("IfThenElse op RequiredGas() operand type mismatch", "second", second.ciphertext.fheUintType, "third", third.ciphertext.fheUintType)
+		return 0
+	}
+	return environment.FhevmParams().GasCosts.FheIfThenElse[second.ciphertext.fheUintType]
 }
 
 func verifyCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -1925,6 +1955,37 @@ func fheRandBoundedRun(environment EVMEnvironment, caller common.Address, addr c
 	return generateRandom(environment, caller, randType, &bound64)
 }
 
+func fheIfThenElseRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+	logger := environment.GetLogger()
+	first, second, third, err := get3VerifiedOperands(environment, input)
+	if err != nil {
+		logger.Error("fheIfThenElse inputs not verified", "err", err, "input", hex.EncodeToString(input))
+		return nil, err
+	}
+
+	if second.ciphertext.fheUintType != third.ciphertext.fheUintType {
+		msg := "fheIfThenElse operand type mismatch"
+		logger.Error(msg, "second", second.ciphertext.fheUintType, "third", third.ciphertext.fheUintType)
+		return nil, errors.New(msg)
+	}
+
+	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+	if !environment.IsCommitting() && !environment.IsEthCall() {
+		return importRandomCiphertext(environment, second.ciphertext.fheUintType), nil
+	}
+
+	result, err := first.ciphertext.ifThenElse(second.ciphertext, third.ciphertext)
+	if err != nil {
+		logger.Error("fheIfThenElse failed", "err", err)
+		return nil, err
+	}
+	importCiphertext(environment, result)
+
+	resultHash := result.getHash()
+	logger.Info("fheIfThenElse success", "first", first.ciphertext.getHash().Hex(), "second", second.ciphertext.getHash().Hex(), "third", third.ciphertext.getHash().Hex(), "result", resultHash.Hex())
+	return resultHash[:], nil
+}
+
 func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 	if len(input) <= 1 {
@@ -2005,24 +2066,59 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
 	if ct != nil {
 		// Make sure we don't decrypt before any optimistic requires are checked.
-		optReqResult, optReqErr := evaluateRemainingOptimisticRequires(environment)
-		if optReqErr != nil {
-			return nil, optReqErr
-		} else if !optReqResult {
-			return nil, ErrExecutionReverted
+		// optReqResult, optReqErr := evaluateRemainingOptimisticRequires(environment)
+		// if optReqErr != nil {
+		// 	return nil, optReqErr
+		// } else if !optReqResult {
+		// 	return nil, ErrExecutionReverted
+		// }
+
+		var fheType kms.FheType
+		switch ct.ciphertext.fheUintType {
+		case FheUint8:
+			fheType = kms.FheType_Euint8
+		case FheUint16:
+			fheType = kms.FheType_Euint16
+		case FheUint32:
+			fheType = kms.FheType_Euint32
 		}
-		decryptedValue, err := ct.ciphertext.decrypt()
-		if err != nil {
-			logger.Error("reencrypt decryption failed", "err", err)
-			return nil, err
-		}
+
 		pubKey := input[32:64]
-		reencryptedValue, err := encryptToUserKey(&decryptedValue, pubKey)
+
+		// TODO: generate merkle proof for some data
+		proof := &kms.Proof{
+			Height:              3,
+			MerklePatriciaProof: []byte{},
+		}
+
+		reencryptionRequest := &kms.ReencryptionRequest{
+			FheType:    fheType,
+			Ciphertext: ct.ciphertext.serialization,
+			Request:    pubKey, // TODO: change according to the structure of `Request`
+			Proof:      proof,
+		}
+
+		conn, err := grpc.Dial(kms.KmsEndpointAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			logger.Error("reencrypt failed to encrypt to user key", "err", err)
+			return nil, errors.New("kms unreachable")
+		}
+		defer conn.Close()
+
+		ep := kms.NewKmsEndpointClient(conn)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		res, err := ep.Reencrypt(ctx, reencryptionRequest)
+		if err != nil {
 			return nil, err
 		}
-		logger.Info("reencrypt success", "input", hex.EncodeToString(input), "callerAddr", caller)
+
+		// TODO: decide if `res.Signature` should be verified here
+
+		var reencryptedValue = res.ReencryptedCiphertext
+
+		logger.Info("reencrypt success", "input", hex.EncodeToString(input), "callerAddr", caller, "reencryptedValue", reencryptedValue, "len", len(reencryptedValue))
 		return toEVMBytes(reencryptedValue), nil
 	}
 	msg := "reencrypt unverified ciphertext handle"
@@ -2075,6 +2171,7 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 		logger.Error(msg, "input", hex.EncodeToString(input))
 		return nil, errors.New(msg)
 	}
+
 	// If we are doing gas estimation, skip decryption and make sure we return the maximum possible value.
 	// We need that, because non-zero bytes cost more than zero bytes in some contexts (e.g. SSTORE or memory operations).
 	if !environment.IsCommitting() && !environment.IsEthCall() {
@@ -2087,11 +2184,15 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 	} else if !optReqResult {
 		return nil, ErrExecutionReverted
 	}
-	plaintext, err := decryptValue(ct.ciphertext)
+
+	plaintext, err := decryptValue(environment, ct.ciphertext)
 	if err != nil {
 		logger.Error("decrypt failed", "err", err)
 		return nil, err
 	}
+
+	logger.Info("decrypt success", "plaintext", plaintext)
+
 	// Always return a 32-byte big-endian integer.
 	ret := make([]byte, 32)
 	bigIntValue := big.NewInt(0)
@@ -2100,9 +2201,50 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 	return ret, nil
 }
 
-func decryptValue(ct *tfheCiphertext) (uint64, error) {
-	v, err := ct.decrypt()
-	return v.Uint64(), err
+func decryptValue(environment EVMEnvironment, ct *tfheCiphertext) (uint64, error) {
+
+	logger := environment.GetLogger()
+	var fheType kms.FheType
+	switch ct.fheUintType {
+	case FheUint8:
+		fheType = kms.FheType_Euint8
+	case FheUint16:
+		fheType = kms.FheType_Euint16
+	case FheUint32:
+		fheType = kms.FheType_Euint32
+	}
+
+	// TODO: generate merkle proof for some data
+	proof := &kms.Proof{
+		Height:              4,
+		MerklePatriciaProof: []byte{},
+	}
+
+	decryptionRequest := &kms.DecryptionRequest{
+		FheType:    fheType,
+		Ciphertext: ct.serialization,
+		Request:    []byte{}, // TODO: change according to the structure of `Request`
+		Proof:      proof,
+	}
+
+	conn, err := grpc.Dial(kms.KmsEndpointAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return 0, errors.New("kms unreachable")
+	}
+	defer conn.Close()
+
+	ep := kms.NewKmsEndpointClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	res, err := ep.Decrypt(ctx, decryptionRequest)
+	if err != nil {
+		logger.Error("decrypt failed", "err", err)
+		return 0, err
+	}
+
+	return uint64(res.Plaintext), err
 }
 
 // If there are optimistic requires, check them by doing bitwise AND on all of them.
@@ -2122,7 +2264,7 @@ func evaluateRemainingOptimisticRequires(environment EVMEnvironment) (bool, erro
 				return false, err
 			}
 		}
-		result, err := decryptValue(cumulative)
+		result, err := decryptValue(environment, cumulative)
 		return result != 0, err
 	}
 	return true, nil

@@ -27,7 +27,7 @@ import (
 
 // generate keys if not present
 func setup() {
-	if !globalKeysPresent() {
+	if !allGlobalKeysPresent() {
 		fmt.Println("INFO: initializing global keys in tests")
 		initGlobalKeysWithNewKeys()
 	}
@@ -1033,6 +1033,41 @@ func TfheNot(t *testing.T, fheUintType FheUintType) {
 	}
 }
 
+func TfheIfThenElse(t *testing.T, fheUintType FheUintType) {
+	var condition, condition2, a, b big.Int
+	condition.SetUint64(1)
+	condition2.SetUint64(0)
+	switch fheUintType {
+	case FheUint8:
+		a.SetUint64(2)
+		b.SetUint64(1)
+	case FheUint16:
+		a.SetUint64(4283)
+		b.SetUint64(1337)
+	case FheUint32:
+		a.SetUint64(1333337)
+		b.SetUint64(133337)
+	}
+	ctCondition := new(tfheCiphertext)
+	ctCondition.encrypt(condition, fheUintType)
+	ctCondition2 := new(tfheCiphertext)
+	ctCondition2.encrypt(condition2, fheUintType)
+	ctA := new(tfheCiphertext)
+	ctA.encrypt(a, fheUintType)
+	ctB := new(tfheCiphertext)
+	ctB.encrypt(b, fheUintType)
+	ctRes1, _ := ctCondition.ifThenElse(ctA, ctB)
+	ctRes2, _ := ctCondition2.ifThenElse(ctA, ctB)
+	res1, err1 := ctRes1.decrypt()
+	res2, err2 := ctRes2.decrypt()
+	if err1 != nil || res1.Uint64() != a.Uint64() {
+		t.Fatalf("%d != %d", 0, res1.Uint64())
+	}
+	if err2 != nil || res2.Uint64() != b.Uint64() {
+		t.Fatalf("%d != %d", 0, res2.Uint64())
+	}
+}
+
 func TfheCast(t *testing.T, fheUintTypeFrom FheUintType, fheUintTypeTo FheUintType) {
 	var a big.Int
 	switch fheUintTypeFrom {
@@ -1556,6 +1591,17 @@ func TestTfheNot16(t *testing.T) {
 }
 func TestTfheNot32(t *testing.T) {
 	TfheNot(t, FheUint32)
+}
+
+func TestTfheIfThenElse8(t *testing.T) {
+	TfheIfThenElse(t, FheUint8)
+}
+
+func TestTfheIfThenElse16(t *testing.T) {
+	TfheIfThenElse(t, FheUint16)
+}
+func TestTfheIfThenElse32(t *testing.T) {
+	TfheIfThenElse(t, FheUint32)
 }
 
 func TestTfhe8Cast16(t *testing.T) {
