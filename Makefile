@@ -6,6 +6,10 @@ build: build-tfhe-rs-capi
 test: build-tfhe-rs-capi
 	cd fhevm && go test -v .
 
+.PHONY: benchmarks
+benchmarks: build-tfhe-rs-capi
+	cd fhevm && go test -v . -run Benchmarks
+
 .PHONY: build-tfhe-rs-capi
 build-tfhe-rs-capi:
 	cd tfhe-rs && RUSTFLAGS="" make build_c_api_experimental_deterministic_fft \
