@@ -61,11 +61,14 @@ type GasCosts struct {
 	FheDecrypt          map[FheUintType]uint64
 	FheBitwiseOp        map[FheUintType]uint64
 	FheMul              map[FheUintType]uint64
-	FheDiv              map[FheUintType]uint64
-	FheRem              map[FheUintType]uint64
+	FheScalarMul        map[FheUintType]uint64
+	FheScalarDiv        map[FheUintType]uint64
+	FheScalarRem        map[FheUintType]uint64
 	FheShift            map[FheUintType]uint64
+	FheScalarShift      map[FheUintType]uint64
 	FheLe               map[FheUintType]uint64
 	FheMinMax           map[FheUintType]uint64
+	FheScalarMinMax     map[FheUintType]uint64
 	FheNegNot           map[FheUintType]uint64
 	FheReencrypt        map[FheUintType]uint64
 	FheTrivialEncrypt   map[FheUintType]uint64
@@ -139,9 +142,9 @@ func DefaultGasCosts() GasCosts {
 			FheUint32: 189000,
 		},
 		FheNegNot: map[FheUintType]uint64{
-			FheUint8:  83000,
-			FheUint16: 108000,
-			FheUint32: 130000,
+			FheUint8:  30000,
+			FheUint16: 31000,
+			FheUint32: 32000,
 		},
 		// TODO: Costs will depend on the complexity of doing reencryption/decryption by the oracle.
 		FheReencrypt: map[FheUintType]uint64{

@@ -354,14 +354,15 @@ func fheMulRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 			logger.Error("fheMul RequiredGas() operand type mismatch", "lhs", lhs.ciphertext.fheUintType, "rhs", rhs.ciphertext.fheUintType)
 			return 0
 		}
+		return environment.FhevmParams().GasCosts.FheMul[lhs.ciphertext.fheUintType]
 	} else {
 		lhs, _, err = getScalarOperands(environment, input)
 		if err != nil {
 			logger.Error("fheMul RequiredGas() scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
+		return environment.FhevmParams().GasCosts.FheScalarMul[lhs.ciphertext.fheUintType]
 	}
-	return environment.FhevmParams().GasCosts.FheMul[lhs.ciphertext.fheUintType]
 }
 
 func fheLeRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -435,14 +436,15 @@ func fheShlRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 			logger.Error("fheShift RequiredGas() operand type mismatch", "lhs", lhs.ciphertext.fheUintType, "rhs", rhs.ciphertext.fheUintType)
 			return 0
 		}
+		return environment.FhevmParams().GasCosts.FheShift[lhs.ciphertext.fheUintType]
 	} else {
 		lhs, _, err = getScalarOperands(environment, input)
 		if err != nil {
 			logger.Error("fheShift RequiredGas() scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
+		return environment.FhevmParams().GasCosts.FheScalarShift[lhs.ciphertext.fheUintType]
 	}
-	return environment.FhevmParams().GasCosts.FheShift[lhs.ciphertext.fheUintType]
 }
 
 func fheShrRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -468,14 +470,15 @@ func fheMinRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 			logger.Error("fheMin/Max RequiredGas() operand type mismatch", "lhs", lhs.ciphertext.fheUintType, "rhs", rhs.ciphertext.fheUintType)
 			return 0
 		}
+		return environment.FhevmParams().GasCosts.FheMinMax[lhs.ciphertext.fheUintType]
 	} else {
 		lhs, _, err = getScalarOperands(environment, input)
 		if err != nil {
 			logger.Error("fheMin/Max RequiredGas() scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
+		return environment.FhevmParams().GasCosts.FheScalarMinMax[lhs.ciphertext.fheUintType]
 	}
-	return environment.FhevmParams().GasCosts.FheMinMax[lhs.ciphertext.fheUintType]
 }
 
 func fheMaxRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -519,8 +522,8 @@ func fheDivRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 			logger.Error("fheDiv RequiredGas() scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
+		return environment.FhevmParams().GasCosts.FheScalarDiv[lhs.ciphertext.fheUintType]
 	}
-	return environment.FhevmParams().GasCosts.FheDiv[lhs.ciphertext.fheUintType]
 }
 
 func fheRemRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -540,8 +543,8 @@ func fheRemRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 			logger.Error("fheRem RequiredGas() scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
+		return environment.FhevmParams().GasCosts.FheScalarRem[lhs.ciphertext.fheUintType]
 	}
-	return environment.FhevmParams().GasCosts.FheRem[lhs.ciphertext.fheUintType]
 }
 
 func fheBitAndRequiredGas(environment EVMEnvironment, input []byte) uint64 {
