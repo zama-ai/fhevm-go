@@ -8,7 +8,7 @@ test: build-tfhe-rs-capi
 
 .PHONY: benchmarks
 benchmarks: build-tfhe-rs-capi
-	cd fhevm && go test -v . -run Benchmarks
+	cd fhevm && go test -count=1 -v . -run Benchmarks
 
 .PHONY: build-tfhe-rs-capi
 build-tfhe-rs-capi:

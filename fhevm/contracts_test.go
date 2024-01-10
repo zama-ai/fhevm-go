@@ -1597,7 +1597,7 @@ func FheMul(t *testing.T, fheUintType FheUintType, scalar bool) {
 	switch fheUintType {
 	case FheUint8:
 		lhs = 2
-		rhs = 1
+		rhs = 3
 	case FheUint16:
 		lhs = 169
 		rhs = 5
@@ -1637,8 +1637,8 @@ func FheDiv(t *testing.T, fheUintType FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
 	case FheUint8:
-		lhs = 4
-		rhs = 2
+		lhs = 6
+		rhs = 3
 	case FheUint16:
 		lhs = 721
 		rhs = 1000

@@ -19,29 +19,35 @@ package fhevm
 import (
 	"testing"
 	"time"
+	"sync"
 )
 
 type operation func(FheUintType)
 
+const numBenchmarkRuns = 10 
 
+func convertInGas(t *testing.T, name string, elapsed [numBenchmarkRuns]time.Duration) {
+	lowest := elapsed[0]
 
-func convertInGas(t *testing.T, name string, elapsed [3]time.Duration) {
-	sum := int64(0)
-	for i := 0; i < 3; i++ {
-			sum += int64(elapsed[i])
+	// Find the lowest duration in the array
+	for i := 1; i < numBenchmarkRuns; i++ {
+		if elapsed[i] < lowest {
+			lowest = elapsed[i]
+		}
 	}
-		
-	avg := sum / 3
-	gasUsed := avg / 1000 // 1s = 1 000 000 gas
-	gasUsed = gasUsed / 7  * 10 // 1s = 100k
-	gasUsed = gasUsed / 1000 // divide to round it
-  t.Logf("%s in %s => %d", name, elapsed, gasUsed * 1000)
+
+	gasUsed := int64(lowest) / 1000 // 1s = 1,000,000 gas
+	gasUsed = gasUsed / 7 * 10      // 1s = 100k
+	gasUsed = gasUsed / 1000        // Divide to round it
+
+	t.Logf("%s in %s => %d", name, lowest, gasUsed*1000)
 }
 
-func runTest(t *testing.T, name string, fn operation, bits string, fheUintType FheUintType) {
-	var elapsed [3]time.Duration
+func runTest(t *testing.T, name string, fn operation, bits string, fheUintType FheUintType, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var elapsed [numBenchmarkRuns]time.Duration
 	n := 0
-	for n < 3 {
+	for n < numBenchmarkRuns {
 		start := time.Now()
 		fn(fheUintType)
   	elapsed[n] = time.Since(start)
@@ -51,9 +57,14 @@ func runTest(t *testing.T, name string, fn operation, bits string, fheUintType F
 }
 
 func benchTests(t *testing.T, name string, fn operation) {
-	runTest(t, name, fn, "8", FheUint8)
-	runTest(t, name, fn, "16", FheUint16)
-	runTest(t, name, fn, "32", FheUint32)
+	var wg sync.WaitGroup
+	wg.Add(3)
+
+	go runTest(t, name, fn, "8", FheUint8, &wg)
+	go runTest(t, name, fn, "16", FheUint16, &wg)
+	go runTest(t, name, fn, "32", FheUint32, &wg)
+
+	wg.Wait()
 }
 
 func TestBenchmarks(t *testing.T) {
@@ -67,4 +78,6 @@ func TestBenchmarks(t *testing.T) {
 	benchTests(t, "ScalarMul", func(fheUintType FheUintType) { FheMul(t, fheUintType, true) })
 
 	benchTests(t, "ScalarDiv", func(fheUintType FheUintType) { FheDiv(t, fheUintType, true) })
+
+	benchTests(t, "IfThenElse", func(fheUintType FheUintType) { FheIfThenElse(t, fheUintType, 1) })
 }
