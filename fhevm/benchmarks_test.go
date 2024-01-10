@@ -48,10 +48,10 @@ func runTest(t *testing.T, name string, fn operation, bits string, fheUintType F
 	for n < numBenchmarkRuns {
 		start := time.Now()
 		fn(fheUintType)
-  	elapsed[n] = time.Since(start)
+		elapsed[n] = time.Since(start)
 		n += 1
 	}
-	convertInGas(t, name + bits, elapsed)
+	convertInGas(t, name+bits, elapsed)
 }
 
 func benchTests(t *testing.T, name string, fn operation) {
@@ -61,6 +61,8 @@ func benchTests(t *testing.T, name string, fn operation) {
 }
 
 func TestBenchmarks(t *testing.T) {
+	benchTests(t, "not", func(fheUintType FheUintType) { FheNot(t, fheUintType, false) })
+
 	benchTests(t, "and", func(fheUintType FheUintType) { FheBitAnd(t, fheUintType, false) })
 
 	benchTests(t, "eq", func(fheUintType FheUintType) { FheEq(t, fheUintType, false) })
