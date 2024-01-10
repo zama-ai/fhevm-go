@@ -79,9 +79,9 @@ type GasCosts struct {
 func DefaultGasCosts() GasCosts {
 	return GasCosts{
 		FheAddSub: map[FheUintType]uint64{
-			FheUint8:  83000,
-			FheUint16: 108000,
-			FheUint32: 130000,
+			FheUint8:  108000,
+			FheUint16: 138000,
+			FheUint32: 169000,
 		},
 		FheDecrypt: map[FheUintType]uint64{
 			FheUint8:  500000,
@@ -89,39 +89,54 @@ func DefaultGasCosts() GasCosts {
 			FheUint32: 500000,
 		},
 		FheBitwiseOp: map[FheUintType]uint64{
-			FheUint8:  20000,
-			FheUint16: 21000,
-			FheUint32: 22000,
+			FheUint8:  30000,
+			FheUint16: 31000,
+			FheUint32: 32000,
 		},
 		FheMul: map[FheUintType]uint64{
-			FheUint8:  150000,
-			FheUint16: 200000,
-			FheUint32: 270000,
+			FheUint8:  185000,
+			FheUint16: 252000,
+			FheUint32: 361000,
 		},
-		FheDiv: map[FheUintType]uint64{
-			FheUint8:  1370000,
-			FheUint16: 3500000,
-			FheUint32: 9120000,
+		FheScalarMul: map[FheUintType]uint64{
+			FheUint8:  128000,
+			FheUint16: 132000,
+			FheUint32: 168000,
 		},
-		FheRem: map[FheUintType]uint64{
-			FheUint8:  1370000, // TODO: check again rem gas
-			FheUint16: 3500000,
-			FheUint32: 9120000,
+		FheScalarDiv: map[FheUintType]uint64{
+			FheUint8:  200000,
+			FheUint16: 400000,
+			FheUint32: 800000,
+		},
+		FheScalarRem: map[FheUintType]uint64{
+			FheUint8:  200000,
+			FheUint16: 400000,
+			FheUint32: 800000,
 		},
 		FheShift: map[FheUintType]uint64{
-			FheUint8:  105000,
-			FheUint16: 128000,
-			FheUint32: 160000,
+			FheUint8:  218000,
+			FheUint16: 273000,
+			FheUint32: 335000,
+		},
+		FheScalarShift: map[FheUintType]uint64{
+			FheUint8:  135000,
+			FheUint16: 161000,
+			FheUint32: 188000,
 		},
 		FheLe: map[FheUintType]uint64{
-			FheUint8:  61000,
-			FheUint16: 83000,
-			FheUint32: 109000,
+			FheUint8:  50000,
+			FheUint16: 53000,
+			FheUint32: 56000,
 		},
 		FheMinMax: map[FheUintType]uint64{
-			FheUint8:  108000,
-			FheUint16: 134000,
-			FheUint32: 150000,
+			FheUint8:  215000,
+			FheUint16: 272000,
+			FheUint32: 332000,
+		},
+		FheScalarMinMax: map[FheUintType]uint64{
+			FheUint8:  131000,
+			FheUint16: 159000,
+			FheUint32: 189000,
 		},
 		FheNegNot: map[FheUintType]uint64{
 			FheUint8:  83000,
@@ -152,9 +167,9 @@ func DefaultGasCosts() GasCosts {
 			FheUint32: EvmNetSstoreInitGas + 400000,
 		},
 		FheIfThenElse: map[FheUintType]uint64{
-			FheUint8:  61000,
-			FheUint16: 83000,
-			FheUint32: 109000,
+			FheUint8:  55000,
+			FheUint16: 60000,
+			FheUint32: 65000,
 		},
 		// TODO: As of now, only support FheUint8. All optimistic require predicates are
 		// downcast to FheUint8 at the solidity level. Eventually move to ebool.
