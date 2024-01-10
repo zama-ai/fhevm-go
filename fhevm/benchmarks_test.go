@@ -23,7 +23,7 @@ import (
 
 type operation func(FheUintType)
 
-const numBenchmarkRuns = 10 
+const numBenchmarkRuns = 5
 
 func convertInGas(t *testing.T, name string, elapsed [numBenchmarkRuns]time.Duration) {
 	lowest := elapsed[0]
