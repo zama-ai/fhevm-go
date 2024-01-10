@@ -19,7 +19,6 @@ package fhevm
 import (
 	"testing"
 	"time"
-	"sync"
 )
 
 type operation func(FheUintType)
@@ -37,14 +36,13 @@ func convertInGas(t *testing.T, name string, elapsed [numBenchmarkRuns]time.Dura
 	}
 
 	gasUsed := int64(lowest) / 1000 // 1s = 1,000,000 gas
-	gasUsed = gasUsed / 7 * 10      // 1s = 100k
+	gasUsed = gasUsed / 7 * 10      // 0.7s = 1,000,000 gas
 	gasUsed = gasUsed / 1000        // Divide to round it
 
 	t.Logf("%s in %s => %d", name, lowest, gasUsed*1000)
 }
 
-func runTest(t *testing.T, name string, fn operation, bits string, fheUintType FheUintType, wg *sync.WaitGroup) {
-	defer wg.Done()
+func runTest(t *testing.T, name string, fn operation, bits string, fheUintType FheUintType) {
 	var elapsed [numBenchmarkRuns]time.Duration
 	n := 0
 	for n < numBenchmarkRuns {
@@ -57,17 +55,23 @@ func runTest(t *testing.T, name string, fn operation, bits string, fheUintType F
 }
 
 func benchTests(t *testing.T, name string, fn operation) {
-	var wg sync.WaitGroup
-	wg.Add(3)
-
-	go runTest(t, name, fn, "8", FheUint8, &wg)
-	go runTest(t, name, fn, "16", FheUint16, &wg)
-	go runTest(t, name, fn, "32", FheUint32, &wg)
-
-	wg.Wait()
+	runTest(t, name, fn, "8", FheUint8)
+	runTest(t, name, fn, "16", FheUint16)
+	runTest(t, name, fn, "32", FheUint32)
 }
 
 func TestBenchmarks(t *testing.T) {
+	benchTests(t, "and", func(fheUintType FheUintType) { FheBitAnd(t, fheUintType, false) })
+
+	benchTests(t, "eq", func(fheUintType FheUintType) { FheEq(t, fheUintType, false) })
+	benchTests(t, "ScalarEq", func(fheUintType FheUintType) { FheEq(t, fheUintType, true) })
+
+	benchTests(t, "shr", func(fheUintType FheUintType) { FheMin(t, fheUintType, false) })
+	benchTests(t, "ScalarShr", func(fheUintType FheUintType) { FheMin(t, fheUintType, true) })
+
+	benchTests(t, "min", func(fheUintType FheUintType) { FheMin(t, fheUintType, false) })
+	benchTests(t, "ScalarMin", func(fheUintType FheUintType) { FheMin(t, fheUintType, true) })
+
 	benchTests(t, "add", func(fheUintType FheUintType) { FheAdd(t, fheUintType, false) })
 	benchTests(t, "ScalarAdd", func(fheUintType FheUintType) { FheAdd(t, fheUintType, true) })
 
