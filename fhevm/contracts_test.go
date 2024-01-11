@@ -1638,13 +1638,13 @@ func FheDiv(t *testing.T, fheUintType FheUintType, scalar bool) {
 	switch fheUintType {
 	case FheUint8:
 		lhs = 6
-		rhs = 3
+		rhs = 7
 	case FheUint16:
 		lhs = 721
-		rhs = 1000
+		rhs = 251
 	case FheUint32:
 		lhs = 137
-		rhs = 17
+		rhs = 65521
 	}
 	expected := lhs / rhs
 	depth := 1
