@@ -731,7 +731,7 @@ func FheLibShr(t *testing.T, fheUintType FheUintType, scalar bool) {
 		rhs = 1
 	case FheUint16:
 		lhs = 4283
-		rhs = 2
+		rhs = 3
 	case FheUint32:
 		lhs = 1333337
 		rhs = 3
@@ -1917,7 +1917,7 @@ func FheShr(t *testing.T, fheUintType FheUintType, scalar bool) {
 		rhs = 1
 	case FheUint16:
 		lhs = 4283
-		rhs = 2
+		rhs = 3
 	case FheUint32:
 		lhs = 1333337
 		rhs = 3
