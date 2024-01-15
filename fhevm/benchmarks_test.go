@@ -52,11 +52,11 @@ func TestBenchmarks(t *testing.T) {
 	benchTests(t, "eq", func(fheUintType FheUintType) { FheEq(t, fheUintType, false) })
 	benchTests(t, "ScalarEq", func(fheUintType FheUintType) { FheEq(t, fheUintType, true) })
 
-	benchTests(t, "shr", func(fheUintType FheUintType) { FheMin(t, fheUintType, false) })
-	benchTests(t, "ScalarShr", func(fheUintType FheUintType) { FheMin(t, fheUintType, true) })
+	benchTests(t, "shr", func(fheUintType FheUintType) { FheShr(t, fheUintType, false) })
+	benchTests(t, "ScalarShr", func(fheUintType FheUintType) { FheShr(t, fheUintType, true) })
 
-	benchTests(t, "min", func(fheUintType FheUintType) { FheShr(t, fheUintType, false) })
-	benchTests(t, "ScalarMin", func(fheUintType FheUintType) { FheShr(t, fheUintType, true) })
+	benchTests(t, "min", func(fheUintType FheUintType) { FheMin(t, fheUintType, false) })
+	benchTests(t, "ScalarMin", func(fheUintType FheUintType) { FheMin(t, fheUintType, true) })
 
 	benchTests(t, "add", func(fheUintType FheUintType) { FheAdd(t, fheUintType, false) })
 	benchTests(t, "ScalarAdd", func(fheUintType FheUintType) { FheAdd(t, fheUintType, true) })
