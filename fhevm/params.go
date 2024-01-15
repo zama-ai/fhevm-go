@@ -170,9 +170,9 @@ func DefaultGasCosts() GasCosts {
 			FheUint32: EvmNetSstoreInitGas + 400000,
 		},
 		FheIfThenElse: map[FheUintType]uint64{
-			FheUint8:  55000,
-			FheUint16: 60000,
-			FheUint32: 65000,
+			FheUint8:  60000,
+			FheUint16: 65000,
+			FheUint32: 70000,
 		},
 		// TODO: As of now, only support FheUint8. All optimistic require predicates are
 		// downcast to FheUint8 at the solidity level. Eventually move to ebool.
