@@ -166,8 +166,8 @@ func DefaultGasCosts() GasCosts {
 		// TODO: These will change once we have an FHE-based random generaration.
 		FheRand: map[FheUintType]uint64{
 			FheUint8:  EvmNetSstoreInitGas + 100000,
-			FheUint16: EvmNetSstoreInitGas + 200000,
-			FheUint32: EvmNetSstoreInitGas + 400000,
+			FheUint16: EvmNetSstoreInitGas + 100000,
+			FheUint32: EvmNetSstoreInitGas + 100000,
 		},
 		FheIfThenElse: map[FheUintType]uint64{
 			FheUint8:  60000,
