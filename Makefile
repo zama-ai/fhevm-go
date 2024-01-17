@@ -6,9 +6,9 @@ build: build-tfhe-rs-capi
 test: build-tfhe-rs-capi
 	cd fhevm && go test -v .
 
-.PHONY: benchmarks
-benchmarks: build-tfhe-rs-capi
-	cd fhevm && go test -count=1 -v . -run Benchmarks
+.PHONY: gasEstimation
+gasEstimation: build-tfhe-rs-capi
+	cd fhevm && go test -count=1 -v . -run GasEstimation
 
 .PHONY: build-tfhe-rs-capi
 build-tfhe-rs-capi:
