@@ -12,6 +12,18 @@ import (
 	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
 )
 
+var protectedStorageAddrCallerAddr common.Address
+var defaultProtectedStorageAddrCallerAddr = []byte{93}
+
+// Set the addr to be used as caller when creating protected storage contracts
+func SetProtectedStorageAddrCallerAddr(addr []byte) {
+	protectedStorageAddrCallerAddr = common.BytesToAddress(addr)
+}
+
+func init() {
+	SetProtectedStorageAddrCallerAddr(defaultProtectedStorageAddrCallerAddr)
+}
+
 // A Logger interface for the EVM.
 type Logger interface {
 	Debug(msg string, keyvals ...interface{})
@@ -191,7 +203,7 @@ func padArrayTo32Multiple(input []byte) []byte {
 func Create(evm EVMEnvironment, caller common.Address, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
 	contractAddr = crypto.CreateAddress(caller, evm.GetNonce(caller))
 	protectedStorageAddr := fhevm_crypto.CreateProtectedStorageContractAddress(contractAddr)
-	_, _, leftOverGas, err = evm.CreateContract(caller, nil, gas, big.NewInt(0), protectedStorageAddr)
+	_, _, leftOverGas, err = evm.CreateContract(protectedStorageAddrCallerAddr, nil, gas, big.NewInt(0), protectedStorageAddr)
 	if err != nil {
 		ret = nil
 		contractAddr = common.Address{}
@@ -205,7 +217,7 @@ func Create2(evm EVMEnvironment, caller common.Address, code []byte, gas uint64,
 	codeHash := crypto.Keccak256Hash(code)
 	contractAddr = crypto.CreateAddress2(caller, salt.Bytes32(), codeHash.Bytes())
 	protectedStorageAddr := fhevm_crypto.CreateProtectedStorageContractAddress(contractAddr)
-	_, _, leftOverGas, err = evm.CreateContract2(caller, nil, common.Hash{}, gas, big.NewInt(0), protectedStorageAddr)
+	_, _, leftOverGas, err = evm.CreateContract2(protectedStorageAddrCallerAddr, nil, common.Hash{}, gas, big.NewInt(0), protectedStorageAddr)
 	if err != nil {
 		ret = nil
 		contractAddr = common.Address{}
