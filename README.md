@@ -23,14 +23,14 @@
 
 ## Main features
 
-Give your EVM the ability to compute on encrypted data using homomorphic encryption.
-- Support of a large collections of encrypted operations via precompiled contracts
-- Ready to use EVM components that supports encrypted computation
+fhevm-go gives your EVM the ability to compute on encrypted data using fully homomorphic encryption by:
+- a collection of operations on encrypted data via precompiled contracts
+- various additional EVM components that support encrypted computation
 
 
 ## Getting started
 
-In order to use the library, you need to clone the repository and build it. This is required because the library depends on another library that needs to be built from source (for now), and Go doesn't support such build.
+In order to use the library, you need to clone the repository and build it. This is required because the library depends on the `tfhe-rs` library that needs to be built from source (for now), and Go doesn't support such a build.
 ```bash
 $ git clone https://github.com/zama-ai/fhevm-go
 $ cd fhevm-go
@@ -55,7 +55,7 @@ replace(
 ```
 
 > [!NOTE]
-> The replace in necessary for now as Go build system can't build the third party library that `fhevm-go` needs. It's therefore necessary that we build it manually as mentioned above, then point to our ready-to-use directory in `go.mod`
+> The replace in necessary for now as Go build system can't build the `tfhe-rs` library that `fhevm-go` needs. It's therefore necessary that we build it manually as mentioned above, then point to our ready-to-use directory in `go.mod`
 
 ## Documentation
 
