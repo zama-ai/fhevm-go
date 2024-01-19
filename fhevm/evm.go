@@ -1,7 +1,7 @@
 package fhevm
 
 import (
-	"fmt"
+	"log/slog"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -30,25 +30,26 @@ type Logger interface {
 }
 
 // A default Logger implementation that logs to stdout.
-type DefaultLogger struct{}
-
-func toString(keyvals ...interface{}) (ret string) {
-	for _, element := range keyvals {
-		ret += fmt.Sprintf("%v", element) + " "
-	}
-	return
+type DefaultLogger struct {
+	slogger *slog.Logger
 }
 
-func (*DefaultLogger) Debug(msg string, keyvals ...interface{}) {
-	fmt.Println("Debug: "+msg, toString(keyvals...))
+func NewDefaultLogger() Logger {
+	logger := &DefaultLogger{}
+	logger.slogger = slog.Default().With("module", "fhevm-go")
+	return logger
 }
 
-func (*DefaultLogger) Info(msg string, keyvals ...interface{}) {
-	fmt.Println("Info: "+msg, toString(keyvals...))
+func (l *DefaultLogger) Debug(msg string, keyvals ...interface{}) {
+	l.slogger.Debug(msg, keyvals...)
 }
 
-func (*DefaultLogger) Error(msg string, keyvals ...interface{}) {
-	fmt.Println("Error: "+msg, toString(keyvals...))
+func (l *DefaultLogger) Info(msg string, keyvals ...interface{}) {
+	l.slogger.Info(msg, keyvals...)
+}
+
+func (l *DefaultLogger) Error(msg string, keyvals ...interface{}) {
+	l.slogger.Error(msg, keyvals...)
 }
 
 func getVerifiedCiphertext(environment EVMEnvironment, ciphertextHash common.Hash) *verifiedCiphertext {

@@ -195,7 +195,7 @@ func (environment *MockEVMEnvironment) GetDepth() int {
 }
 
 func (environment *MockEVMEnvironment) GetLogger() Logger {
-	return &DefaultLogger{}
+	return NewDefaultLogger()
 }
 
 func (environment *MockEVMEnvironment) IsCommitting() bool {
