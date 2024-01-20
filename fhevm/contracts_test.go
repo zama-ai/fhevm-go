@@ -731,7 +731,7 @@ func FheLibShr(t *testing.T, fheUintType FheUintType, scalar bool) {
 		rhs = 1
 	case FheUint16:
 		lhs = 4283
-		rhs = 2
+		rhs = 3
 	case FheUint32:
 		lhs = 1333337
 		rhs = 3
@@ -1597,7 +1597,7 @@ func FheMul(t *testing.T, fheUintType FheUintType, scalar bool) {
 	switch fheUintType {
 	case FheUint8:
 		lhs = 2
-		rhs = 1
+		rhs = 3
 	case FheUint16:
 		lhs = 169
 		rhs = 5
@@ -1637,14 +1637,14 @@ func FheDiv(t *testing.T, fheUintType FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
 	case FheUint8:
-		lhs = 4
-		rhs = 2
+		lhs = 6
+		rhs = 7
 	case FheUint16:
 		lhs = 721
-		rhs = 1000
+		rhs = 251
 	case FheUint32:
 		lhs = 137
-		rhs = 17
+		rhs = 65521
 	}
 	expected := lhs / rhs
 	depth := 1
@@ -1917,7 +1917,7 @@ func FheShr(t *testing.T, fheUintType FheUintType, scalar bool) {
 		rhs = 1
 	case FheUint16:
 		lhs = 4283
-		rhs = 2
+		rhs = 3
 	case FheUint32:
 		lhs = 1333337
 		rhs = 3

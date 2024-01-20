@@ -6,6 +6,10 @@ build: build-tfhe-rs-capi
 test: build-tfhe-rs-capi
 	cd fhevm && go test -v .
 
+.PHONY: gasEstimation
+gasEstimation: build-tfhe-rs-capi
+	cd fhevm && go test -count=1 -v . -run GasEstimation
+
 .PHONY: build-tfhe-rs-capi
 build-tfhe-rs-capi:
 	cd tfhe-rs && RUSTFLAGS="" make build_c_api_experimental_deterministic_fft \
