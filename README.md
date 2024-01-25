@@ -4,7 +4,7 @@
 </p>
 <hr/>
 <p align="center">
-  <a href="https://docs.zama.ai/fhevm"> 📒 Read documentation</a> | <a href="https://zama.ai/community"> 💛 Community support</a>
+  <a href="https://docs.zama.ai/fhevm-go"> 📒 Read documentation</a> | <a href="https://zama.ai/community"> 💛 Community support</a>
 </p>
 <p align="center">
 <!-- Version badge using shields.io -->
@@ -18,12 +18,12 @@
 </p>
 <hr/>
 
-**fhevm-go** is an open-source library used to easily integrate the [fhEVM](https://docs.zama.ai/fhevm) into an EVM-compatible blockchain.
+**fhEVM-go** is an open-source library used to easily integrate the [fhEVM](https://docs.zama.ai/fhevm) into an EVM-compatible blockchain.
 
 
 ## Main features
 
-fhevm-go gives your EVM the ability to compute on encrypted data using fully homomorphic encryption by:
+fhEVM-go gives your EVM the ability to compute on encrypted data using fully homomorphic encryption by:
 - a collection of operations on encrypted data via precompiled contracts
 - various additional EVM components that support encrypted computation
 
@@ -55,20 +55,19 @@ replace(
 ```
 
 > [!NOTE]
-> The replace in necessary for now as Go build system can't build the `tfhe-rs` library that `fhevm-go` needs. It's therefore necessary that we build it manually as mentioned above, then point to our ready-to-use directory in `go.mod`
+> The replace in necessary for now as Go build system can't build the `tfhe-rs` library that `fhevm-go` needs. It's therefore necessary that we build it manually as mentioned above, then point to our ready-to-use directory in `go.mod`.
 
 ## Documentation
 
-Full, comprehensive documentation is available at [https://docs.zama.ai/fhevm](https://docs.zama.ai/fhevm) (still nothing about fhevm-go however).
+Full, comprehensive documentation is available at [https://docs.zama.ai/fhevm-go](https://docs.zama.ai/fhevm-go).
 
 ## Target users
 
-The library helps EVM maintainers to extend their EVM with the power of FHE. If you are looking for a library to deploy and use smart contracts on an fhEVM, you should better look at [https://github.com/zama-ai/fhevm](https://github.com/zama-ai/fhevm-go/releases)
+The library helps EVM maintainers to extend their EVM with the power of FHE. If you are looking for a library to deploy and use smart contracts on an fhEVM, you should better look at [https://github.com/zama-ai/fhevm](https://github.com/zama-ai/fhevm).
 
 ## Tutorials
 
-- [Integration guide](Integration.md)
-- Idea: video doing the integration
+- [Integration guide](https://docs.zama.ai/fhevm-go/getting-started/integration)
 
 ## Need support?
 
