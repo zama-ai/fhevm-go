@@ -18,9 +18,13 @@ package fhevm
 
 /*
 #cgo linux CFLAGS: -O3 -I../tfhe-rs/target/release
+#cgo linux CFLAGS: -O3 -I../tfhe-rs/target/release/deps
 #cgo linux LDFLAGS: -L../tfhe-rs/target/release -l:libtfhe.a -lm
+#cgo linux LDFLAGS: -L../tfhe-rs/target/release/deps -l:libtfhe_c_api_dynamic_buffer.a
 #cgo darwin CFLAGS: -O3 -I../tfhe-rs/target/release
+#cgo darwin CFLAGS: -O3 -I../tfhe-rs/target/release/deps
 #cgo darwin LDFLAGS: -framework Security -L../tfhe-rs/target/release -ltfhe -lm
+#cgo darwin LDFLAGS: -framework Security -L../tfhe-rs/target/release/deps -ltfhe_c_api_dynamic_buffer
 
 #include <tfhe.h>
 
@@ -39,9 +43,9 @@ FhevmKeys generate_fhevm_keys(){
 	CompactPublicKey *pks;
 
 	int r;
-	r = config_builder_all_disabled(&builder);
+	r = config_builder_default(&builder);
 	assert(r == 0);
-	r = config_builder_enable_custom_integers(&builder, SHORTINT_PARAM_MESSAGE_2_CARRY_2_KS_PBS);
+	r = config_builder_use_custom_parameters(&builder, SHORTINT_PARAM_MESSAGE_2_CARRY_2_KS_PBS);
 	assert(r == 0);
 	r = config_builder_build(builder, &config);
 	assert(r == 0);
@@ -54,25 +58,25 @@ FhevmKeys generate_fhevm_keys(){
 	return keys;
 }
 
-int serialize_compact_public_key(void *pks, Buffer* out) {
+int serialize_compact_public_key(void *pks, DynamicBuffer* out) {
 	return compact_public_key_serialize(pks, out);
 }
 
-void* deserialize_server_key(BufferView in) {
+void* deserialize_server_key(DynamicBufferView in) {
 	ServerKey* sks = NULL;
 	const int r = server_key_deserialize(in, &sks);
 	assert(r == 0);
 	return sks;
 }
 
-void* deserialize_client_key(BufferView in) {
+void* deserialize_client_key(DynamicBufferView in) {
 	ClientKey* cks = NULL;
 	const int r = client_key_deserialize(in, &cks);
 	assert(r == 0);
 	return cks;
 }
 
-void* deserialize_compact_public_key(BufferView in) {
+void* deserialize_compact_public_key(DynamicBufferView in) {
 	CompactPublicKey* pks = NULL;
 	const int r = compact_public_key_deserialize(in, &pks);
 	assert(r == 0);
@@ -84,11 +88,51 @@ void checked_set_server_key(void *sks) {
 	assert(r == 0);
 }
 
-int serialize_fhe_uint8(void *ct, Buffer* out) {
+void* cast_8_bool(void* ct, void* sks) {
+	FheBool* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint8_scalar_ne(ct, 0, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_bool_8(void* ct, void* sks) {
+	FheUint8* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_bool_cast_into_fhe_uint8(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_bool_16(void* ct, void* sks) {
+	FheUint16* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_bool_cast_into_fhe_uint16(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_bool_32(void* ct, void* sks) {
+	FheUint32* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_bool_cast_into_fhe_uint32(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+int serialize_fhe_uint8(void *ct, DynamicBuffer* out) {
 	return fhe_uint8_serialize(ct, out);
 }
 
-void* deserialize_fhe_uint8(BufferView in) {
+void* deserialize_fhe_uint8(DynamicBufferView in) {
 	FheUint8* ct = NULL;
 	const int r = fhe_uint8_deserialize(in, &ct);
 	if(r != 0) {
@@ -97,7 +141,7 @@ void* deserialize_fhe_uint8(BufferView in) {
 	return ct;
 }
 
-void* deserialize_compact_fhe_uint8(BufferView in) {
+void* deserialize_compact_fhe_uint8(DynamicBufferView in) {
 	CompactFheUint8List* list = NULL;
 	FheUint8* ct = NULL;
 
@@ -122,11 +166,11 @@ void* deserialize_compact_fhe_uint8(BufferView in) {
 	return ct;
 }
 
-int serialize_fhe_uint16(void *ct, Buffer* out) {
+int serialize_fhe_uint16(void *ct, DynamicBuffer* out) {
 	return fhe_uint16_serialize(ct, out);
 }
 
-void* deserialize_fhe_uint16(BufferView in) {
+void* deserialize_fhe_uint16(DynamicBufferView in) {
 	FheUint16* ct = NULL;
 	const int r = fhe_uint16_deserialize(in, &ct);
 	if(r != 0) {
@@ -135,7 +179,7 @@ void* deserialize_fhe_uint16(BufferView in) {
 	return ct;
 }
 
-void* deserialize_compact_fhe_uint16(BufferView in) {
+void* deserialize_compact_fhe_uint16(DynamicBufferView in) {
 	CompactFheUint16List* list = NULL;
 	FheUint16* ct = NULL;
 
@@ -160,11 +204,11 @@ void* deserialize_compact_fhe_uint16(BufferView in) {
 	return ct;
 }
 
-int serialize_fhe_uint32(void *ct, Buffer* out) {
+int serialize_fhe_uint32(void *ct, DynamicBuffer* out) {
 	return fhe_uint32_serialize(ct, out);
 }
 
-void* deserialize_fhe_uint32(BufferView in) {
+void* deserialize_fhe_uint32(DynamicBufferView in) {
 	FheUint32* ct = NULL;
 	const int r = fhe_uint32_deserialize(in, &ct);
 	if(r != 0) {
@@ -173,7 +217,7 @@ void* deserialize_fhe_uint32(BufferView in) {
 	return ct;
 }
 
-void* deserialize_compact_fhe_uint32(BufferView in) {
+void* deserialize_compact_fhe_uint32(DynamicBufferView in) {
 	CompactFheUint32List* list = NULL;
 	FheUint32* ct = NULL;
 
@@ -710,397 +754,433 @@ void* scalar_shr_fhe_uint32(void* ct, uint32_t pt, void* sks)
 
 void* eq_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
-	FheUint8* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_eq(ct1, ct2, &result);
+	const int r = fhe_uint8_eq(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
+	FheUint8* result = cast_bool_8(boolResult, sks);
 	return result;
 }
 
 void* eq_fhe_uint16(void* ct1, void* ct2, void* sks)
 {
-	FheUint16* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_eq(ct1, ct2, &result);
+	const int r = fhe_uint16_eq(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
+	FheUint16* result = cast_bool_16(boolResult, sks);
 	return result;
 }
 
 void* eq_fhe_uint32(void* ct1, void* ct2, void* sks)
 {
-	FheUint32* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_eq(ct1, ct2, &result);
+	const int r = fhe_uint16_eq(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
+	FheUint32* result = cast_bool_32(boolResult, sks);
 	return result;
 }
 
 void* scalar_eq_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
-	FheUint8* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_scalar_eq(ct, pt, &result);
+	const int r = fhe_uint8_scalar_eq(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint8* result = cast_bool_8(boolResult, sks);
 	return result;
 }
 
 void* scalar_eq_fhe_uint16(void* ct, uint16_t pt, void* sks)
 {
-	FheUint16* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_scalar_eq(ct, pt, &result);
+	const int r = fhe_uint16_scalar_eq(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint16* result = cast_bool_16(boolResult, sks);
 	return result;
 }
 
 void* scalar_eq_fhe_uint32(void* ct, uint32_t pt, void* sks)
 {
-	FheUint32* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_scalar_eq(ct, pt, &result);
+	const int r = fhe_uint32_scalar_eq(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint32* result = cast_bool_32(boolResult, sks);
 	return result;
 }
 
 void* ne_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
-	FheUint8* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_ne(ct1, ct2, &result);
+	const int r = fhe_uint8_ne(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
+	FheUint8* result = cast_bool_8(boolResult, sks);
 	return result;
 }
 
 void* ne_fhe_uint16(void* ct1, void* ct2, void* sks)
 {
-	FheUint16* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_ne(ct1, ct2, &result);
+	const int r = fhe_uint16_ne(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
+	FheUint16* result = cast_bool_16(boolResult, sks);
 	return result;
 }
 
 void* ne_fhe_uint32(void* ct1, void* ct2, void* sks)
 {
-	FheUint32* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_ne(ct1, ct2, &result);
+	const int r = fhe_uint32_ne(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
+	FheUint32* result = cast_bool_32(boolResult, sks);
 	return result;
 }
 
 void* scalar_ne_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
-	FheUint8* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_scalar_ne(ct, pt, &result);
+	const int r = fhe_uint8_scalar_ne(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint8* result = cast_bool_8(boolResult, sks);
 	return result;
 }
 
 void* scalar_ne_fhe_uint16(void* ct, uint16_t pt, void* sks)
 {
-	FheUint16* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_scalar_ne(ct, pt, &result);
+	const int r = fhe_uint16_scalar_ne(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint16* result = cast_bool_16(boolResult, sks);
 	return result;
 }
 
 void* scalar_ne_fhe_uint32(void* ct, uint32_t pt, void* sks)
 {
-	FheUint32* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_scalar_ne(ct, pt, &result);
+	const int r = fhe_uint32_scalar_ne(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint32* result = cast_bool_32(boolResult, sks);
 	return result;
 }
 
 void* ge_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
-	FheUint8* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_ge(ct1, ct2, &result);
+	const int r = fhe_uint8_ge(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
+	FheUint8* result = cast_bool_8(boolResult, sks);
 	return result;
 }
 
 void* ge_fhe_uint16(void* ct1, void* ct2, void* sks)
 {
-	FheUint16* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_ge(ct1, ct2, &result);
+	const int r = fhe_uint16_ge(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
+	FheUint16* result = cast_bool_16(boolResult, sks);
 	return result;
 }
 
 void* ge_fhe_uint32(void* ct1, void* ct2, void* sks)
 {
-	FheUint32* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_ge(ct1, ct2, &result);
+	const int r = fhe_uint32_ge(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
+	FheUint32* result = cast_bool_32(boolResult, sks);
 	return result;
 }
 
 void* scalar_ge_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
-	FheUint8* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_scalar_ge(ct, pt, &result);
+	const int r = fhe_uint8_scalar_ge(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint8* result = cast_bool_8(boolResult, sks);
 	return result;
 }
 
 void* scalar_ge_fhe_uint16(void* ct, uint16_t pt, void* sks)
 {
-	FheUint16* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_scalar_ge(ct, pt, &result);
+	const int r = fhe_uint16_scalar_ge(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint16* result = cast_bool_16(boolResult, sks);
 	return result;
 }
 
 void* scalar_ge_fhe_uint32(void* ct, uint32_t pt, void* sks)
 {
-	FheUint32* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_scalar_ge(ct, pt, &result);
+	const int r = fhe_uint32_scalar_ge(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint32* result = cast_bool_32(boolResult, sks);
 	return result;
 }
 
 void* gt_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
-	FheUint8* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_gt(ct1, ct2, &result);
+	const int r = fhe_uint8_gt(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
+	FheUint8* result = cast_bool_8(boolResult, sks);
 	return result;
 }
 
 void* gt_fhe_uint16(void* ct1, void* ct2, void* sks)
 {
-	FheUint16* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_gt(ct1, ct2, &result);
+	const int r = fhe_uint16_gt(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
+	FheUint16* result = cast_bool_16(boolResult, sks);
 	return result;
 }
 
 void* gt_fhe_uint32(void* ct1, void* ct2, void* sks)
 {
-	FheUint32* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_gt(ct1, ct2, &result);
+	const int r = fhe_uint32_gt(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
+	FheUint32* result = cast_bool_32(boolResult, sks);
 	return result;
 }
 
 void* scalar_gt_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
-	FheUint8* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_scalar_gt(ct, pt, &result);
+	const int r = fhe_uint8_scalar_gt(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint8* result = cast_bool_8(boolResult, sks);
 	return result;
 }
 
 void* scalar_gt_fhe_uint16(void* ct, uint16_t pt, void* sks)
 {
-	FheUint16* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_scalar_gt(ct, pt, &result);
+	const int r = fhe_uint16_scalar_gt(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint16* result = cast_bool_16(boolResult, sks);
 	return result;
 }
 
 void* scalar_gt_fhe_uint32(void* ct, uint32_t pt, void* sks)
 {
-	FheUint32* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_scalar_gt(ct, pt, &result);
+	const int r = fhe_uint32_scalar_gt(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint32* result = cast_bool_32(boolResult, sks);
 	return result;
 }
 
 void* le_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
-	FheUint8* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_le(ct1, ct2, &result);
+	const int r = fhe_uint8_le(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
+	FheUint8* result = cast_bool_8(boolResult, sks);
 	return result;
 }
 
 void* le_fhe_uint16(void* ct1, void* ct2, void* sks)
 {
-	FheUint16* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_le(ct1, ct2, &result);
+	const int r = fhe_uint16_le(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
+	FheUint16* result = cast_bool_16(boolResult, sks);
 	return result;
 }
 
 void* le_fhe_uint32(void* ct1, void* ct2, void* sks)
 {
-	FheUint32* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_le(ct1, ct2, &result);
+	const int r = fhe_uint32_le(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
-	return result;
-}
-
-void* lt_fhe_uint8(void* ct1, void* ct2, void* sks)
-{
-	FheUint8* result = NULL;
-
-	checked_set_server_key(sks);
-
-	const int r = fhe_uint8_lt(ct1, ct2, &result);
-	if(r != 0) return NULL;
+	FheUint32* result = cast_bool_32(boolResult, sks);
 	return result;
 }
 
 void* scalar_le_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
-	FheUint8* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_scalar_le(ct, pt, &result);
+	const int r = fhe_uint8_scalar_le(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint8* result = cast_bool_8(boolResult, sks);
 	return result;
 }
 
 void* scalar_le_fhe_uint16(void* ct, uint16_t pt, void* sks)
 {
-	FheUint16* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_scalar_le(ct, pt, &result);
+	const int r = fhe_uint16_scalar_le(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint16* result = cast_bool_16(boolResult, sks);
 	return result;
 }
 
 void* scalar_le_fhe_uint32(void* ct, uint32_t pt, void* sks)
 {
-	FheUint32* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_scalar_le(ct, pt, &result);
+	const int r = fhe_uint32_scalar_le(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint32* result = cast_bool_32(boolResult, sks);
+	return result;
+}
+
+void* lt_fhe_uint8(void* ct1, void* ct2, void* sks)
+{
+	FheBool* boolResult = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint8_lt(ct1, ct2, &boolResult);
+	if(r != 0) return NULL;
+	FheUint8* result = cast_bool_8(boolResult, sks);
 	return result;
 }
 
 void* lt_fhe_uint16(void* ct1, void* ct2, void* sks)
 {
-	FheUint16* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_lt(ct1, ct2, &result);
+	const int r = fhe_uint16_lt(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
+	FheUint16* result = cast_bool_16(boolResult, sks);
 	return result;
 }
 
 void* lt_fhe_uint32(void* ct1, void* ct2, void* sks)
 {
-	FheUint32* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_lt(ct1, ct2, &result);
+	const int r = fhe_uint32_lt(ct1, ct2, &boolResult);
 	if(r != 0) return NULL;
+	FheUint32* result = cast_bool_32(boolResult, sks);
 	return result;
 }
 
 void* scalar_lt_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
-	FheUint8* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_scalar_lt(ct, pt, &result);
+	const int r = fhe_uint8_scalar_lt(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint8* result = cast_bool_8(boolResult, sks);
 	return result;
 }
 
 void* scalar_lt_fhe_uint16(void* ct, uint16_t pt, void* sks)
 {
-	FheUint16* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_scalar_lt(ct, pt, &result);
+	const int r = fhe_uint16_scalar_lt(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint16* result = cast_bool_16(boolResult, sks);
 	return result;
 }
 
 void* scalar_lt_fhe_uint32(void* ct, uint32_t pt, void* sks)
 {
-	FheUint32* result = NULL;
+	FheBool* boolResult = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_scalar_lt(ct, pt, &result);
+	const int r = fhe_uint32_scalar_lt(ct, pt, &boolResult);
 	if(r != 0) return NULL;
+	FheUint32* result = cast_bool_32(boolResult, sks);
 	return result;
 }
 
@@ -1302,7 +1382,9 @@ void* if_then_else_fhe_uint8(void* condition, void* ct1, void* ct2, void* sks)
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_if_then_else(condition, ct1, ct2, &result);
+	FheBool* cond = cast_8_bool(condition, sks);
+
+	const int r = fhe_uint8_if_then_else(cond, ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -1313,7 +1395,9 @@ void* if_then_else_fhe_uint16(void* condition, void* ct1, void* ct2, void* sks)
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_if_then_else(condition, ct1, ct2, &result);
+	FheBool* cond = cast_8_bool(condition, sks);
+
+	const int r = fhe_uint16_if_then_else(cond, ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -1324,7 +1408,9 @@ void* if_then_else_fhe_uint32(void* condition, void* ct1, void* ct2, void* sks)
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_if_then_else(condition, ct1, ct2, &result);
+	FheBool* cond = cast_8_bool(condition, sks);
+
+	const int r = fhe_uint32_if_then_else(cond, ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -1428,7 +1514,7 @@ void* trivial_encrypt_fhe_uint32(void* sks, uint32_t value) {
 	return ct;
 }
 
-void public_key_encrypt_and_serialize_fhe_uint8_list(void* pks, uint8_t value, Buffer* out) {
+void public_key_encrypt_and_serialize_fhe_uint8_list(void* pks, uint8_t value, DynamicBuffer* out) {
 	CompactFheUint8List* list = NULL;
 
 	int r = compact_fhe_uint8_list_try_encrypt_with_compact_public_key_u8(&value, 1, pks, &list);
@@ -1441,7 +1527,7 @@ void public_key_encrypt_and_serialize_fhe_uint8_list(void* pks, uint8_t value, B
 	assert(r == 0);
 }
 
-void public_key_encrypt_and_serialize_fhe_uint16_list(void* pks, uint16_t value, Buffer* out) {
+void public_key_encrypt_and_serialize_fhe_uint16_list(void* pks, uint16_t value, DynamicBuffer* out) {
 	CompactFheUint16List* list = NULL;
 
 	int r = compact_fhe_uint16_list_try_encrypt_with_compact_public_key_u16(&value, 1, pks, &list);
@@ -1454,7 +1540,7 @@ void public_key_encrypt_and_serialize_fhe_uint16_list(void* pks, uint16_t value,
 	assert(r == 0);
 }
 
-void public_key_encrypt_and_serialize_fhe_uint32_list(void* pks, uint32_t value, Buffer* out) {
+void public_key_encrypt_and_serialize_fhe_uint32_list(void* pks, uint32_t value, DynamicBuffer* out) {
 	CompactFheUint32List* list = NULL;
 
 	int r = compact_fhe_uint32_list_try_encrypt_with_compact_public_key_u32(&value, 1, pks, &list);
@@ -1543,8 +1629,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func toBufferView(in []byte) C.BufferView {
-	return C.BufferView{
+func toDynamicBufferView(in []byte) C.DynamicBufferView {
+	return C.DynamicBufferView{
 		pointer: (*C.uint8_t)(unsafe.Pointer(&in[0])),
 		length:  (C.size_t)(len(in)),
 	}
@@ -1610,10 +1696,10 @@ func InitGlobalKeysFromFiles(keysDir string) error {
 		return err
 	}
 
-	sks = C.deserialize_server_key(toBufferView(sksBytes))
+	sks = C.deserialize_server_key(toDynamicBufferView(sksBytes))
 
 	pksHash = crypto.Keccak256Hash(pksBytes)
-	pks = C.deserialize_compact_public_key(toBufferView(pksBytes))
+	pks = C.deserialize_compact_public_key(toDynamicBufferView(pksBytes))
 
 	initCiphertextSizes()
 
@@ -1637,7 +1723,7 @@ func init() {
 }
 
 func serialize(ptr unsafe.Pointer, t FheUintType) ([]byte, error) {
-	out := &C.Buffer{}
+	out := &C.DynamicBuffer{}
 	var ret C.int
 	switch t {
 	case FheUint8:
@@ -1653,19 +1739,19 @@ func serialize(ptr unsafe.Pointer, t FheUintType) ([]byte, error) {
 		return nil, errors.New("serialize: failed to serialize a ciphertext")
 	}
 	ser := C.GoBytes(unsafe.Pointer(out.pointer), C.int(out.length))
-	C.destroy_buffer(out)
+	C.destroy_dynamic_buffer(out)
 	return ser, nil
 }
 
 func serializePublicKey(pks unsafe.Pointer) ([]byte, error) {
-	out := &C.Buffer{}
+	out := &C.DynamicBuffer{}
 	var ret C.int
 	ret = C.serialize_compact_public_key(pks, out)
 	if ret != 0 {
 		return nil, errors.New("serialize: failed to serialize public key")
 	}
 	ser := C.GoBytes(unsafe.Pointer(out.pointer), C.int(out.length))
-	C.destroy_buffer(out)
+	C.destroy_dynamic_buffer(out)
 	return ser, nil
 }
 
@@ -1689,19 +1775,19 @@ type tfheCiphertext struct {
 func (ct *tfheCiphertext) deserialize(in []byte, t FheUintType) error {
 	switch t {
 	case FheUint8:
-		ptr := C.deserialize_fhe_uint8(toBufferView((in)))
+		ptr := C.deserialize_fhe_uint8(toDynamicBufferView((in)))
 		if ptr == nil {
 			return errors.New("FheUint8 ciphertext deserialization failed")
 		}
 		C.destroy_fhe_uint8(ptr)
 	case FheUint16:
-		ptr := C.deserialize_fhe_uint16(toBufferView((in)))
+		ptr := C.deserialize_fhe_uint16(toDynamicBufferView((in)))
 		if ptr == nil {
 			return errors.New("FheUint16 ciphertext deserialization failed")
 		}
 		C.destroy_fhe_uint16(ptr)
 	case FheUint32:
-		ptr := C.deserialize_fhe_uint32(toBufferView((in)))
+		ptr := C.deserialize_fhe_uint32(toDynamicBufferView((in)))
 		if ptr == nil {
 			return errors.New("FheUint32 ciphertext deserialization failed")
 		}
@@ -1721,7 +1807,7 @@ func (ct *tfheCiphertext) deserialize(in []byte, t FheUintType) error {
 func (ct *tfheCiphertext) deserializeCompact(in []byte, t FheUintType) error {
 	switch t {
 	case FheUint8:
-		ptr := C.deserialize_compact_fhe_uint8(toBufferView((in)))
+		ptr := C.deserialize_compact_fhe_uint8(toDynamicBufferView((in)))
 		if ptr == nil {
 			return errors.New("compact FheUint8 ciphertext deserialization failed")
 		}
@@ -1732,7 +1818,7 @@ func (ct *tfheCiphertext) deserializeCompact(in []byte, t FheUintType) error {
 			return err
 		}
 	case FheUint16:
-		ptr := C.deserialize_compact_fhe_uint16(toBufferView((in)))
+		ptr := C.deserialize_compact_fhe_uint16(toDynamicBufferView((in)))
 		if ptr == nil {
 			return errors.New("compact FheUint16 ciphertext deserialization failed")
 		}
@@ -1743,7 +1829,7 @@ func (ct *tfheCiphertext) deserializeCompact(in []byte, t FheUintType) error {
 			return err
 		}
 	case FheUint32:
-		ptr := C.deserialize_compact_fhe_uint32(toBufferView((in)))
+		ptr := C.deserialize_compact_fhe_uint32(toDynamicBufferView((in)))
 		if ptr == nil {
 			return errors.New("compact FheUint32 ciphertext deserialization failed")
 		}
@@ -1840,10 +1926,10 @@ func (ct *tfheCiphertext) executeUnaryCiphertextOperation(rhs *tfheCiphertext,
 
 	res := new(tfheCiphertext)
 	res.fheUintType = ct.fheUintType
-	res_ser := &C.Buffer{}
+	res_ser := &C.DynamicBuffer{}
 	switch ct.fheUintType {
 	case FheUint8:
-		ct_ptr := C.deserialize_fhe_uint8(toBufferView((ct.serialization)))
+		ct_ptr := C.deserialize_fhe_uint8(toDynamicBufferView((ct.serialization)))
 		if ct_ptr == nil {
 			return nil, errors.New("8 bit unary op deserialization failed")
 		}
@@ -1858,9 +1944,9 @@ func (ct *tfheCiphertext) executeUnaryCiphertextOperation(rhs *tfheCiphertext,
 			return nil, errors.New("8 bit unary op serialization failed")
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
-		C.destroy_buffer(res_ser)
+		C.destroy_dynamic_buffer(res_ser)
 	case FheUint16:
-		ct_ptr := C.deserialize_fhe_uint16(toBufferView((ct.serialization)))
+		ct_ptr := C.deserialize_fhe_uint16(toDynamicBufferView((ct.serialization)))
 		if ct_ptr == nil {
 			return nil, errors.New("16 bit unary op deserialization failed")
 		}
@@ -1875,9 +1961,9 @@ func (ct *tfheCiphertext) executeUnaryCiphertextOperation(rhs *tfheCiphertext,
 			return nil, errors.New("16 bit unary op serialization failed")
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
-		C.destroy_buffer(res_ser)
+		C.destroy_dynamic_buffer(res_ser)
 	case FheUint32:
-		ct_ptr := C.deserialize_fhe_uint32(toBufferView((ct.serialization)))
+		ct_ptr := C.deserialize_fhe_uint32(toDynamicBufferView((ct.serialization)))
 		if ct_ptr == nil {
 			return nil, errors.New("32 bit unary op deserialization failed")
 		}
@@ -1892,7 +1978,7 @@ func (ct *tfheCiphertext) executeUnaryCiphertextOperation(rhs *tfheCiphertext,
 			return nil, errors.New("32 bit unary op serialization failed")
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
-		C.destroy_buffer(res_ser)
+		C.destroy_dynamic_buffer(res_ser)
 	default:
 		panic("unary op unexpected ciphertext type")
 	}
@@ -1910,14 +1996,14 @@ func (lhs *tfheCiphertext) executeBinaryCiphertextOperation(rhs *tfheCiphertext,
 
 	res := new(tfheCiphertext)
 	res.fheUintType = lhs.fheUintType
-	res_ser := &C.Buffer{}
+	res_ser := &C.DynamicBuffer{}
 	switch lhs.fheUintType {
 	case FheUint8:
-		lhs_ptr := C.deserialize_fhe_uint8(toBufferView((lhs.serialization)))
+		lhs_ptr := C.deserialize_fhe_uint8(toDynamicBufferView((lhs.serialization)))
 		if lhs_ptr == nil {
 			return nil, errors.New("8 bit binary op deserialization failed")
 		}
-		rhs_ptr := C.deserialize_fhe_uint8(toBufferView((rhs.serialization)))
+		rhs_ptr := C.deserialize_fhe_uint8(toDynamicBufferView((rhs.serialization)))
 		if rhs_ptr == nil {
 			C.destroy_fhe_uint8(lhs_ptr)
 			return nil, errors.New("8 bit binary op deserialization failed")
@@ -1934,13 +2020,13 @@ func (lhs *tfheCiphertext) executeBinaryCiphertextOperation(rhs *tfheCiphertext,
 			return nil, errors.New("8 bit binary op serialization failed")
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
-		C.destroy_buffer(res_ser)
+		C.destroy_dynamic_buffer(res_ser)
 	case FheUint16:
-		lhs_ptr := C.deserialize_fhe_uint16(toBufferView((lhs.serialization)))
+		lhs_ptr := C.deserialize_fhe_uint16(toDynamicBufferView((lhs.serialization)))
 		if lhs_ptr == nil {
 			return nil, errors.New("16 bit binary op deserialization failed")
 		}
-		rhs_ptr := C.deserialize_fhe_uint16(toBufferView((rhs.serialization)))
+		rhs_ptr := C.deserialize_fhe_uint16(toDynamicBufferView((rhs.serialization)))
 		if rhs_ptr == nil {
 			C.destroy_fhe_uint16(lhs_ptr)
 			return nil, errors.New("16 bit binary op deserialization failed")
@@ -1957,13 +2043,13 @@ func (lhs *tfheCiphertext) executeBinaryCiphertextOperation(rhs *tfheCiphertext,
 			return nil, errors.New("16 bit binary op serialization failed")
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
-		C.destroy_buffer(res_ser)
+		C.destroy_dynamic_buffer(res_ser)
 	case FheUint32:
-		lhs_ptr := C.deserialize_fhe_uint32(toBufferView((lhs.serialization)))
+		lhs_ptr := C.deserialize_fhe_uint32(toDynamicBufferView((lhs.serialization)))
 		if lhs_ptr == nil {
 			return nil, errors.New("32 bit binary op deserialization failed")
 		}
-		rhs_ptr := C.deserialize_fhe_uint32(toBufferView((rhs.serialization)))
+		rhs_ptr := C.deserialize_fhe_uint32(toDynamicBufferView((rhs.serialization)))
 		if rhs_ptr == nil {
 			C.destroy_fhe_uint32(lhs_ptr)
 			return nil, errors.New("32 bit binary op deserialization failed")
@@ -1980,7 +2066,7 @@ func (lhs *tfheCiphertext) executeBinaryCiphertextOperation(rhs *tfheCiphertext,
 			return nil, errors.New("32 bit binary op serialization failed")
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
-		C.destroy_buffer(res_ser)
+		C.destroy_dynamic_buffer(res_ser)
 	default:
 		panic("binary op unexpected ciphertext type")
 	}
@@ -1998,19 +2084,19 @@ func (first *tfheCiphertext) executeTernaryCiphertextOperation(lhs *tfheCipherte
 
 	res := new(tfheCiphertext)
 	res.fheUintType = lhs.fheUintType
-	res_ser := &C.Buffer{}
+	res_ser := &C.DynamicBuffer{}
 	switch lhs.fheUintType {
 	case FheUint8:
-		lhs_ptr := C.deserialize_fhe_uint8(toBufferView((lhs.serialization)))
+		lhs_ptr := C.deserialize_fhe_uint8(toDynamicBufferView((lhs.serialization)))
 		if lhs_ptr == nil {
 			return nil, errors.New("8 bit binary op deserialization failed")
 		}
-		rhs_ptr := C.deserialize_fhe_uint8(toBufferView((rhs.serialization)))
+		rhs_ptr := C.deserialize_fhe_uint8(toDynamicBufferView((rhs.serialization)))
 		if rhs_ptr == nil {
 			C.destroy_fhe_uint8(lhs_ptr)
 			return nil, errors.New("8 bit binary op deserialization failed")
 		}
-		first_ptr := C.deserialize_fhe_uint8(toBufferView((first.serialization)))
+		first_ptr := C.deserialize_fhe_uint8(toDynamicBufferView((first.serialization)))
 		if first_ptr == nil {
 			C.destroy_fhe_uint8(lhs_ptr)
 			C.destroy_fhe_uint8(rhs_ptr)
@@ -2028,18 +2114,18 @@ func (first *tfheCiphertext) executeTernaryCiphertextOperation(lhs *tfheCipherte
 			return nil, errors.New("8 bit binary op serialization failed")
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
-		C.destroy_buffer(res_ser)
+		C.destroy_dynamic_buffer(res_ser)
 	case FheUint16:
-		lhs_ptr := C.deserialize_fhe_uint16(toBufferView((lhs.serialization)))
+		lhs_ptr := C.deserialize_fhe_uint16(toDynamicBufferView((lhs.serialization)))
 		if lhs_ptr == nil {
 			return nil, errors.New("16 bit binary op deserialization failed")
 		}
-		rhs_ptr := C.deserialize_fhe_uint16(toBufferView((rhs.serialization)))
+		rhs_ptr := C.deserialize_fhe_uint16(toDynamicBufferView((rhs.serialization)))
 		if rhs_ptr == nil {
 			C.destroy_fhe_uint16(lhs_ptr)
 			return nil, errors.New("16 bit binary op deserialization failed")
 		}
-		first_ptr := C.deserialize_fhe_uint8(toBufferView((first.serialization)))
+		first_ptr := C.deserialize_fhe_uint8(toDynamicBufferView((first.serialization)))
 		if first_ptr == nil {
 			C.destroy_fhe_uint8(lhs_ptr)
 			C.destroy_fhe_uint8(rhs_ptr)
@@ -2057,18 +2143,18 @@ func (first *tfheCiphertext) executeTernaryCiphertextOperation(lhs *tfheCipherte
 			return nil, errors.New("16 bit binary op serialization failed")
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
-		C.destroy_buffer(res_ser)
+		C.destroy_dynamic_buffer(res_ser)
 	case FheUint32:
-		lhs_ptr := C.deserialize_fhe_uint32(toBufferView((lhs.serialization)))
+		lhs_ptr := C.deserialize_fhe_uint32(toDynamicBufferView((lhs.serialization)))
 		if lhs_ptr == nil {
 			return nil, errors.New("32 bit binary op deserialization failed")
 		}
-		rhs_ptr := C.deserialize_fhe_uint32(toBufferView((rhs.serialization)))
+		rhs_ptr := C.deserialize_fhe_uint32(toDynamicBufferView((rhs.serialization)))
 		if rhs_ptr == nil {
 			C.destroy_fhe_uint32(lhs_ptr)
 			return nil, errors.New("32 bit binary op deserialization failed")
 		}
-		first_ptr := C.deserialize_fhe_uint8(toBufferView((first.serialization)))
+		first_ptr := C.deserialize_fhe_uint8(toDynamicBufferView((first.serialization)))
 		if first_ptr == nil {
 			C.destroy_fhe_uint8(lhs_ptr)
 			C.destroy_fhe_uint8(rhs_ptr)
@@ -2086,7 +2172,7 @@ func (first *tfheCiphertext) executeTernaryCiphertextOperation(lhs *tfheCipherte
 			return nil, errors.New("32 bit binary op serialization failed")
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
-		C.destroy_buffer(res_ser)
+		C.destroy_dynamic_buffer(res_ser)
 	default:
 		panic("binary op unexpected ciphertext type")
 	}
@@ -2100,10 +2186,10 @@ func (lhs *tfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 	op32 func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer) (*tfheCiphertext, error) {
 	res := new(tfheCiphertext)
 	res.fheUintType = lhs.fheUintType
-	res_ser := &C.Buffer{}
+	res_ser := &C.DynamicBuffer{}
 	switch lhs.fheUintType {
 	case FheUint8:
-		lhs_ptr := C.deserialize_fhe_uint8(toBufferView((lhs.serialization)))
+		lhs_ptr := C.deserialize_fhe_uint8(toDynamicBufferView((lhs.serialization)))
 		if lhs_ptr == nil {
 			return nil, errors.New("8 bit scalar op deserialization failed")
 		}
@@ -2119,9 +2205,9 @@ func (lhs *tfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 			return nil, errors.New("8 bit scalar op serialization failed")
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
-		C.destroy_buffer(res_ser)
+		C.destroy_dynamic_buffer(res_ser)
 	case FheUint16:
-		lhs_ptr := C.deserialize_fhe_uint16(toBufferView((lhs.serialization)))
+		lhs_ptr := C.deserialize_fhe_uint16(toDynamicBufferView((lhs.serialization)))
 		if lhs_ptr == nil {
 			return nil, errors.New("16 bit scalar op deserialization failed")
 		}
@@ -2137,9 +2223,9 @@ func (lhs *tfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 			return nil, errors.New("16 bit scalar op serialization failed")
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
-		C.destroy_buffer(res_ser)
+		C.destroy_dynamic_buffer(res_ser)
 	case FheUint32:
-		lhs_ptr := C.deserialize_fhe_uint32(toBufferView((lhs.serialization)))
+		lhs_ptr := C.deserialize_fhe_uint32(toDynamicBufferView((lhs.serialization)))
 		if lhs_ptr == nil {
 			return nil, errors.New("32 bit scalar op deserialization failed")
 		}
@@ -2155,7 +2241,7 @@ func (lhs *tfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 			return nil, errors.New("32 bit scalar op serialization failed")
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
-		C.destroy_buffer(res_ser)
+		C.destroy_dynamic_buffer(res_ser)
 	default:
 		panic("scalar op unexpected ciphertext type")
 	}
@@ -2482,9 +2568,11 @@ func (lhs *tfheCiphertext) scalarLe(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
 			return C.scalar_le_fhe_uint16(lhs, rhs, sks)
+
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_le_fhe_uint32(lhs, rhs, sks)
+
 		})
 }
 
@@ -2617,7 +2705,7 @@ func (ct *tfheCiphertext) castTo(castToType FheUintType) (*tfheCiphertext, error
 	case FheUint8:
 		switch castToType {
 		case FheUint16:
-			from_ptr := C.deserialize_fhe_uint8(toBufferView(ct.serialization))
+			from_ptr := C.deserialize_fhe_uint8(toDynamicBufferView(ct.serialization))
 			if from_ptr == nil {
 				return nil, errors.New("castTo failed to deserialize FheUint8 ciphertext")
 			}
@@ -2633,7 +2721,7 @@ func (ct *tfheCiphertext) castTo(castToType FheUintType) (*tfheCiphertext, error
 				return nil, err
 			}
 		case FheUint32:
-			from_ptr := C.deserialize_fhe_uint8(toBufferView(ct.serialization))
+			from_ptr := C.deserialize_fhe_uint8(toDynamicBufferView(ct.serialization))
 			if from_ptr == nil {
 				return nil, errors.New("castTo failed to deserialize FheUint8 ciphertext")
 			}
@@ -2654,7 +2742,7 @@ func (ct *tfheCiphertext) castTo(castToType FheUintType) (*tfheCiphertext, error
 	case FheUint16:
 		switch castToType {
 		case FheUint8:
-			from_ptr := C.deserialize_fhe_uint16(toBufferView(ct.serialization))
+			from_ptr := C.deserialize_fhe_uint16(toDynamicBufferView(ct.serialization))
 			if from_ptr == nil {
 				return nil, errors.New("castTo failed to deserialize FheUint16 ciphertext")
 			}
@@ -2670,7 +2758,7 @@ func (ct *tfheCiphertext) castTo(castToType FheUintType) (*tfheCiphertext, error
 				return nil, err
 			}
 		case FheUint32:
-			from_ptr := C.deserialize_fhe_uint16(toBufferView(ct.serialization))
+			from_ptr := C.deserialize_fhe_uint16(toDynamicBufferView(ct.serialization))
 			if from_ptr == nil {
 				return nil, errors.New("castTo failed to deserialize FheUint16 ciphertext")
 			}
@@ -2691,7 +2779,7 @@ func (ct *tfheCiphertext) castTo(castToType FheUintType) (*tfheCiphertext, error
 	case FheUint32:
 		switch castToType {
 		case FheUint8:
-			from_ptr := C.deserialize_fhe_uint32(toBufferView(ct.serialization))
+			from_ptr := C.deserialize_fhe_uint32(toDynamicBufferView(ct.serialization))
 			if from_ptr == nil {
 				return nil, errors.New("castTo failed to deserialize FheUint32 ciphertext")
 			}
@@ -2707,7 +2795,7 @@ func (ct *tfheCiphertext) castTo(castToType FheUintType) (*tfheCiphertext, error
 				return nil, err
 			}
 		case FheUint16:
-			from_ptr := C.deserialize_fhe_uint32(toBufferView(ct.serialization))
+			from_ptr := C.deserialize_fhe_uint32(toDynamicBufferView(ct.serialization))
 			if from_ptr == nil {
 				return nil, errors.New("castTo failed to deserialize FheUint32 ciphertext")
 			}
@@ -2738,7 +2826,7 @@ func (ct *tfheCiphertext) decrypt() (big.Int, error) {
 	var ret C.int
 	switch ct.fheUintType {
 	case FheUint8:
-		ptr := C.deserialize_fhe_uint8(toBufferView(ct.serialization))
+		ptr := C.deserialize_fhe_uint8(toDynamicBufferView(ct.serialization))
 		if ptr == nil {
 			return *new(big.Int).SetUint64(0), errors.New("failed to deserialize FheUint8")
 		}
@@ -2747,7 +2835,7 @@ func (ct *tfheCiphertext) decrypt() (big.Int, error) {
 		C.destroy_fhe_uint8(ptr)
 		value = uint64(result)
 	case FheUint16:
-		ptr := C.deserialize_fhe_uint16(toBufferView(ct.serialization))
+		ptr := C.deserialize_fhe_uint16(toDynamicBufferView(ct.serialization))
 		if ptr == nil {
 			return *new(big.Int).SetUint64(0), errors.New("failed to deserialize FheUint16")
 		}
@@ -2756,7 +2844,7 @@ func (ct *tfheCiphertext) decrypt() (big.Int, error) {
 		C.destroy_fhe_uint16(ptr)
 		value = uint64(result)
 	case FheUint32:
-		ptr := C.deserialize_fhe_uint32(toBufferView(ct.serialization))
+		ptr := C.deserialize_fhe_uint32(toDynamicBufferView(ct.serialization))
 		if ptr == nil {
 			return *new(big.Int).SetUint64(0), errors.New("failed to deserialize FheUint32")
 		}
@@ -2794,7 +2882,7 @@ func isValidType(t byte) bool {
 }
 
 func encryptAndSerializeCompact(value uint32, fheUintType FheUintType) []byte {
-	out := &C.Buffer{}
+	out := &C.DynamicBuffer{}
 	switch fheUintType {
 	case FheUint8:
 		C.public_key_encrypt_and_serialize_fhe_uint8_list(pks, C.uint8_t(value), out)
@@ -2805,6 +2893,6 @@ func encryptAndSerializeCompact(value uint32, fheUintType FheUintType) []byte {
 	}
 
 	ser := C.GoBytes(unsafe.Pointer(out.pointer), C.int(out.length))
-	C.destroy_buffer(out)
+	C.destroy_dynamic_buffer(out)
 	return ser
 }
