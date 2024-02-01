@@ -754,433 +754,433 @@ void* scalar_shr_fhe_uint32(void* ct, uint32_t pt, void* sks)
 
 void* eq_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_eq(ct1, ct2, &boolResult);
+	const int r = fhe_uint8_eq(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint8* result = cast_bool_8(boolResult, sks);
+	FheUint8* result = cast_bool_8(bool_result, sks);
 	return result;
 }
 
 void* eq_fhe_uint16(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_eq(ct1, ct2, &boolResult);
+	const int r = fhe_uint16_eq(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint16* result = cast_bool_16(boolResult, sks);
+	FheUint16* result = cast_bool_16(bool_result, sks);
 	return result;
 }
 
 void* eq_fhe_uint32(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_eq(ct1, ct2, &boolResult);
+	const int r = fhe_uint16_eq(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint32* result = cast_bool_32(boolResult, sks);
+	FheUint32* result = cast_bool_32(bool_result, sks);
 	return result;
 }
 
 void* scalar_eq_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_scalar_eq(ct, pt, &boolResult);
+	const int r = fhe_uint8_scalar_eq(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint8* result = cast_bool_8(boolResult, sks);
+	FheUint8* result = cast_bool_8(bool_result, sks);
 	return result;
 }
 
 void* scalar_eq_fhe_uint16(void* ct, uint16_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_scalar_eq(ct, pt, &boolResult);
+	const int r = fhe_uint16_scalar_eq(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint16* result = cast_bool_16(boolResult, sks);
+	FheUint16* result = cast_bool_16(bool_result, sks);
 	return result;
 }
 
 void* scalar_eq_fhe_uint32(void* ct, uint32_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_scalar_eq(ct, pt, &boolResult);
+	const int r = fhe_uint32_scalar_eq(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint32* result = cast_bool_32(boolResult, sks);
+	FheUint32* result = cast_bool_32(bool_result, sks);
 	return result;
 }
 
 void* ne_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_ne(ct1, ct2, &boolResult);
+	const int r = fhe_uint8_ne(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint8* result = cast_bool_8(boolResult, sks);
+	FheUint8* result = cast_bool_8(bool_result, sks);
 	return result;
 }
 
 void* ne_fhe_uint16(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_ne(ct1, ct2, &boolResult);
+	const int r = fhe_uint16_ne(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint16* result = cast_bool_16(boolResult, sks);
+	FheUint16* result = cast_bool_16(bool_result, sks);
 	return result;
 }
 
 void* ne_fhe_uint32(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_ne(ct1, ct2, &boolResult);
+	const int r = fhe_uint32_ne(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint32* result = cast_bool_32(boolResult, sks);
+	FheUint32* result = cast_bool_32(bool_result, sks);
 	return result;
 }
 
 void* scalar_ne_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_scalar_ne(ct, pt, &boolResult);
+	const int r = fhe_uint8_scalar_ne(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint8* result = cast_bool_8(boolResult, sks);
+	FheUint8* result = cast_bool_8(bool_result, sks);
 	return result;
 }
 
 void* scalar_ne_fhe_uint16(void* ct, uint16_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_scalar_ne(ct, pt, &boolResult);
+	const int r = fhe_uint16_scalar_ne(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint16* result = cast_bool_16(boolResult, sks);
+	FheUint16* result = cast_bool_16(bool_result, sks);
 	return result;
 }
 
 void* scalar_ne_fhe_uint32(void* ct, uint32_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_scalar_ne(ct, pt, &boolResult);
+	const int r = fhe_uint32_scalar_ne(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint32* result = cast_bool_32(boolResult, sks);
+	FheUint32* result = cast_bool_32(bool_result, sks);
 	return result;
 }
 
 void* ge_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_ge(ct1, ct2, &boolResult);
+	const int r = fhe_uint8_ge(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint8* result = cast_bool_8(boolResult, sks);
+	FheUint8* result = cast_bool_8(bool_result, sks);
 	return result;
 }
 
 void* ge_fhe_uint16(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_ge(ct1, ct2, &boolResult);
+	const int r = fhe_uint16_ge(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint16* result = cast_bool_16(boolResult, sks);
+	FheUint16* result = cast_bool_16(bool_result, sks);
 	return result;
 }
 
 void* ge_fhe_uint32(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_ge(ct1, ct2, &boolResult);
+	const int r = fhe_uint32_ge(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint32* result = cast_bool_32(boolResult, sks);
+	FheUint32* result = cast_bool_32(bool_result, sks);
 	return result;
 }
 
 void* scalar_ge_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_scalar_ge(ct, pt, &boolResult);
+	const int r = fhe_uint8_scalar_ge(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint8* result = cast_bool_8(boolResult, sks);
+	FheUint8* result = cast_bool_8(bool_result, sks);
 	return result;
 }
 
 void* scalar_ge_fhe_uint16(void* ct, uint16_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_scalar_ge(ct, pt, &boolResult);
+	const int r = fhe_uint16_scalar_ge(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint16* result = cast_bool_16(boolResult, sks);
+	FheUint16* result = cast_bool_16(bool_result, sks);
 	return result;
 }
 
 void* scalar_ge_fhe_uint32(void* ct, uint32_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_scalar_ge(ct, pt, &boolResult);
+	const int r = fhe_uint32_scalar_ge(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint32* result = cast_bool_32(boolResult, sks);
+	FheUint32* result = cast_bool_32(bool_result, sks);
 	return result;
 }
 
 void* gt_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_gt(ct1, ct2, &boolResult);
+	const int r = fhe_uint8_gt(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint8* result = cast_bool_8(boolResult, sks);
+	FheUint8* result = cast_bool_8(bool_result, sks);
 	return result;
 }
 
 void* gt_fhe_uint16(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_gt(ct1, ct2, &boolResult);
+	const int r = fhe_uint16_gt(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint16* result = cast_bool_16(boolResult, sks);
+	FheUint16* result = cast_bool_16(bool_result, sks);
 	return result;
 }
 
 void* gt_fhe_uint32(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_gt(ct1, ct2, &boolResult);
+	const int r = fhe_uint32_gt(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint32* result = cast_bool_32(boolResult, sks);
+	FheUint32* result = cast_bool_32(bool_result, sks);
 	return result;
 }
 
 void* scalar_gt_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_scalar_gt(ct, pt, &boolResult);
+	const int r = fhe_uint8_scalar_gt(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint8* result = cast_bool_8(boolResult, sks);
+	FheUint8* result = cast_bool_8(bool_result, sks);
 	return result;
 }
 
 void* scalar_gt_fhe_uint16(void* ct, uint16_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_scalar_gt(ct, pt, &boolResult);
+	const int r = fhe_uint16_scalar_gt(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint16* result = cast_bool_16(boolResult, sks);
+	FheUint16* result = cast_bool_16(bool_result, sks);
 	return result;
 }
 
 void* scalar_gt_fhe_uint32(void* ct, uint32_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_scalar_gt(ct, pt, &boolResult);
+	const int r = fhe_uint32_scalar_gt(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint32* result = cast_bool_32(boolResult, sks);
+	FheUint32* result = cast_bool_32(bool_result, sks);
 	return result;
 }
 
 void* le_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_le(ct1, ct2, &boolResult);
+	const int r = fhe_uint8_le(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint8* result = cast_bool_8(boolResult, sks);
+	FheUint8* result = cast_bool_8(bool_result, sks);
 	return result;
 }
 
 void* le_fhe_uint16(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_le(ct1, ct2, &boolResult);
+	const int r = fhe_uint16_le(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint16* result = cast_bool_16(boolResult, sks);
+	FheUint16* result = cast_bool_16(bool_result, sks);
 	return result;
 }
 
 void* le_fhe_uint32(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_le(ct1, ct2, &boolResult);
+	const int r = fhe_uint32_le(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint32* result = cast_bool_32(boolResult, sks);
+	FheUint32* result = cast_bool_32(bool_result, sks);
 	return result;
 }
 
 void* scalar_le_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_scalar_le(ct, pt, &boolResult);
+	const int r = fhe_uint8_scalar_le(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint8* result = cast_bool_8(boolResult, sks);
+	FheUint8* result = cast_bool_8(bool_result, sks);
 	return result;
 }
 
 void* scalar_le_fhe_uint16(void* ct, uint16_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_scalar_le(ct, pt, &boolResult);
+	const int r = fhe_uint16_scalar_le(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint16* result = cast_bool_16(boolResult, sks);
+	FheUint16* result = cast_bool_16(bool_result, sks);
 	return result;
 }
 
 void* scalar_le_fhe_uint32(void* ct, uint32_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_scalar_le(ct, pt, &boolResult);
+	const int r = fhe_uint32_scalar_le(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint32* result = cast_bool_32(boolResult, sks);
+	FheUint32* result = cast_bool_32(bool_result, sks);
 	return result;
 }
 
 void* lt_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_lt(ct1, ct2, &boolResult);
+	const int r = fhe_uint8_lt(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint8* result = cast_bool_8(boolResult, sks);
+	FheUint8* result = cast_bool_8(bool_result, sks);
 	return result;
 }
 
 void* lt_fhe_uint16(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_lt(ct1, ct2, &boolResult);
+	const int r = fhe_uint16_lt(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint16* result = cast_bool_16(boolResult, sks);
+	FheUint16* result = cast_bool_16(bool_result, sks);
 	return result;
 }
 
 void* lt_fhe_uint32(void* ct1, void* ct2, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_lt(ct1, ct2, &boolResult);
+	const int r = fhe_uint32_lt(ct1, ct2, &bool_result);
 	if(r != 0) return NULL;
-	FheUint32* result = cast_bool_32(boolResult, sks);
+	FheUint32* result = cast_bool_32(bool_result, sks);
 	return result;
 }
 
 void* scalar_lt_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint8_scalar_lt(ct, pt, &boolResult);
+	const int r = fhe_uint8_scalar_lt(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint8* result = cast_bool_8(boolResult, sks);
+	FheUint8* result = cast_bool_8(bool_result, sks);
 	return result;
 }
 
 void* scalar_lt_fhe_uint16(void* ct, uint16_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint16_scalar_lt(ct, pt, &boolResult);
+	const int r = fhe_uint16_scalar_lt(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint16* result = cast_bool_16(boolResult, sks);
+	FheUint16* result = cast_bool_16(bool_result, sks);
 	return result;
 }
 
 void* scalar_lt_fhe_uint32(void* ct, uint32_t pt, void* sks)
 {
-	FheBool* boolResult = NULL;
+	FheBool* bool_result = NULL;
 
 	checked_set_server_key(sks);
 
-	const int r = fhe_uint32_scalar_lt(ct, pt, &boolResult);
+	const int r = fhe_uint32_scalar_lt(ct, pt, &bool_result);
 	if(r != 0) return NULL;
-	FheUint32* result = cast_bool_32(boolResult, sks);
+	FheUint32* result = cast_bool_32(bool_result, sks);
 	return result;
 }
 
