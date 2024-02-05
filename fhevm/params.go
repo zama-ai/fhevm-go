@@ -26,6 +26,7 @@ package fhevm
 // Base gas costs of existing EVM operations. Used for setting gas costs relative to them.
 // These constants are used just for readability.
 const EvmNetSstoreInitGas uint64 = 20000
+const AdjustFHEGas uint64 = 10000
 const ColdSloadCostEIP2929 uint64 = 2100
 
 var (
@@ -69,7 +70,8 @@ type GasCosts struct {
 	FheLe               map[FheUintType]uint64
 	FheMinMax           map[FheUintType]uint64
 	FheScalarMinMax     map[FheUintType]uint64
-	FheNegNot           map[FheUintType]uint64
+	FheNot              map[FheUintType]uint64
+	FheNeg              map[FheUintType]uint64
 	FheReencrypt        map[FheUintType]uint64
 	FheTrivialEncrypt   map[FheUintType]uint64
 	FheRand             map[FheUintType]uint64
@@ -82,69 +84,88 @@ type GasCosts struct {
 func DefaultGasCosts() GasCosts {
 	return GasCosts{
 		FheAddSub: map[FheUintType]uint64{
-			FheUint8:  120000,
-			FheUint16: 150000,
-			FheUint32: 180000,
+			FheUint8:  84000 + AdjustFHEGas,
+			FheUint16: 123000 + AdjustFHEGas,
+			FheUint32: 152000 + AdjustFHEGas,
+			FheUint64: 178000 + AdjustFHEGas,
 		},
 		FheDecrypt: map[FheUintType]uint64{
 			FheUint8:  500000,
 			FheUint16: 500000,
 			FheUint32: 500000,
+			FheUint64: 500000,
 		},
 		FheBitwiseOp: map[FheUintType]uint64{
-			FheUint8:  30000,
-			FheUint16: 33000,
-			FheUint32: 36000,
+			FheUint8:  24000 + AdjustFHEGas,
+			FheUint16: 24000 + AdjustFHEGas,
+			FheUint32: 25000 + AdjustFHEGas,
+			FheUint64: 28000 + AdjustFHEGas,
 		},
 		FheMul: map[FheUintType]uint64{
-			FheUint8:  200000,
-			FheUint16: 260000,
-			FheUint32: 380000,
+			FheUint8:  187000 + AdjustFHEGas,
+			FheUint16: 252000 + AdjustFHEGas,
+			FheUint32: 349000 + AdjustFHEGas,
+			FheUint64: 631000 + AdjustFHEGas,
 		},
 		FheScalarMul: map[FheUintType]uint64{
-			FheUint8:  135000,
-			FheUint16: 140000,
-			FheUint32: 170000,
+			FheUint8:  149000 + AdjustFHEGas,
+			FheUint16: 198000 + AdjustFHEGas,
+			FheUint32: 254000 + AdjustFHEGas,
+			FheUint64: 346000 + AdjustFHEGas,
 		},
 		FheScalarDiv: map[FheUintType]uint64{
-			FheUint8:  450000,
-			FheUint16: 500000,
-			FheUint32: 550000,
+			FheUint8:  228000 + AdjustFHEGas,
+			FheUint16: 304000 + AdjustFHEGas,
+			FheUint32: 388000 + AdjustFHEGas,
+			FheUint64: 574000 + AdjustFHEGas,
 		},
 		FheScalarRem: map[FheUintType]uint64{
-			FheUint8:  450000,
-			FheUint16: 500000,
-			FheUint32: 550000,
+			FheUint8:  450000 + AdjustFHEGas,
+			FheUint16: 612000 + AdjustFHEGas,
+			FheUint32: 795000 + AdjustFHEGas,
+			FheUint64: 1095000 + AdjustFHEGas,
 		},
 		FheShift: map[FheUintType]uint64{
-			FheUint8:  150000,
-			FheUint16: 180000,
-			FheUint32: 210000,
+			FheUint8:  123000 + AdjustFHEGas,
+			FheUint16: 143000 + AdjustFHEGas,
+			FheUint32: 173000 + AdjustFHEGas,
+			FheUint64: 217000 + AdjustFHEGas,
 		},
 		FheScalarShift: map[FheUintType]uint64{
-			FheUint8:  32000,
-			FheUint16: 32000,
-			FheUint32: 32000,
+			FheUint8:  25000 + AdjustFHEGas,
+			FheUint16: 25000 + AdjustFHEGas,
+			FheUint32: 25000 + AdjustFHEGas,
+			FheUint64: 28000 + AdjustFHEGas,
 		},
 		FheLe: map[FheUintType]uint64{
-			FheUint8:  56000,
-			FheUint16: 67000,
-			FheUint32: 89000,
+			FheUint8:  46000 + AdjustFHEGas,
+			FheUint16: 46000 + AdjustFHEGas,
+			FheUint32: 72000 + AdjustFHEGas,
+			FheUint64: 76000 + AdjustFHEGas,
 		},
 		FheMinMax: map[FheUintType]uint64{
-			FheUint8:  220000,
-			FheUint16: 280000,
-			FheUint32: 340000,
+			FheUint8:  94000 + AdjustFHEGas,
+			FheUint16: 120000 + AdjustFHEGas,
+			FheUint32: 148000 + AdjustFHEGas,
+			FheUint64: 189000 + AdjustFHEGas,
 		},
 		FheScalarMinMax: map[FheUintType]uint64{
-			FheUint8:  140000,
-			FheUint16: 165000,
-			FheUint32: 190000,
+			FheUint8:  114000 + AdjustFHEGas,
+			FheUint16: 140000 + AdjustFHEGas,
+			FheUint32: 154000 + AdjustFHEGas,
+			FheUint64: 182000 + AdjustFHEGas,
 		},
-		FheNegNot: map[FheUintType]uint64{
-			FheUint8:  29000,
-			FheUint16: 31000,
-			FheUint32: 33000,
+		FheNot: map[FheUintType]uint64{
+			FheUint8:  25000 + AdjustFHEGas,
+			FheUint16: 25000 + AdjustFHEGas,
+			FheUint32: 26000 + AdjustFHEGas,
+			FheUint64: 27000 + AdjustFHEGas,
+		},
+		FheNeg: map[FheUintType]uint64{
+			FheUint8:  79000 + AdjustFHEGas,
+			FheUint16: 114000 + AdjustFHEGas,
+			FheUint32: 150000 + AdjustFHEGas,
+			FheUint64: 189000 + AdjustFHEGas,
 		},
 		// TODO: Costs will depend on the complexity of doing reencryption/decryption by the oracle.
 		FheReencrypt: map[FheUintType]uint64{
@@ -157,22 +178,26 @@ func DefaultGasCosts() GasCosts {
 			FheUint8:  200,
 			FheUint16: 300,
 			FheUint32: 400,
+			FheUint64: 800,
 		},
 		FheTrivialEncrypt: map[FheUintType]uint64{
 			FheUint8:  100,
 			FheUint16: 200,
 			FheUint32: 300,
+			FheUint64: 600,
 		},
 		// TODO: These will change once we have an FHE-based random generaration.
 		FheRand: map[FheUintType]uint64{
 			FheUint8:  EvmNetSstoreInitGas + 100000,
 			FheUint16: EvmNetSstoreInitGas + 100000,
 			FheUint32: EvmNetSstoreInitGas + 100000,
+			FheUint64: EvmNetSstoreInitGas + 100000,
 		},
 		FheIfThenElse: map[FheUintType]uint64{
-			FheUint8:  60000,
-			FheUint16: 65000,
-			FheUint32: 70000,
+			FheUint8:  37000 + AdjustFHEGas,
+			FheUint16: 37000 + AdjustFHEGas,
+			FheUint32: 40000 + AdjustFHEGas,
+			FheUint64: 43000 + AdjustFHEGas,
 		},
 		// TODO: As of now, only support FheUint8. All optimistic require predicates are
 		// downcast to FheUint8 at the solidity level. Eventually move to ebool.

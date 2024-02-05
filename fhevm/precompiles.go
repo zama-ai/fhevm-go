@@ -263,7 +263,7 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		bwCompatBytes := input[4:minInt(5, len(input))]
 		return fheRandRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheRandBounded:
-		bwCompatBytes := input[4:minInt(37, len(input))]
+		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheRandBoundedRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheIfThenElse:
 		bwCompatBytes := input[4:minInt(100, len(input))]
@@ -497,12 +497,22 @@ func fheNegRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("fheNeg input not verified", "input", hex.EncodeToString(input))
 		return 0
 	}
-	return environment.FhevmParams().GasCosts.FheNegNot[ct.ciphertext.fheUintType]
+	return environment.FhevmParams().GasCosts.FheNeg[ct.ciphertext.fheUintType]
 }
 
 func fheNotRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	// Implement in terms of neg, because costs are currently the same.
-	return fheNegRequiredGas(environment, input)
+	logger := environment.GetLogger()
+	if len(input) != 32 {
+		logger.Error("fheNot input needs to contain one 256-bit sized value", "input", hex.EncodeToString(input))
+		return 0
+	}
+	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	if ct == nil {
+		logger.Error("fheNot input not verified", "input", hex.EncodeToString(input))
+		return 0
+	}
+	return environment.FhevmParams().GasCosts.FheNot[ct.ciphertext.fheUintType]
 }
 
 func fheDivRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -1906,6 +1916,11 @@ func generateRandom(environment EVMEnvironment, caller common.Address, resultTyp
 		cipher.XORKeyStream(randBytes, randBytes)
 		randUint = uint64(binary.BigEndian.Uint32(randBytes))
 		randUint = uint64(applyUpperBound(randUint, 32, upperBound))
+	case FheUint64:
+		randBytes := make([]byte, 8)
+		cipher.XORKeyStream(randBytes, randBytes)
+		randUint = uint64(binary.BigEndian.Uint64(randBytes))
+		randUint = uint64(applyUpperBound(randUint, 64, upperBound))
 	default:
 		return nil, fmt.Errorf("generateRandom() invalid type requested: %d", resultType)
 	}

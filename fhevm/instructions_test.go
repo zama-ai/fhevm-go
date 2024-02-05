@@ -56,7 +56,7 @@ func init() {
 
 func verifyCiphertextInTestMemory(environment EVMEnvironment, value uint64, depth int, t FheUintType) *tfheCiphertext {
 	// Simulate as if the ciphertext is compact and comes externally.
-	ser := encryptAndSerializeCompact(uint32(value), t)
+	ser := encryptAndSerializeCompact(uint64(value), t)
 	ct := new(tfheCiphertext)
 	err := ct.deserializeCompact(ser, t)
 	if err != nil {

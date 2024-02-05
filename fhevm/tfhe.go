@@ -124,6 +124,16 @@ void* cast_bool_32(void* ct, void* sks) {
 	return result;
 }
 
+void* cast_bool_64(void* ct, void* sks) {
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_bool_cast_into_fhe_uint64(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 int serialize_fhe_uint8(void *ct, DynamicBuffer* out) {
 	return fhe_uint8_serialize(ct, out);
 }
@@ -238,6 +248,44 @@ void* deserialize_compact_fhe_uint32(DynamicBufferView in) {
 	return ct;
 }
 
+int serialize_fhe_uint64(void *ct, DynamicBuffer* out) {
+	return fhe_uint64_serialize(ct, out);
+}
+
+void* deserialize_fhe_uint64(DynamicBufferView in) {
+	FheUint64* ct = NULL;
+	const int r = fhe_uint64_deserialize(in, &ct);
+	if(r != 0) {
+		return NULL;
+	}
+	return ct;
+}
+
+void* deserialize_compact_fhe_uint64(DynamicBufferView in) {
+	CompactFheUint64List* list = NULL;
+	FheUint64* ct = NULL;
+
+	int r = compact_fhe_uint64_list_deserialize(in, &list);
+	if(r != 0) {
+		return NULL;
+	}
+	size_t len = 0;
+	r = compact_fhe_uint64_list_len(list, &len);
+	// Expect only 1 ciphertext in the list.
+	if(r != 0 || len != 1) {
+		r = compact_fhe_uint64_list_destroy(list);
+		assert(r == 0);
+		return NULL;
+	}
+	r = compact_fhe_uint64_list_expand(list, &ct, 1);
+	if(r != 0) {
+		ct = NULL;
+	}
+	r = compact_fhe_uint64_list_destroy(list);
+	assert(r == 0);
+	return ct;
+}
+
 void destroy_fhe_uint8(void* ct) {
 	const int r = fhe_uint8_destroy(ct);
 	assert(r == 0);
@@ -250,6 +298,11 @@ void destroy_fhe_uint16(void* ct) {
 
 void destroy_fhe_uint32(void* ct) {
 	const int r = fhe_uint32_destroy(ct);
+	assert(r == 0);
+}
+
+void destroy_fhe_uint64(void* ct) {
+	const int r = fhe_uint64_destroy(ct);
 	assert(r == 0);
 }
 
@@ -282,6 +335,17 @@ void* add_fhe_uint32(void* ct1, void* ct2, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint32_add(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* add_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_add(ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -319,6 +383,17 @@ void* scalar_add_fhe_uint32(void* ct, uint32_t pt, void* sks)
 	return result;
 }
 
+void* scalar_add_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_add(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* sub_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
 	FheUint8* result = NULL;
@@ -348,6 +423,17 @@ void* sub_fhe_uint32(void* ct1, void* ct2, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint32_sub(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* sub_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_sub(ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -385,6 +471,17 @@ void* scalar_sub_fhe_uint32(void* ct, uint32_t pt, void* sks)
 	return result;
 }
 
+void* scalar_sub_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_sub(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* mul_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
 	FheUint8* result = NULL;
@@ -414,6 +511,17 @@ void* mul_fhe_uint32(void* ct1, void* ct2, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint32_mul(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* mul_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_mul(ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -451,6 +559,17 @@ void* scalar_mul_fhe_uint32(void* ct, uint32_t pt, void* sks)
 	return result;
 }
 
+void* scalar_mul_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_mul(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* scalar_div_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheUint8* result = NULL;
@@ -480,6 +599,17 @@ void* scalar_div_fhe_uint32(void* ct, uint32_t pt, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint32_scalar_div(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_div_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_div(ct, pt, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -517,6 +647,17 @@ void* scalar_rem_fhe_uint32(void* ct, uint32_t pt, void* sks)
 	return result;
 }
 
+void* scalar_rem_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_rem(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* bitand_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
 	FheUint8* result = NULL;
@@ -546,6 +687,17 @@ void* bitand_fhe_uint32(void* ct1, void* ct2, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint32_bitand(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* bitand_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_bitand(ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -583,6 +735,17 @@ void* bitor_fhe_uint32(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* bitor_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_bitor(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* bitxor_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
 	FheUint8* result = NULL;
@@ -612,6 +775,17 @@ void* bitxor_fhe_uint32(void* ct1, void* ct2, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint32_bitxor(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* bitxor_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_bitxor(ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -649,6 +823,17 @@ void* shl_fhe_uint32(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* shl_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_shl(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* scalar_shl_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheUint8* result = NULL;
@@ -678,6 +863,17 @@ void* scalar_shl_fhe_uint32(void* ct, uint32_t pt, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint32_scalar_shl(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_shl_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_shl(ct, pt, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -715,6 +911,17 @@ void* shr_fhe_uint32(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* shr_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_shr(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* scalar_shr_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheUint8* result = NULL;
@@ -744,6 +951,17 @@ void* scalar_shr_fhe_uint32(void* ct, uint32_t pt, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint32_scalar_shr(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_shr_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_shr(ct, pt, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -784,6 +1002,18 @@ void* eq_fhe_uint32(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* eq_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_eq(ct1, ct2, &bool_result);
+	if(r != 0) return NULL;
+	FheUint64* result = cast_bool_64(bool_result, sks);
+	return result;
+}
+
 void* scalar_eq_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheBool* bool_result = NULL;
@@ -817,6 +1047,18 @@ void* scalar_eq_fhe_uint32(void* ct, uint32_t pt, void* sks)
 	const int r = fhe_uint32_scalar_eq(ct, pt, &bool_result);
 	if(r != 0) return NULL;
 	FheUint32* result = cast_bool_32(bool_result, sks);
+	return result;
+}
+
+void* scalar_eq_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_eq(ct, pt, &bool_result);
+	if(r != 0) return NULL;
+	FheUint64* result = cast_bool_64(bool_result, sks);
 	return result;
 }
 
@@ -856,6 +1098,18 @@ void* ne_fhe_uint32(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* ne_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_ne(ct1, ct2, &bool_result);
+	if(r != 0) return NULL;
+	FheUint64* result = cast_bool_64(bool_result, sks);
+	return result;
+}
+
 void* scalar_ne_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheBool* bool_result = NULL;
@@ -889,6 +1143,18 @@ void* scalar_ne_fhe_uint32(void* ct, uint32_t pt, void* sks)
 	const int r = fhe_uint32_scalar_ne(ct, pt, &bool_result);
 	if(r != 0) return NULL;
 	FheUint32* result = cast_bool_32(bool_result, sks);
+	return result;
+}
+
+void* scalar_ne_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_ne(ct, pt, &bool_result);
+	if(r != 0) return NULL;
+	FheUint64* result = cast_bool_64(bool_result, sks);
 	return result;
 }
 
@@ -928,6 +1194,18 @@ void* ge_fhe_uint32(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* ge_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_ge(ct1, ct2, &bool_result);
+	if(r != 0) return NULL;
+	FheUint64* result = cast_bool_64(bool_result, sks);
+	return result;
+}
+
 void* scalar_ge_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheBool* bool_result = NULL;
@@ -961,6 +1239,18 @@ void* scalar_ge_fhe_uint32(void* ct, uint32_t pt, void* sks)
 	const int r = fhe_uint32_scalar_ge(ct, pt, &bool_result);
 	if(r != 0) return NULL;
 	FheUint32* result = cast_bool_32(bool_result, sks);
+	return result;
+}
+
+void* scalar_ge_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_ge(ct, pt, &bool_result);
+	if(r != 0) return NULL;
+	FheUint64* result = cast_bool_32(bool_result, sks);
 	return result;
 }
 
@@ -1000,6 +1290,18 @@ void* gt_fhe_uint32(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* gt_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_gt(ct1, ct2, &bool_result);
+	if(r != 0) return NULL;
+	FheUint64* result = cast_bool_64(bool_result, sks);
+	return result;
+}
+
 void* scalar_gt_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheBool* bool_result = NULL;
@@ -1033,6 +1335,18 @@ void* scalar_gt_fhe_uint32(void* ct, uint32_t pt, void* sks)
 	const int r = fhe_uint32_scalar_gt(ct, pt, &bool_result);
 	if(r != 0) return NULL;
 	FheUint32* result = cast_bool_32(bool_result, sks);
+	return result;
+}
+
+void* scalar_gt_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_gt(ct, pt, &bool_result);
+	if(r != 0) return NULL;
+	FheUint64* result = cast_bool_64(bool_result, sks);
 	return result;
 }
 
@@ -1072,6 +1386,18 @@ void* le_fhe_uint32(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* le_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_le(ct1, ct2, &bool_result);
+	if(r != 0) return NULL;
+	FheUint64* result = cast_bool_64(bool_result, sks);
+	return result;
+}
+
 void* scalar_le_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheBool* bool_result = NULL;
@@ -1105,6 +1431,18 @@ void* scalar_le_fhe_uint32(void* ct, uint32_t pt, void* sks)
 	const int r = fhe_uint32_scalar_le(ct, pt, &bool_result);
 	if(r != 0) return NULL;
 	FheUint32* result = cast_bool_32(bool_result, sks);
+	return result;
+}
+
+void* scalar_le_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_le(ct, pt, &bool_result);
+	if(r != 0) return NULL;
+	FheUint64* result = cast_bool_64(bool_result, sks);
 	return result;
 }
 
@@ -1144,6 +1482,18 @@ void* lt_fhe_uint32(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* lt_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_lt(ct1, ct2, &bool_result);
+	if(r != 0) return NULL;
+	FheUint64* result = cast_bool_64(bool_result, sks);
+	return result;
+}
+
 void* scalar_lt_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheBool* bool_result = NULL;
@@ -1180,6 +1530,18 @@ void* scalar_lt_fhe_uint32(void* ct, uint32_t pt, void* sks)
 	return result;
 }
 
+void* scalar_lt_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_lt(ct, pt, &bool_result);
+	if(r != 0) return NULL;
+	FheUint64* result = cast_bool_64(bool_result, sks);
+	return result;
+}
+
 void* min_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
 	FheUint8* result = NULL;
@@ -1209,6 +1571,17 @@ void* min_fhe_uint32(void* ct1, void* ct2, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint32_min(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* min_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_min(ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -1246,6 +1619,17 @@ void* scalar_min_fhe_uint32(void* ct, uint32_t pt, void* sks)
 	return result;
 }
 
+void* scalar_min_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_min(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* max_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
 	FheUint8* result = NULL;
@@ -1275,6 +1659,17 @@ void* max_fhe_uint32(void* ct1, void* ct2, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint32_max(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* max_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_max(ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -1312,6 +1707,17 @@ void* scalar_max_fhe_uint32(void* ct, uint32_t pt, void* sks)
 	return result;
 }
 
+void* scalar_max_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_max(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* neg_fhe_uint8(void* ct, void* sks) {
 	FheUint8* result = NULL;
 
@@ -1342,6 +1748,16 @@ void* neg_fhe_uint32(void* ct, void* sks) {
 	return result;
 }
 
+void* neg_fhe_uint64(void* ct, void* sks) {
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_neg(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* not_fhe_uint8(void* ct, void* sks) {
 	FheUint8* result = NULL;
 
@@ -1368,6 +1784,16 @@ void* not_fhe_uint32(void* ct, void* sks) {
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint32_not(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* not_fhe_uint64(void* ct, void* sks) {
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_not(ct, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -1411,6 +1837,19 @@ void* if_then_else_fhe_uint32(void* condition, void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* if_then_else_fhe_uint64(void* condition, void* ct1, void* ct2, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	FheBool* cond = cast_8_bool(condition, sks);
+
+	const int r = fhe_uint64_if_then_else(cond, ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 int decrypt_fhe_uint8(void* cks, void* ct, uint8_t* res)
 {
 	*res = 0;
@@ -1427,6 +1866,12 @@ int decrypt_fhe_uint32(void* cks, void* ct, uint32_t* res)
 {
 	*res = 0;
 	return fhe_uint32_decrypt(ct, cks, res);
+}
+
+int decrypt_fhe_uint64(void* cks, void* ct, uint64_t* res)
+{
+	*res = 0;
+	return fhe_uint64_decrypt(ct, cks, res);
 }
 
 void* public_key_encrypt_fhe_uint8(void* pks, uint8_t value) {
@@ -1477,6 +1922,22 @@ void* public_key_encrypt_fhe_uint32(void* pks, uint32_t value) {
 	return ct;
 }
 
+void* public_key_encrypt_fhe_uint64(void* pks, uint64_t value) {
+	CompactFheUint64List* list = NULL;
+	FheUint64* ct = NULL;
+
+	int r = compact_fhe_uint64_list_try_encrypt_with_compact_public_key_u64(&value, 1, pks, &list);
+  	assert(r == 0);
+
+	r = compact_fhe_uint64_list_expand(list, &ct, 1);
+	assert(r == 0);
+
+	r = compact_fhe_uint64_list_destroy(list);
+	assert(r == 0);
+
+	return ct;
+}
+
 void* trivial_encrypt_fhe_uint8(void* sks, uint8_t value) {
 	FheUint8* ct = NULL;
 
@@ -1505,6 +1966,17 @@ void* trivial_encrypt_fhe_uint32(void* sks, uint32_t value) {
 	checked_set_server_key(sks);
 
 	int r = fhe_uint32_try_encrypt_trivial_u32(value, &ct);
+  	assert(r == 0);
+
+	return ct;
+}
+
+void* trivial_encrypt_fhe_uint64(void* sks, uint64_t value) {
+	FheUint64* ct = NULL;
+
+	checked_set_server_key(sks);
+
+	int r = fhe_uint64_try_encrypt_trivial_u64(value, &ct);
   	assert(r == 0);
 
 	return ct;
@@ -1549,6 +2021,19 @@ void public_key_encrypt_and_serialize_fhe_uint32_list(void* pks, uint32_t value,
 	assert(r == 0);
 }
 
+void public_key_encrypt_and_serialize_fhe_uint64_list(void* pks, uint64_t value, DynamicBuffer* out) {
+	CompactFheUint64List* list = NULL;
+
+	int r = compact_fhe_uint64_list_try_encrypt_with_compact_public_key_u64(&value, 1, pks, &list);
+  	assert(r == 0);
+
+	r = compact_fhe_uint64_list_serialize(list, out);
+	assert(r == 0);
+
+	r = compact_fhe_uint64_list_destroy(list);
+	assert(r == 0);
+}
+
 void* cast_8_16(void* ct, void* sks) {
 	FheUint16* result = NULL;
 
@@ -1565,6 +2050,16 @@ void* cast_8_32(void* ct, void* sks) {
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint8_cast_into_fhe_uint32(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_8_64(void* ct, void* sks) {
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint8_cast_into_fhe_uint64(ct, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -1589,6 +2084,16 @@ void* cast_16_32(void* ct, void* sks) {
 	return result;
 }
 
+void* cast_16_64(void* ct, void* sks) {
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint16_cast_into_fhe_uint64(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* cast_32_8(void* ct, void* sks) {
 	FheUint8* result = NULL;
 
@@ -1605,6 +2110,46 @@ void* cast_32_16(void* ct, void* sks) {
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint32_cast_into_fhe_uint16(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_32_64(void* ct, void* sks) {
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint32_cast_into_fhe_uint64(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_64_8(void* ct, void* sks) {
+	FheUint8* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_cast_into_fhe_uint8(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_64_16(void* ct, void* sks) {
+	FheUint16* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_cast_into_fhe_uint16(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_64_32(void* ct, void* sks) {
+	FheUint32* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_cast_into_fhe_uint32(ct, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -1670,10 +2215,12 @@ func initCiphertextSizes() {
 	expandedFheCiphertextSize[FheUint8] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint8).serialize()))
 	expandedFheCiphertextSize[FheUint16] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint16).serialize()))
 	expandedFheCiphertextSize[FheUint32] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint32).serialize()))
+	expandedFheCiphertextSize[FheUint64] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint64).serialize()))
 
 	compactFheCiphertextSize[FheUint8] = uint(len(encryptAndSerializeCompact(0, FheUint8)))
 	compactFheCiphertextSize[FheUint16] = uint(len(encryptAndSerializeCompact(0, FheUint16)))
 	compactFheCiphertextSize[FheUint32] = uint(len(encryptAndSerializeCompact(0, FheUint32)))
+	compactFheCiphertextSize[FheUint64] = uint(len(encryptAndSerializeCompact(0, FheUint64)))
 }
 
 func InitGlobalKeysFromFiles(keysDir string) error {
@@ -1728,6 +2275,8 @@ func serialize(ptr unsafe.Pointer, t FheUintType) ([]byte, error) {
 		ret = C.serialize_fhe_uint16(ptr, out)
 	case FheUint32:
 		ret = C.serialize_fhe_uint32(ptr, out)
+	case FheUint64:
+		ret = C.serialize_fhe_uint64(ptr, out)
 	default:
 		panic("serialize: unexpected ciphertext type")
 	}
@@ -1758,6 +2307,7 @@ const (
 	FheUint8  FheUintType = 0
 	FheUint16 FheUintType = 1
 	FheUint32 FheUintType = 2
+	FheUint64 FheUintType = 3
 )
 
 // Represents an expanded TFHE ciphertext.
@@ -1788,6 +2338,12 @@ func (ct *tfheCiphertext) deserialize(in []byte, t FheUintType) error {
 			return errors.New("FheUint32 ciphertext deserialization failed")
 		}
 		C.destroy_fhe_uint32(ptr)
+	case FheUint64:
+		ptr := C.deserialize_fhe_uint64(toDynamicBufferView((in)))
+		if ptr == nil {
+			return errors.New("FheUint64 ciphertext deserialization failed")
+		}
+		C.destroy_fhe_uint64(ptr)
 	default:
 		panic("deserialize: unexpected ciphertext type")
 	}
@@ -1835,6 +2391,17 @@ func (ct *tfheCiphertext) deserializeCompact(in []byte, t FheUintType) error {
 		if err != nil {
 			return err
 		}
+	case FheUint64:
+		ptr := C.deserialize_compact_fhe_uint64(toDynamicBufferView((in)))
+		if ptr == nil {
+			return errors.New("compact FheUint64 ciphertext deserialization failed")
+		}
+		var err error
+		ct.serialization, err = serialize(ptr, t)
+		C.destroy_fhe_uint64(ptr)
+		if err != nil {
+			return err
+		}
 	default:
 		panic("deserializeCompact: unexpected ciphertext type")
 	}
@@ -1867,6 +2434,13 @@ func (ct *tfheCiphertext) encrypt(value big.Int, t FheUintType) *tfheCiphertext 
 		ptr = C.public_key_encrypt_fhe_uint32(pks, C.uint32_t(value.Uint64()))
 		ct.serialization, err = serialize(ptr, t)
 		C.destroy_fhe_uint32(ptr)
+		if err != nil {
+			panic(err)
+		}
+	case FheUint64:
+		ptr = C.public_key_encrypt_fhe_uint64(pks, C.uint64_t(value.Uint64()))
+		ct.serialization, err = serialize(ptr, t)
+		C.destroy_fhe_uint64(ptr)
 		if err != nil {
 			panic(err)
 		}
@@ -1903,6 +2477,13 @@ func (ct *tfheCiphertext) trivialEncrypt(value big.Int, t FheUintType) *tfheCiph
 		if err != nil {
 			panic(err)
 		}
+	case FheUint64:
+		ptr = C.trivial_encrypt_fhe_uint64(sks, C.uint64_t(value.Uint64()))
+		ct.serialization, err = serialize(ptr, t)
+		C.destroy_fhe_uint64(ptr)
+		if err != nil {
+			panic(err)
+		}
 	default:
 		panic("trivialEncrypt: unexpected ciphertext type")
 	}
@@ -1918,7 +2499,8 @@ func (ct *tfheCiphertext) serialize() []byte {
 func (ct *tfheCiphertext) executeUnaryCiphertextOperation(rhs *tfheCiphertext,
 	op8 func(ct unsafe.Pointer) unsafe.Pointer,
 	op16 func(ct unsafe.Pointer) unsafe.Pointer,
-	op32 func(ct unsafe.Pointer) unsafe.Pointer) (*tfheCiphertext, error) {
+	op32 func(ct unsafe.Pointer) unsafe.Pointer,
+	op64 func(ct unsafe.Pointer) unsafe.Pointer) (*tfheCiphertext, error) {
 
 	res := new(tfheCiphertext)
 	res.fheUintType = ct.fheUintType
@@ -1975,6 +2557,23 @@ func (ct *tfheCiphertext) executeUnaryCiphertextOperation(rhs *tfheCiphertext,
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
 		C.destroy_dynamic_buffer(res_ser)
+	case FheUint64:
+		ct_ptr := C.deserialize_fhe_uint64(toDynamicBufferView((ct.serialization)))
+		if ct_ptr == nil {
+			return nil, errors.New("64 bit unary op deserialization failed")
+		}
+		res_ptr := op64(ct_ptr)
+		C.destroy_fhe_uint64(ct_ptr)
+		if res_ptr == nil {
+			return nil, errors.New("64 bit op failed")
+		}
+		ret := C.serialize_fhe_uint64(res_ptr, res_ser)
+		C.destroy_fhe_uint64(res_ptr)
+		if ret != 0 {
+			return nil, errors.New("64 bit unary op serialization failed")
+		}
+		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
+		C.destroy_dynamic_buffer(res_ser)
 	default:
 		panic("unary op unexpected ciphertext type")
 	}
@@ -1985,7 +2584,8 @@ func (ct *tfheCiphertext) executeUnaryCiphertextOperation(rhs *tfheCiphertext,
 func (lhs *tfheCiphertext) executeBinaryCiphertextOperation(rhs *tfheCiphertext,
 	op8 func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
 	op16 func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
-	op32 func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer) (*tfheCiphertext, error) {
+	op32 func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
+	op64 func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer) (*tfheCiphertext, error) {
 	if lhs.fheUintType != rhs.fheUintType {
 		return nil, errors.New("binary operations are only well-defined for identical types")
 	}
@@ -2063,6 +2663,29 @@ func (lhs *tfheCiphertext) executeBinaryCiphertextOperation(rhs *tfheCiphertext,
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
 		C.destroy_dynamic_buffer(res_ser)
+	case FheUint64:
+		lhs_ptr := C.deserialize_fhe_uint64(toDynamicBufferView((lhs.serialization)))
+		if lhs_ptr == nil {
+			return nil, errors.New("64 bit binary op deserialization failed")
+		}
+		rhs_ptr := C.deserialize_fhe_uint64(toDynamicBufferView((rhs.serialization)))
+		if rhs_ptr == nil {
+			C.destroy_fhe_uint64(lhs_ptr)
+			return nil, errors.New("64 bit binary op deserialization failed")
+		}
+		res_ptr := op64(lhs_ptr, rhs_ptr)
+		C.destroy_fhe_uint64(lhs_ptr)
+		C.destroy_fhe_uint64(rhs_ptr)
+		if res_ptr == nil {
+			return nil, errors.New("64 bit binary op failed")
+		}
+		ret := C.serialize_fhe_uint64(res_ptr, res_ser)
+		C.destroy_fhe_uint64(res_ptr)
+		if ret != 0 {
+			return nil, errors.New("64 bit binary op serialization failed")
+		}
+		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
+		C.destroy_dynamic_buffer(res_ser)
 	default:
 		panic("binary op unexpected ciphertext type")
 	}
@@ -2073,7 +2696,8 @@ func (lhs *tfheCiphertext) executeBinaryCiphertextOperation(rhs *tfheCiphertext,
 func (first *tfheCiphertext) executeTernaryCiphertextOperation(lhs *tfheCiphertext, rhs *tfheCiphertext,
 	op8 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
 	op16 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
-	op32 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer) (*tfheCiphertext, error) {
+	op32 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
+	op64 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer) (*tfheCiphertext, error) {
 	if lhs.fheUintType != rhs.fheUintType {
 		return nil, errors.New("ternary operations are only well-defined for identical types")
 	}
@@ -2169,6 +2793,35 @@ func (first *tfheCiphertext) executeTernaryCiphertextOperation(lhs *tfheCipherte
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
 		C.destroy_dynamic_buffer(res_ser)
+	case FheUint64:
+		lhs_ptr := C.deserialize_fhe_uint64(toDynamicBufferView((lhs.serialization)))
+		if lhs_ptr == nil {
+			return nil, errors.New("64 bit binary op deserialization failed")
+		}
+		rhs_ptr := C.deserialize_fhe_uint64(toDynamicBufferView((rhs.serialization)))
+		if rhs_ptr == nil {
+			C.destroy_fhe_uint64(lhs_ptr)
+			return nil, errors.New("64 bit binary op deserialization failed")
+		}
+		first_ptr := C.deserialize_fhe_uint8(toDynamicBufferView((first.serialization)))
+		if first_ptr == nil {
+			C.destroy_fhe_uint8(lhs_ptr)
+			C.destroy_fhe_uint8(rhs_ptr)
+			return nil, errors.New("8 bit binary op deserialization failed")
+		}
+		res_ptr := op64(first_ptr, lhs_ptr, rhs_ptr)
+		C.destroy_fhe_uint64(lhs_ptr)
+		C.destroy_fhe_uint64(rhs_ptr)
+		if res_ptr == nil {
+			return nil, errors.New("64 bit binary op failed")
+		}
+		ret := C.serialize_fhe_uint64(res_ptr, res_ser)
+		C.destroy_fhe_uint64(res_ptr)
+		if ret != 0 {
+			return nil, errors.New("64 bit binary op serialization failed")
+		}
+		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
+		C.destroy_dynamic_buffer(res_ser)
 	default:
 		panic("binary op unexpected ciphertext type")
 	}
@@ -2179,7 +2832,8 @@ func (first *tfheCiphertext) executeTernaryCiphertextOperation(lhs *tfheCipherte
 func (lhs *tfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 	op8 func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer,
 	op16 func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer,
-	op32 func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer) (*tfheCiphertext, error) {
+	op32 func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer,
+	op64 func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer) (*tfheCiphertext, error) {
 	res := new(tfheCiphertext)
 	res.fheUintType = lhs.fheUintType
 	res_ser := &C.DynamicBuffer{}
@@ -2238,6 +2892,24 @@ func (lhs *tfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
 		C.destroy_dynamic_buffer(res_ser)
+	case FheUint64:
+		lhs_ptr := C.deserialize_fhe_uint64(toDynamicBufferView((lhs.serialization)))
+		if lhs_ptr == nil {
+			return nil, errors.New("64 bit scalar op deserialization failed")
+		}
+		scalar := C.uint64_t(rhs)
+		res_ptr := op64(lhs_ptr, scalar)
+		C.destroy_fhe_uint64(lhs_ptr)
+		if res_ptr == nil {
+			return nil, errors.New("64 bit scalar op failed")
+		}
+		ret := C.serialize_fhe_uint64(res_ptr, res_ser)
+		C.destroy_fhe_uint64(res_ptr)
+		if ret != 0 {
+			return nil, errors.New("64 bit scalar op serialization failed")
+		}
+		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
+		C.destroy_dynamic_buffer(res_ser)
 	default:
 		panic("scalar op unexpected ciphertext type")
 	}
@@ -2255,6 +2927,9 @@ func (lhs *tfheCiphertext) add(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.add_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.add_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2268,6 +2943,9 @@ func (lhs *tfheCiphertext) scalarAdd(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_add_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
+			return C.scalar_add_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2281,6 +2959,9 @@ func (lhs *tfheCiphertext) sub(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.sub_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.sub_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2294,6 +2975,9 @@ func (lhs *tfheCiphertext) scalarSub(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_sub_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
+			return C.scalar_sub_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2307,6 +2991,9 @@ func (lhs *tfheCiphertext) mul(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.mul_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.mul_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2320,6 +3007,9 @@ func (lhs *tfheCiphertext) scalarMul(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_mul_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
+			return C.scalar_mul_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2333,6 +3023,9 @@ func (lhs *tfheCiphertext) scalarDiv(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_div_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
+			return C.scalar_div_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2346,6 +3039,9 @@ func (lhs *tfheCiphertext) scalarRem(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_rem_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
+			return C.scalar_rem_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2359,6 +3055,9 @@ func (lhs *tfheCiphertext) bitand(rhs *tfheCiphertext) (*tfheCiphertext, error) 
 		},
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.bitand_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.bitand_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2372,6 +3071,9 @@ func (lhs *tfheCiphertext) bitor(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.bitor_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.bitor_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2385,6 +3087,9 @@ func (lhs *tfheCiphertext) bitxor(rhs *tfheCiphertext) (*tfheCiphertext, error) 
 		},
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.bitxor_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.bitxor_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2398,6 +3103,9 @@ func (lhs *tfheCiphertext) shl(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.shl_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.shl_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2411,6 +3119,9 @@ func (lhs *tfheCiphertext) scalarShl(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_shl_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
+			return C.scalar_shl_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2424,6 +3135,9 @@ func (lhs *tfheCiphertext) shr(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.shr_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.shr_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2437,6 +3151,9 @@ func (lhs *tfheCiphertext) scalarShr(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_shr_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
+			return C.scalar_shr_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2450,6 +3167,9 @@ func (lhs *tfheCiphertext) eq(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.eq_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.eq_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2463,6 +3183,9 @@ func (lhs *tfheCiphertext) scalarEq(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_eq_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
+			return C.scalar_eq_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2476,6 +3199,9 @@ func (lhs *tfheCiphertext) ne(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.ne_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.ne_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2489,6 +3215,9 @@ func (lhs *tfheCiphertext) scalarNe(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_ne_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
+			return C.scalar_ne_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2502,6 +3231,9 @@ func (lhs *tfheCiphertext) ge(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.ge_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.ge_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2515,6 +3247,9 @@ func (lhs *tfheCiphertext) scalarGe(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_ge_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
+			return C.scalar_ge_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2528,6 +3263,9 @@ func (lhs *tfheCiphertext) gt(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.gt_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.gt_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2541,6 +3279,9 @@ func (lhs *tfheCiphertext) scalarGt(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_gt_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
+			return C.scalar_gt_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2554,6 +3295,9 @@ func (lhs *tfheCiphertext) le(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.le_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.le_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2568,7 +3312,9 @@ func (lhs *tfheCiphertext) scalarLe(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_le_fhe_uint32(lhs, rhs, sks)
-
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
+			return C.scalar_le_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2582,6 +3328,9 @@ func (lhs *tfheCiphertext) lt(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.lt_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.lt_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2595,6 +3344,9 @@ func (lhs *tfheCiphertext) scalarLt(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_lt_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
+			return C.scalar_lt_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2608,6 +3360,9 @@ func (lhs *tfheCiphertext) min(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.min_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.min_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2621,6 +3376,9 @@ func (lhs *tfheCiphertext) scalarMin(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_min_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
+			return C.scalar_min_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2634,6 +3392,9 @@ func (lhs *tfheCiphertext) max(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.max_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.max_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2647,6 +3408,9 @@ func (lhs *tfheCiphertext) scalarMax(rhs uint64) (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
 			return C.scalar_max_fhe_uint32(lhs, rhs, sks)
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
+			return C.scalar_max_fhe_uint64(lhs, rhs, sks)
 		})
 }
 
@@ -2660,6 +3424,9 @@ func (lhs *tfheCiphertext) neg() (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer) unsafe.Pointer {
 			return C.neg_fhe_uint32(lhs, sks)
+		},
+		func(lhs unsafe.Pointer) unsafe.Pointer {
+			return C.neg_fhe_uint64(lhs, sks)
 		})
 }
 
@@ -2673,6 +3440,9 @@ func (lhs *tfheCiphertext) not() (*tfheCiphertext, error) {
 		},
 		func(lhs unsafe.Pointer) unsafe.Pointer {
 			return C.not_fhe_uint32(lhs, sks)
+		},
+		func(lhs unsafe.Pointer) unsafe.Pointer {
+			return C.not_fhe_uint64(lhs, sks)
 		})
 }
 
@@ -2686,6 +3456,9 @@ func (condition *tfheCiphertext) ifThenElse(lhs *tfheCiphertext, rhs *tfheCipher
 		},
 		func(condition unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.if_then_else_fhe_uint32(condition, lhs, rhs, sks)
+		},
+		func(condition unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.if_then_else_fhe_uint64(condition, lhs, rhs, sks)
 		})
 }
 
@@ -2732,6 +3505,22 @@ func (ct *tfheCiphertext) castTo(castToType FheUintType) (*tfheCiphertext, error
 			if err != nil {
 				return nil, err
 			}
+		case FheUint64:
+			from_ptr := C.deserialize_fhe_uint8(toDynamicBufferView(ct.serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheUint8 ciphertext")
+			}
+			to_ptr := C.cast_8_64(from_ptr, sks)
+			C.destroy_fhe_uint8(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheUint8 to FheUint64")
+			}
+			var err error
+			res.serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint64(to_ptr)
+			if err != nil {
+				return nil, err
+			}
 		default:
 			panic("castTo: unexpected type to cast to")
 		}
@@ -2769,6 +3558,22 @@ func (ct *tfheCiphertext) castTo(castToType FheUintType) (*tfheCiphertext, error
 			if err != nil {
 				return nil, err
 			}
+		case FheUint64:
+			from_ptr := C.deserialize_fhe_uint16(toDynamicBufferView(ct.serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheUint16 ciphertext")
+			}
+			to_ptr := C.cast_16_64(from_ptr, sks)
+			C.destroy_fhe_uint16(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheUint16 to FheUint64")
+			}
+			var err error
+			res.serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint64(to_ptr)
+			if err != nil {
+				return nil, err
+			}
 		default:
 			panic("castTo: unexpected type to cast to")
 		}
@@ -2803,6 +3608,75 @@ func (ct *tfheCiphertext) castTo(castToType FheUintType) (*tfheCiphertext, error
 			var err error
 			res.serialization, err = serialize(to_ptr, castToType)
 			C.destroy_fhe_uint16(to_ptr)
+			if err != nil {
+				return nil, err
+			}
+		case FheUint64:
+			from_ptr := C.deserialize_fhe_uint32(toDynamicBufferView(ct.serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheUint32 ciphertext")
+			}
+			to_ptr := C.cast_32_64(from_ptr, sks)
+			C.destroy_fhe_uint32(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheUint32 to FheUint64")
+			}
+			var err error
+			res.serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint64(to_ptr)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			panic("castTo: unexpected type to cast to")
+		}
+	case FheUint64:
+		switch castToType {
+		case FheUint8:
+			from_ptr := C.deserialize_fhe_uint64(toDynamicBufferView(ct.serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheUint64 ciphertext")
+			}
+			to_ptr := C.cast_64_8(from_ptr, sks)
+			C.destroy_fhe_uint64(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheUint64 to FheUint8")
+			}
+			var err error
+			res.serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint8(to_ptr)
+			if err != nil {
+				return nil, err
+			}
+		case FheUint16:
+			from_ptr := C.deserialize_fhe_uint64(toDynamicBufferView(ct.serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheUint64 ciphertext")
+			}
+			to_ptr := C.cast_64_16(from_ptr, sks)
+			C.destroy_fhe_uint64(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheUint64 to FheUint16")
+			}
+			var err error
+			res.serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint16(to_ptr)
+			if err != nil {
+				return nil, err
+			}
+		case FheUint32:
+			from_ptr := C.deserialize_fhe_uint64(toDynamicBufferView(ct.serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheUint64 ciphertext")
+			}
+			to_ptr := C.cast_64_32(from_ptr, sks)
+			C.destroy_fhe_uint64(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheUint64 to FheUint32")
+			}
+			var err error
+			res.serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint32(to_ptr)
 			if err != nil {
 				return nil, err
 			}
@@ -2848,6 +3722,15 @@ func (ct *tfheCiphertext) decrypt() (big.Int, error) {
 		ret = C.decrypt_fhe_uint32(cks, ptr, &result)
 		C.destroy_fhe_uint32(ptr)
 		value = uint64(result)
+	case FheUint64:
+		ptr := C.deserialize_fhe_uint64(toDynamicBufferView(ct.serialization))
+		if ptr == nil {
+			return *new(big.Int).SetUint64(0), errors.New("failed to deserialize FheUint64")
+		}
+		var result C.uint64_t
+		ret = C.decrypt_fhe_uint64(cks, ptr, &result)
+		C.destroy_fhe_uint64(ptr)
+		value = uint64(result)
 	default:
 		panic("decrypt: unexpected ciphertext type")
 	}
@@ -2871,13 +3754,13 @@ func (ct *tfheCiphertext) getHash() common.Hash {
 }
 
 func isValidType(t byte) bool {
-	if uint8(t) < uint8(FheUint8) || uint8(t) > uint8(FheUint32) {
+	if uint8(t) < uint8(FheUint8) || uint8(t) > uint8(FheUint64) {
 		return false
 	}
 	return true
 }
 
-func encryptAndSerializeCompact(value uint32, fheUintType FheUintType) []byte {
+func encryptAndSerializeCompact(value uint64, fheUintType FheUintType) []byte {
 	out := &C.DynamicBuffer{}
 	switch fheUintType {
 	case FheUint8:
@@ -2886,6 +3769,8 @@ func encryptAndSerializeCompact(value uint32, fheUintType FheUintType) []byte {
 		C.public_key_encrypt_and_serialize_fhe_uint16_list(pks, C.uint16_t(value), out)
 	case FheUint32:
 		C.public_key_encrypt_and_serialize_fhe_uint32_list(pks, C.uint32_t(value), out)
+	case FheUint64:
+		C.public_key_encrypt_and_serialize_fhe_uint64_list(pks, C.uint64_t(value), out)
 	}
 
 	ser := C.GoBytes(unsafe.Pointer(out.pointer), C.int(out.length))

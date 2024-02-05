@@ -47,6 +47,8 @@ func TfheEncryptDecrypt(t *testing.T, fheUintType FheUintType) {
 		val.SetUint64(1337)
 	case FheUint32:
 		val.SetUint64(1333337)
+	case FheUint64:
+		val.SetUint64(13333377777777777)
 	}
 	ct := new(tfheCiphertext)
 	ct.encrypt(val, fheUintType)
@@ -65,6 +67,8 @@ func TfheTrivialEncryptDecrypt(t *testing.T, fheUintType FheUintType) {
 		val.SetUint64(1337)
 	case FheUint32:
 		val.SetUint64(1333337)
+	case FheUint64:
+		val.SetUint64(13333377777777777)
 	}
 	ct := new(tfheCiphertext)
 	ct.trivialEncrypt(val, fheUintType)
@@ -83,6 +87,8 @@ func TfheSerializeDeserialize(t *testing.T, fheUintType FheUintType) {
 		val = *big.NewInt(1337)
 	case FheUint32:
 		val = *big.NewInt(1333337)
+	case FheUint64:
+		val = *big.NewInt(13333377777777777)
 	}
 	ct1 := new(tfheCiphertext)
 	ct1.encrypt(val, fheUintType)
@@ -99,7 +105,7 @@ func TfheSerializeDeserialize(t *testing.T, fheUintType FheUintType) {
 }
 
 func TfheSerializeDeserializeCompact(t *testing.T, fheUintType FheUintType) {
-	var val uint32
+	var val uint64
 	switch fheUintType {
 	case FheUint8:
 		val = 2
@@ -107,6 +113,8 @@ func TfheSerializeDeserializeCompact(t *testing.T, fheUintType FheUintType) {
 		val = 1337
 	case FheUint32:
 		val = 1333337
+	case FheUint64:
+		val = 13333377777777777
 	}
 
 	ser := encryptAndSerializeCompact(val, fheUintType)
@@ -129,7 +137,7 @@ func TfheSerializeDeserializeCompact(t *testing.T, fheUintType FheUintType) {
 	}
 
 	decrypted, err := ct2.decrypt()
-	if err != nil || uint32(decrypted.Uint64()) != val {
+	if err != nil || uint64(decrypted.Uint64()) != val {
 		t.Fatalf("decrypted value is incorrect")
 	}
 }
@@ -143,6 +151,8 @@ func TfheTrivialSerializeDeserialize(t *testing.T, fheUintType FheUintType) {
 		val = *big.NewInt(1337)
 	case FheUint32:
 		val = *big.NewInt(1333337)
+	case FheUint64:
+		val = *big.NewInt(13333377777777777)
 	}
 	ct1 := new(tfheCiphertext)
 	ct1.trivialEncrypt(val, fheUintType)
@@ -169,7 +179,7 @@ func TfheDeserializeFailure(t *testing.T, fheUintType FheUintType) {
 }
 
 func TfheDeserializeCompact(t *testing.T, fheUintType FheUintType) {
-	var val uint32
+	var val uint64
 	switch fheUintType {
 	case FheUint8:
 		val = 2
@@ -177,6 +187,8 @@ func TfheDeserializeCompact(t *testing.T, fheUintType FheUintType) {
 		val = 1337
 	case FheUint32:
 		val = 1333337
+	case FheUint64:
+		val = 13333377777777777
 	}
 	ser := encryptAndSerializeCompact(val, fheUintType)
 	ct := new(tfheCiphertext)
@@ -185,7 +197,7 @@ func TfheDeserializeCompact(t *testing.T, fheUintType FheUintType) {
 		t.Fatalf("compact deserialization failed")
 	}
 	decryptedVal, err := ct.decrypt()
-	if err != nil || uint32(decryptedVal.Uint64()) != val {
+	if err != nil || uint64(decryptedVal.Uint64()) != val {
 		t.Fatalf("compact deserialization wrong decryption")
 	}
 }
@@ -210,6 +222,9 @@ func TfheAdd(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13333377777777777)
+		b.SetUint64(133337777777777)
 	}
 	expected := new(big.Int).Add(&a, &b)
 	ctA := new(tfheCiphertext)
@@ -235,6 +250,9 @@ func TfheScalarAdd(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13333377777777777)
+		b.SetUint64(133337777777777)
 	}
 	expected := new(big.Int).Add(&a, &b)
 	ctA := new(tfheCiphertext)
@@ -258,6 +276,9 @@ func TfheSub(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13333377777777777)
+		b.SetUint64(133337777777777)
 	}
 	expected := new(big.Int).Sub(&a, &b)
 	ctA := new(tfheCiphertext)
@@ -283,6 +304,9 @@ func TfheScalarSub(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13333377777777777)
+		b.SetUint64(133337777777777)
 	}
 	expected := new(big.Int).Sub(&a, &b)
 	ctA := new(tfheCiphertext)
@@ -306,6 +330,9 @@ func TfheMul(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(137)
 		b.SetInt64(17)
+	case FheUint64:
+		a.SetUint64(1337)
+		b.SetUint64(133)
 	}
 	expected := new(big.Int).Mul(&a, &b)
 	ctA := new(tfheCiphertext)
@@ -331,6 +358,9 @@ func TfheScalarMul(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(137)
 		b.SetInt64(17)
+	case FheUint64:
+		a.SetUint64(1337)
+		b.SetUint64(133)
 	}
 	expected := new(big.Int).Mul(&a, &b)
 	ctA := new(tfheCiphertext)
@@ -354,6 +384,9 @@ func TfheScalarDiv(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(70)
 		b.SetInt64(17)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	expected := new(big.Int).Div(&a, &b)
 	ctA := new(tfheCiphertext)
@@ -377,6 +410,9 @@ func TfheScalarRem(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(70)
 		b.SetInt64(17)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	expected := new(big.Int).Rem(&a, &b)
 	ctA := new(tfheCiphertext)
@@ -400,6 +436,9 @@ func TfheBitAnd(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(137)
 		b.SetInt64(17)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	expected := a.Uint64() & b.Uint64()
 	ctA := new(tfheCiphertext)
@@ -425,6 +464,9 @@ func TfheBitOr(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(137)
 		b.SetInt64(17)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	expected := a.Uint64() | b.Uint64()
 	ctA := new(tfheCiphertext)
@@ -450,6 +492,9 @@ func TfheBitXor(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(137)
 		b.SetInt64(17)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	expected := a.Uint64() ^ b.Uint64()
 	ctA := new(tfheCiphertext)
@@ -475,6 +520,9 @@ func TfheShl(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(137)
 		b.SetInt64(17)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(45)
 	}
 	expected := new(big.Int).Lsh(&a, uint(b.Uint64()))
 	ctA := new(tfheCiphertext)
@@ -500,6 +548,9 @@ func TfheScalarShl(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(137)
 		b.SetInt64(17)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(45)
 	}
 	expected := new(big.Int).Lsh(&a, uint(b.Uint64()))
 	ctA := new(tfheCiphertext)
@@ -523,6 +574,9 @@ func TfheShr(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(137)
 		b.SetInt64(17)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	expected := new(big.Int).Rsh(&a, uint(b.Uint64()))
 	ctA := new(tfheCiphertext)
@@ -548,6 +602,9 @@ func TfheScalarShr(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(137)
 		b.SetInt64(17)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	expected := new(big.Int).Rsh(&a, uint(b.Uint64()))
 	ctA := new(tfheCiphertext)
@@ -571,6 +628,9 @@ func TfheEq(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(137)
 		b.SetInt64(137)
+	case FheUint64:
+		a.SetUint64(1337)
+		b.SetUint64(1337)
 	}
 	var expected uint64
 	expectedBool := a.Uint64() == b.Uint64()
@@ -602,6 +662,9 @@ func TfheScalarEq(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(137)
 		b.SetInt64(17)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	var expected uint64
 	expectedBool := a.Uint64() == b.Uint64()
@@ -631,6 +694,9 @@ func TfheNe(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(137)
 		b.SetInt64(137)
+	case FheUint64:
+		a.SetUint64(1337)
+		b.SetUint64(1337)
 	}
 	var expected uint64
 	expectedBool := a.Uint64() != b.Uint64()
@@ -662,6 +728,9 @@ func TfheScalarNe(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(137)
 		b.SetInt64(17)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	var expected uint64
 	expectedBool := a.Uint64() != b.Uint64()
@@ -691,6 +760,9 @@ func TfheGe(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	ctA := new(tfheCiphertext)
 	ctA.encrypt(a, fheUintType)
@@ -720,6 +792,9 @@ func TfheScalarGe(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	ctA := new(tfheCiphertext)
 	ctA.encrypt(a, fheUintType)
@@ -742,6 +817,9 @@ func TfheGt(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	ctA := new(tfheCiphertext)
 	ctA.encrypt(a, fheUintType)
@@ -771,6 +849,9 @@ func TfheScalarGt(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	ctA := new(tfheCiphertext)
 	ctA.encrypt(a, fheUintType)
@@ -793,6 +874,9 @@ func TfheLe(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	ctA := new(tfheCiphertext)
 	ctA.encrypt(a, fheUintType)
@@ -822,6 +906,9 @@ func TfheScalarLe(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	ctA := new(tfheCiphertext)
 	ctA.encrypt(a, fheUintType)
@@ -844,6 +931,9 @@ func TfheLt(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	ctA := new(tfheCiphertext)
 	ctA.encrypt(a, fheUintType)
@@ -873,6 +963,9 @@ func TfheScalarLt(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	ctA := new(tfheCiphertext)
 	ctA.encrypt(a, fheUintType)
@@ -895,6 +988,9 @@ func TfheMin(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	ctA := new(tfheCiphertext)
 	ctA.encrypt(a, fheUintType)
@@ -924,6 +1020,9 @@ func TfheScalarMin(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	ctA := new(tfheCiphertext)
 	ctA.encrypt(a, fheUintType)
@@ -946,6 +1045,9 @@ func TfheMax(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	ctA := new(tfheCiphertext)
 	ctA.encrypt(a, fheUintType)
@@ -975,6 +1077,9 @@ func TfheScalarMax(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
 	}
 	ctA := new(tfheCiphertext)
 	ctA.encrypt(a, fheUintType)
@@ -999,6 +1104,9 @@ func TfheNeg(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		expected = uint64(-uint32(a.Uint64()))
+	case FheUint64:
+		a.SetUint64(13333377777777777)
+		expected = uint64(-uint64(a.Uint64()))
 	}
 	ctA := new(tfheCiphertext)
 	ctA.encrypt(a, fheUintType)
@@ -1022,6 +1130,9 @@ func TfheNot(t *testing.T, fheUintType FheUintType) {
 	case FheUint32:
 		a.SetUint64(1333337)
 		expected = uint64(^uint32(a.Uint64()))
+	case FheUint64:
+		a.SetUint64(13333377777777777)
+		expected = uint64(^uint64(a.Uint64()))
 	}
 	ctA := new(tfheCiphertext)
 	ctA.encrypt(a, fheUintType)
@@ -1046,6 +1157,9 @@ func TfheIfThenElse(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(1337)
 	case FheUint32:
 		a.SetUint64(1333337)
+		b.SetUint64(133337)
+	case FheUint64:
+		a.SetUint64(13333377777777777)
 		b.SetUint64(133337)
 	}
 	ctCondition := new(tfheCiphertext)
@@ -1077,6 +1191,8 @@ func TfheCast(t *testing.T, fheUintTypeFrom FheUintType, fheUintTypeTo FheUintTy
 		a.SetUint64(4283)
 	case FheUint32:
 		a.SetUint64(1333337)
+	case FheUint64:
+		a.SetUint64(13333377777777777)
 	}
 
 	var modulus uint64
@@ -1087,6 +1203,8 @@ func TfheCast(t *testing.T, fheUintTypeFrom FheUintType, fheUintTypeTo FheUintTy
 		modulus = uint64(math.Pow(2, 16))
 	case FheUint32:
 		modulus = uint64(math.Pow(2, 32))
+	case FheUint64:
+		modulus = uint64(math.Pow(2, 64))
 	}
 
 	ctA := new(tfheCiphertext)
@@ -1118,6 +1236,10 @@ func TestTfheEncryptDecrypt32(t *testing.T) {
 	TfheEncryptDecrypt(t, FheUint32)
 }
 
+func TestTfheEncryptDecrypt64(t *testing.T) {
+	TfheEncryptDecrypt(t, FheUint64)
+}
+
 func TestTfheTrivialEncryptDecrypt8(t *testing.T) {
 	TfheTrivialEncryptDecrypt(t, FheUint8)
 }
@@ -1128,6 +1250,10 @@ func TestTfheTrivialEncryptDecrypt16(t *testing.T) {
 
 func TestTfheTrivialEncryptDecrypt32(t *testing.T) {
 	TfheTrivialEncryptDecrypt(t, FheUint32)
+}
+
+func TestTfheTrivialEncryptDecrypt64(t *testing.T) {
+	TfheTrivialEncryptDecrypt(t, FheUint64)
 }
 
 func TestTfheSerializeDeserialize8(t *testing.T) {
@@ -1142,6 +1268,10 @@ func TestTfheSerializeDeserialize32(t *testing.T) {
 	TfheSerializeDeserialize(t, FheUint32)
 }
 
+func TestTfheSerializeDeserialize64(t *testing.T) {
+	TfheSerializeDeserialize(t, FheUint64)
+}
+
 func TestTfheSerializeDeserializeCompact8(t *testing.T) {
 	TfheSerializeDeserializeCompact(t, FheUint8)
 }
@@ -1152,6 +1282,10 @@ func TestTfheSerializeDeserializeCompact16(t *testing.T) {
 
 func TestTfheSerializeDeserializeCompact32(t *testing.T) {
 	TfheSerializeDeserializeCompact(t, FheUint32)
+}
+
+func TestTfheSerializeDeserializeCompact64(t *testing.T) {
+	TfheSerializeDeserializeCompact(t, FheUint64)
 }
 
 func TestTfheTrivialSerializeDeserialize8(t *testing.T) {
@@ -1166,6 +1300,10 @@ func TestTfheTrivialSerializeDeserialize32(t *testing.T) {
 	TfheTrivialSerializeDeserialize(t, FheUint32)
 }
 
+func TestTfheTrivialSerializeDeserialize64(t *testing.T) {
+	TfheTrivialSerializeDeserialize(t, FheUint64)
+}
+
 func TestTfheDeserializeFailure8(t *testing.T) {
 	TfheDeserializeFailure(t, FheUint8)
 }
@@ -1178,6 +1316,10 @@ func TestTfheDeserializeFailure32(t *testing.T) {
 	TfheDeserializeFailure(t, FheUint32)
 }
 
+func TestTfheDeserializeFailure64(t *testing.T) {
+	TfheDeserializeFailure(t, FheUint64)
+}
+
 func TestTfheDeserializeCompact8(t *testing.T) {
 	TfheDeserializeCompact(t, FheUint8)
 }
@@ -1186,8 +1328,12 @@ func TestTfheDeserializeCompact16(t *testing.T) {
 	TfheDeserializeCompact(t, FheUint16)
 }
 
-func TestTfheDeserializeCompatc32(t *testing.T) {
+func TestTfheDeserializeCompact32(t *testing.T) {
 	TfheDeserializeCompact(t, FheUint32)
+}
+
+func TestTfheDeserializeCompact64(t *testing.T) {
+	TfheDeserializeCompact(t, FheUint64)
 }
 
 func TestTfheDeserializeCompactFailure8(t *testing.T) {
@@ -1202,6 +1348,10 @@ func TestTfheDeserializeCompatcFailure32(t *testing.T) {
 	TfheDeserializeCompactFailure(t, FheUint32)
 }
 
+func TestTfheDeserializeCompatcFailure64(t *testing.T) {
+	TfheDeserializeCompactFailure(t, FheUint64)
+}
+
 func TestTfheAdd8(t *testing.T) {
 	TfheAdd(t, FheUint8)
 }
@@ -1214,6 +1364,10 @@ func TestTfheAdd32(t *testing.T) {
 	TfheAdd(t, FheUint32)
 }
 
+func TestTfheAdd64(t *testing.T) {
+	TfheAdd(t, FheUint64)
+}
+
 func TestTfheScalarAdd8(t *testing.T) {
 	TfheScalarAdd(t, FheUint8)
 }
@@ -1223,6 +1377,10 @@ func TestTfheScalarAdd16(t *testing.T) {
 }
 
 func TestTfheScalarAdd32(t *testing.T) {
+	TfheScalarAdd(t, FheUint32)
+}
+
+func TestTfheScalarAdd64(t *testing.T) {
 	TfheScalarAdd(t, FheUint32)
 }
 
@@ -1238,6 +1396,10 @@ func TestTfheSub32(t *testing.T) {
 	TfheSub(t, FheUint32)
 }
 
+func TestTfheSub64(t *testing.T) {
+	TfheSub(t, FheUint64)
+}
+
 func TestTfheScalarSub8(t *testing.T) {
 	TfheScalarSub(t, FheUint8)
 }
@@ -1248,6 +1410,10 @@ func TestTfheScalarSub16(t *testing.T) {
 
 func TestTfheScalarSub32(t *testing.T) {
 	TfheScalarSub(t, FheUint32)
+}
+
+func TestTfheScalarSub64(t *testing.T) {
+	TfheScalarSub(t, FheUint64)
 }
 
 func TestTfheMul8(t *testing.T) {
@@ -1262,6 +1428,10 @@ func TestTfheMul32(t *testing.T) {
 	TfheMul(t, FheUint32)
 }
 
+func TestTfheMul64(t *testing.T) {
+	TfheMul(t, FheUint64)
+}
+
 func TestTfheScalarMul8(t *testing.T) {
 	TfheScalarMul(t, FheUint8)
 }
@@ -1274,6 +1444,11 @@ func TestTfheScalarMul32(t *testing.T) {
 	TfheScalarMul(t, FheUint32)
 }
 
+func TestTfheScalarMul64(t *testing.T) {
+	TfheScalarMul(t, FheUint64)
+}
+
+
 func TestTfheScalarDiv8(t *testing.T) {
 	TfheScalarDiv(t, FheUint8)
 }
@@ -1284,6 +1459,10 @@ func TestTfheScalarDiv16(t *testing.T) {
 
 func TestTfheScalarDiv32(t *testing.T) {
 	TfheScalarDiv(t, FheUint32)
+}
+
+func TestTfheScalarDiv64(t *testing.T) {
+	TfheScalarDiv(t, FheUint64)
 }
 
 func TestTfheScalarRem8(t *testing.T) {
@@ -1298,6 +1477,10 @@ func TestTfheScalarRem32(t *testing.T) {
 	TfheScalarRem(t, FheUint32)
 }
 
+func TestTfheScalarRem64(t *testing.T) {
+	TfheScalarRem(t, FheUint64)
+}
+
 func TestTfheBitAnd8(t *testing.T) {
 	TfheBitAnd(t, FheUint8)
 }
@@ -1308,6 +1491,10 @@ func TestTfheBitAnd16(t *testing.T) {
 
 func TestTfheBitAnd32(t *testing.T) {
 	TfheBitAnd(t, FheUint32)
+}
+
+func TestTfheBitAnd64(t *testing.T) {
+	TfheBitAnd(t, FheUint64)
 }
 
 func TestTfheBitOr8(t *testing.T) {
@@ -1322,6 +1509,10 @@ func TestTfheBitOr32(t *testing.T) {
 	TfheBitOr(t, FheUint32)
 }
 
+func TestTfheBitOr64(t *testing.T) {
+	TfheBitOr(t, FheUint64)
+}
+
 func TestTfheBitXor8(t *testing.T) {
 	TfheBitXor(t, FheUint8)
 }
@@ -1332,6 +1523,10 @@ func TestTfheBitXor16(t *testing.T) {
 
 func TestTfheBitXor32(t *testing.T) {
 	TfheBitXor(t, FheUint32)
+}
+
+func TestTfheBitXor64(t *testing.T) {
+	TfheBitXor(t, FheUint64)
 }
 
 func TestTfheShl8(t *testing.T) {
@@ -1346,6 +1541,10 @@ func TestTfheShl32(t *testing.T) {
 	TfheShl(t, FheUint32)
 }
 
+func TestTfheShl64(t *testing.T) {
+	TfheShl(t, FheUint64)
+}
+
 func TestTfheScalarShl8(t *testing.T) {
 	TfheScalarShl(t, FheUint8)
 }
@@ -1356,6 +1555,10 @@ func TestTfheScalarShl16(t *testing.T) {
 
 func TestTfheScalarShl32(t *testing.T) {
 	TfheScalarShl(t, FheUint32)
+}
+
+func TestTfheScalarShl64(t *testing.T) {
+	TfheScalarShl(t, FheUint64)
 }
 
 func TestTfheShr8(t *testing.T) {
@@ -1370,6 +1573,10 @@ func TestTfheShr32(t *testing.T) {
 	TfheShr(t, FheUint32)
 }
 
+func TestTfheShr64(t *testing.T) {
+	TfheShr(t, FheUint64)
+}
+
 func TestTfheScalarShr8(t *testing.T) {
 	TfheScalarShr(t, FheUint8)
 }
@@ -1380,6 +1587,10 @@ func TestTfheScalarShr16(t *testing.T) {
 
 func TestTfheScalarShr32(t *testing.T) {
 	TfheScalarShr(t, FheUint32)
+}
+
+func TestTfheScalarShr64(t *testing.T) {
+	TfheScalarShr(t, FheUint64)
 }
 
 func TestTfheEq8(t *testing.T) {
@@ -1394,6 +1605,10 @@ func TestTfheEq32(t *testing.T) {
 	TfheEq(t, FheUint32)
 }
 
+func TestTfheEq64(t *testing.T) {
+	TfheEq(t, FheUint64)
+}
+
 func TestTfheScalarEq8(t *testing.T) {
 	TfheScalarEq(t, FheUint8)
 }
@@ -1404,6 +1619,10 @@ func TestTfheScalarEq16(t *testing.T) {
 
 func TestTfheScalarEq32(t *testing.T) {
 	TfheScalarEq(t, FheUint32)
+}
+
+func TestTfheScalarEq64(t *testing.T) {
+	TfheScalarEq(t, FheUint64)
 }
 
 func TestTfheNe8(t *testing.T) {
@@ -1418,6 +1637,10 @@ func TestTfheNe32(t *testing.T) {
 	TfheNe(t, FheUint32)
 }
 
+func TestTfheNe64(t *testing.T) {
+	TfheNe(t, FheUint64)
+}
+
 func TestTfheScalarNe8(t *testing.T) {
 	TfheScalarNe(t, FheUint8)
 }
@@ -1428,6 +1651,10 @@ func TestTfheScalarNe16(t *testing.T) {
 
 func TestTfheScalarNe32(t *testing.T) {
 	TfheScalarNe(t, FheUint32)
+}
+
+func TestTfheScalarNe64(t *testing.T) {
+	TfheScalarNe(t, FheUint64)
 }
 
 func TestTfheGe8(t *testing.T) {
@@ -1442,6 +1669,10 @@ func TestTfheGe32(t *testing.T) {
 	TfheGe(t, FheUint32)
 }
 
+func TestTfheGe64(t *testing.T) {
+	TfheGe(t, FheUint64)
+}
+
 func TestTfheScalarGe8(t *testing.T) {
 	TfheScalarGe(t, FheUint8)
 }
@@ -1452,6 +1683,10 @@ func TestTfheScalarGe16(t *testing.T) {
 
 func TestTfheScalarGe32(t *testing.T) {
 	TfheScalarGe(t, FheUint32)
+}
+
+func TestTfheScalarGe64(t *testing.T) {
+	TfheScalarGe(t, FheUint64)
 }
 
 func TestTfheGt8(t *testing.T) {
@@ -1466,6 +1701,10 @@ func TestTfheGt32(t *testing.T) {
 	TfheGt(t, FheUint32)
 }
 
+func TestTfheGt64(t *testing.T) {
+	TfheGt(t, FheUint64)
+}
+
 func TestTfheScalarGt8(t *testing.T) {
 	TfheScalarGt(t, FheUint8)
 }
@@ -1476,6 +1715,10 @@ func TestTfheScalarGt16(t *testing.T) {
 
 func TestTfheScalarGt32(t *testing.T) {
 	TfheScalarGt(t, FheUint32)
+}
+
+func TestTfheScalarGt64(t *testing.T) {
+	TfheScalarGt(t, FheUint64)
 }
 
 func TestTfheLe8(t *testing.T) {
@@ -1490,6 +1733,10 @@ func TestTfheLe32(t *testing.T) {
 	TfheLe(t, FheUint32)
 }
 
+func TestTfheLe64(t *testing.T) {
+	TfheLe(t, FheUint64)
+}
+
 func TestTfheScalarLe8(t *testing.T) {
 	TfheScalarLe(t, FheUint8)
 }
@@ -1502,6 +1749,10 @@ func TestTfheScalarLe32(t *testing.T) {
 	TfheScalarLe(t, FheUint32)
 }
 
+func TestTfheScalarLe64(t *testing.T) {
+	TfheScalarLe(t, FheUint64)
+}
+
 func TestTfheLt8(t *testing.T) {
 	TfheLt(t, FheUint8)
 }
@@ -1511,6 +1762,9 @@ func TestTfheLt16(t *testing.T) {
 }
 func TestTfheLt32(t *testing.T) {
 	TfheLt(t, FheUint32)
+}
+func TestTfheLt64(t *testing.T) {
+	TfheLt(t, FheUint64)
 }
 
 func TestTfheScalarLt8(t *testing.T) {
@@ -1525,6 +1779,10 @@ func TestTfheScalarLt32(t *testing.T) {
 	TfheScalarLt(t, FheUint32)
 }
 
+func TestTfheScalarLt64(t *testing.T) {
+	TfheScalarLt(t, FheUint64)
+}
+
 func TestTfheMin8(t *testing.T) {
 	TfheMin(t, FheUint8)
 }
@@ -1534,6 +1792,9 @@ func TestTfheMin16(t *testing.T) {
 }
 func TestTfheMin32(t *testing.T) {
 	TfheMin(t, FheUint32)
+}
+func TestTfheMin64(t *testing.T) {
+	TfheMin(t, FheUint64)
 }
 
 func TestTfheScalarMin8(t *testing.T) {
@@ -1548,6 +1809,10 @@ func TestTfheScalarMin32(t *testing.T) {
 	TfheScalarMin(t, FheUint32)
 }
 
+func TestTfheScalarMin64(t *testing.T) {
+	TfheScalarMin(t, FheUint64)
+}
+
 func TestTfheMax8(t *testing.T) {
 	TfheMax(t, FheUint8)
 }
@@ -1557,6 +1822,9 @@ func TestTfheMax16(t *testing.T) {
 }
 func TestTfheMax32(t *testing.T) {
 	TfheMax(t, FheUint32)
+}
+func TestTfheMax64(t *testing.T) {
+	TfheMax(t, FheUint64)
 }
 
 func TestTfheScalarMax8(t *testing.T) {
@@ -1571,6 +1839,10 @@ func TestTfheScalarMax32(t *testing.T) {
 	TfheScalarMax(t, FheUint32)
 }
 
+func TestTfheScalarMax64(t *testing.T) {
+	TfheScalarMax(t, FheUint64)
+}
+
 func TestTfheNeg8(t *testing.T) {
 	TfheNeg(t, FheUint8)
 }
@@ -1580,6 +1852,9 @@ func TestTfheNeg16(t *testing.T) {
 }
 func TestTfheNeg32(t *testing.T) {
 	TfheNeg(t, FheUint32)
+}
+func TestTfheNeg64(t *testing.T) {
+	TfheNeg(t, FheUint64)
 }
 
 func TestTfheNot8(t *testing.T) {
@@ -1592,6 +1867,9 @@ func TestTfheNot16(t *testing.T) {
 func TestTfheNot32(t *testing.T) {
 	TfheNot(t, FheUint32)
 }
+func TestTfheNot64(t *testing.T) {
+	TfheNot(t, FheUint64)
+}
 
 func TestTfheIfThenElse8(t *testing.T) {
 	TfheIfThenElse(t, FheUint8)
@@ -1603,6 +1881,9 @@ func TestTfheIfThenElse16(t *testing.T) {
 func TestTfheIfThenElse32(t *testing.T) {
 	TfheIfThenElse(t, FheUint32)
 }
+func TestTfheIfThenElse64(t *testing.T) {
+	TfheIfThenElse(t, FheUint64)
+}
 
 func TestTfhe8Cast16(t *testing.T) {
 	TfheCast(t, FheUint8, FheUint16)
@@ -1610,6 +1891,10 @@ func TestTfhe8Cast16(t *testing.T) {
 
 func TestTfhe8Cast32(t *testing.T) {
 	TfheCast(t, FheUint8, FheUint32)
+}
+
+func TestTfhe8Cast64(t *testing.T) {
+	TfheCast(t, FheUint8, FheUint64)
 }
 
 func TestTfhe16Cast8(t *testing.T) {
@@ -1620,10 +1905,30 @@ func TestTfhe16Cast32(t *testing.T) {
 	TfheCast(t, FheUint16, FheUint32)
 }
 
+func TestTfhe16Cast64(t *testing.T) {
+	TfheCast(t, FheUint16, FheUint64)
+}
+
 func TestTfhe32Cast8(t *testing.T) {
-	TfheCast(t, FheUint16, FheUint8)
+	TfheCast(t, FheUint32, FheUint8)
 }
 
 func TestTfhe32Cast16(t *testing.T) {
-	TfheCast(t, FheUint16, FheUint8)
+	TfheCast(t, FheUint32, FheUint16)
+}
+
+func TestTfhe32Cast64(t *testing.T) {
+	TfheCast(t, FheUint32, FheUint64)
+}
+
+func TestTfhe64Cast8(t *testing.T) {
+	TfheCast(t, FheUint64, FheUint8)
+}
+
+func TestTfhe64Cast16(t *testing.T) {
+	TfheCast(t, FheUint64, FheUint16)
+}
+
+func TestTfhe64Cast32(t *testing.T) {
+	TfheCast(t, FheUint64, FheUint32)
 }
