@@ -2,7 +2,6 @@ package fhevm
 
 import (
 	"bytes"
-	"context"
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
@@ -10,17 +9,13 @@ import (
 	"fmt"
 	"math/big"
 	"math/bits"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
-	kms "github.com/zama-ai/fhevm-go/kms"
 	"golang.org/x/crypto/chacha20"
 	"golang.org/x/crypto/nacl/box"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 // PrecompiledContract is the basic interface for native Go contracts. The implementation
@@ -2069,57 +2064,24 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
 	if ct != nil {
 		// Make sure we don't decrypt before any optimistic requires are checked.
-		// optReqResult, optReqErr := evaluateRemainingOptimisticRequires(environment)
-		// if optReqErr != nil {
-		// 	return nil, optReqErr
-		// } else if !optReqResult {
-		// 	return nil, ErrExecutionReverted
-		// }
-
-		var fheType kms.FheType
-		switch ct.ciphertext.fheUintType {
-		case FheUint8:
-			fheType = kms.FheType_Euint8
-		case FheUint16:
-			fheType = kms.FheType_Euint16
-		case FheUint32:
-			fheType = kms.FheType_Euint32
+		optReqResult, optReqErr := evaluateRemainingOptimisticRequires(environment)
+		if optReqErr != nil {
+			return nil, optReqErr
+		} else if !optReqResult {
+			return nil, ErrExecutionReverted
 		}
 
-		pubKey := input[32:64]
-
-		// TODO: generate merkle proof for some data
-		proof := &kms.Proof{
-			Height:              3,
-			MerklePatriciaProof: []byte{},
-		}
-
-		reencryptionRequest := &kms.ReencryptionRequest{
-			FheType:    fheType,
-			Ciphertext: ct.ciphertext.serialization,
-			Request:    pubKey, // TODO: change according to the structure of `Request`
-			Proof:      proof,
-		}
-
-		conn, err := grpc.Dial(kms.KmsEndpointAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		decryptedValue, err := ct.ciphertext.decrypt()
 		if err != nil {
-			return nil, errors.New("kms unreachable")
-		}
-		defer conn.Close()
-
-		ep := kms.NewKmsEndpointClient(conn)
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		res, err := ep.Reencrypt(ctx, reencryptionRequest)
-		if err != nil {
+			logger.Error("reencrypt decryption failed", "err", err)
 			return nil, err
 		}
-
-		// TODO: decide if `res.Signature` should be verified here
-
-		var reencryptedValue = res.ReencryptedCiphertext
+		pubKey := input[32:64]
+		reencryptedValue, err := encryptToUserKey(&decryptedValue, pubKey)
+		if err != nil {
+			logger.Error("reencrypt failed to encrypt to user key", "err", err)
+			return nil, err
+		}
 
 		logger.Info("reencrypt success", "input", hex.EncodeToString(input), "callerAddr", caller, "reencryptedValue", reencryptedValue, "len", len(reencryptedValue))
 		return toEVMBytes(reencryptedValue), nil
@@ -2205,49 +2167,8 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 }
 
 func decryptValue(environment EVMEnvironment, ct *tfheCiphertext) (uint64, error) {
-
-	logger := environment.GetLogger()
-	var fheType kms.FheType
-	switch ct.fheUintType {
-	case FheUint8:
-		fheType = kms.FheType_Euint8
-	case FheUint16:
-		fheType = kms.FheType_Euint16
-	case FheUint32:
-		fheType = kms.FheType_Euint32
-	}
-
-	// TODO: generate merkle proof for some data
-	proof := &kms.Proof{
-		Height:              4,
-		MerklePatriciaProof: []byte{},
-	}
-
-	decryptionRequest := &kms.DecryptionRequest{
-		FheType:    fheType,
-		Ciphertext: ct.serialization,
-		Request:    []byte{}, // TODO: change according to the structure of `Request`
-		Proof:      proof,
-	}
-
-	conn, err := grpc.Dial(kms.KmsEndpointAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return 0, errors.New("kms unreachable")
-	}
-	defer conn.Close()
-
-	ep := kms.NewKmsEndpointClient(conn)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	res, err := ep.Decrypt(ctx, decryptionRequest)
-	if err != nil {
-		logger.Error("decrypt failed", "err", err)
-		return 0, err
-	}
-
-	return uint64(res.Plaintext), err
+	v, err := ct.decrypt()
+	return v.Uint64(), err
 }
 
 // If there are optimistic requires, check them by doing bitwise AND on all of them.
