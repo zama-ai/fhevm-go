@@ -3,9 +3,9 @@ name: Run Tests
 on:
   push:
     branches:
-      - 'main'
+      - "main"
     tags:
-      - '*'
+      - "*"
   pull_request:
 
 jobs:
@@ -26,7 +26,7 @@ jobs:
         run: make test
 
       - name: Run e2e tests in ethermint with current branch
-        if: github.event_name == 'pull_request'
+        if: false # Switch back to `github.event_name == 'pull_request'` once the e2e tests are ready, ref: https://github.com/Inco-fhevm/fhevm-go/issues/2
         shell: bash
         env:
           SECRET_TOKEN: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
