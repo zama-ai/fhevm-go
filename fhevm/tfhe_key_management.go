@@ -1,0 +1,105 @@
+package fhevm
+
+/*
+#include "tfhe_wrappers.h"
+*/
+import "C"
+
+import (
+	"fmt"
+	"math/big"
+	"os"
+	"path"
+	"unsafe"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+)
+
+// Expanded TFHE ciphertext sizes by type, in bytes.
+var expandedFheCiphertextSize map[FheUintType]uint
+
+// Compact TFHE ciphertext sizes by type, in bytes.
+var compactFheCiphertextSize map[FheUintType]uint
+
+// server key: evaluation key
+var sks unsafe.Pointer
+
+// client key: secret key
+var cks unsafe.Pointer
+
+// public key
+var pks unsafe.Pointer
+var pksHash common.Hash
+
+// Generate keys for the fhevm (sks, cks, psk)
+func generateFhevmKeys() (unsafe.Pointer, unsafe.Pointer, unsafe.Pointer) {
+	var keys = C.generate_fhevm_keys()
+	return keys.sks, keys.cks, keys.pks
+}
+
+func allGlobalKeysPresent() bool {
+	return sks != nil && cks != nil && pks != nil
+}
+
+func initGlobalKeysWithNewKeys() {
+	sks, cks, pks = generateFhevmKeys()
+	initCiphertextSizes()
+}
+
+func initCiphertextSizes() {
+	expandedFheCiphertextSize = make(map[FheUintType]uint)
+	compactFheCiphertextSize = make(map[FheUintType]uint)
+
+	expandedFheCiphertextSize[FheUint8] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint8).serialize()))
+	expandedFheCiphertextSize[FheUint16] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint16).serialize()))
+	expandedFheCiphertextSize[FheUint32] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint32).serialize()))
+	expandedFheCiphertextSize[FheUint64] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint64).serialize()))
+
+	compactFheCiphertextSize[FheUint8] = uint(len(encryptAndSerializeCompact(0, FheUint8)))
+	compactFheCiphertextSize[FheUint16] = uint(len(encryptAndSerializeCompact(0, FheUint16)))
+	compactFheCiphertextSize[FheUint32] = uint(len(encryptAndSerializeCompact(0, FheUint32)))
+	compactFheCiphertextSize[FheUint64] = uint(len(encryptAndSerializeCompact(0, FheUint64)))
+}
+
+func InitGlobalKeysFromFiles(keysDir string) error {
+	if _, err := os.Stat(keysDir); os.IsNotExist(err) {
+		return fmt.Errorf("init_keys: global keys directory doesn't exist (FHEVM_GO_KEYS_DIR): %s", keysDir)
+	}
+	// read keys from files
+	var sksPath = path.Join(keysDir, "sks")
+	sksBytes, err := os.ReadFile(sksPath)
+	if err != nil {
+		return err
+	}
+	var pksPath = path.Join(keysDir, "pks")
+	pksBytes, err := os.ReadFile(pksPath)
+	if err != nil {
+		return err
+	}
+
+	sks = C.deserialize_server_key(toDynamicBufferView(sksBytes))
+
+	pksHash = crypto.Keccak256Hash(pksBytes)
+	pks = C.deserialize_compact_public_key(toDynamicBufferView(pksBytes))
+
+	initCiphertextSizes()
+
+	fmt.Println("INFO: global keys loaded from: " + keysDir)
+
+	return nil
+}
+
+// initialize keys automatically only if FHEVM_GO_KEYS_DIR is set
+func init() {
+	var keysDirPath, present = os.LookupEnv("FHEVM_GO_KEYS_DIR")
+	if present {
+		err := InitGlobalKeysFromFiles(keysDirPath)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("INFO: global keys are initialized automatically using FHEVM_GO_KEYS_DIR env variable")
+	} else {
+		fmt.Println("INFO: global keys aren't initialized automatically (FHEVM_GO_KEYS_DIR env variable not set)")
+	}
+}
