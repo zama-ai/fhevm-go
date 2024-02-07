@@ -1448,7 +1448,6 @@ func TestTfheScalarMul64(t *testing.T) {
 	TfheScalarMul(t, FheUint64)
 }
 
-
 func TestTfheScalarDiv8(t *testing.T) {
 	TfheScalarDiv(t, FheUint8)
 }
