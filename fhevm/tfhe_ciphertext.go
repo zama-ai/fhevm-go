@@ -1,174 +1,17 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
-//
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
 package fhevm
 
 /*
-#cgo linux CFLAGS: -O3 -I../tfhe-rs/target/release -I../tfhe-rs/target/release/deps
-#cgo linux LDFLAGS: -L../tfhe-rs/target/release -l:libtfhe.a -L../tfhe-rs/target/release/deps -l:libtfhe_c_api_dynamic_buffer.a -lm
-#cgo darwin CFLAGS: -O3 -I../tfhe-rs/target/release -I../tfhe-rs/target/release/deps
-#cgo darwin LDFLAGS: -framework Security -L../tfhe-rs/target/release -ltfhe -L../tfhe-rs/target/release/deps -ltfhe_c_api_dynamic_buffer -lm
-
 #include "tfhe_wrappers.h"
-
 */
 import "C"
-
 import (
-	_ "embed"
 	"errors"
-	"fmt"
 	"math/big"
-	"os"
-	"path"
 	"unsafe"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
-
-func toDynamicBufferView(in []byte) C.DynamicBufferView {
-	return C.DynamicBufferView{
-		pointer: (*C.uint8_t)(unsafe.Pointer(&in[0])),
-		length:  (C.size_t)(len(in)),
-	}
-}
-
-// Expanded TFHE ciphertext sizes by type, in bytes.
-var expandedFheCiphertextSize map[FheUintType]uint
-
-// Compact TFHE ciphertext sizes by type, in bytes.
-var compactFheCiphertextSize map[FheUintType]uint
-
-// server key: evaluation key
-var sks unsafe.Pointer
-
-// client key: secret key
-var cks unsafe.Pointer
-
-// public key
-var pks unsafe.Pointer
-var pksHash common.Hash
-
-// Generate keys for the fhevm (sks, cks, psk)
-func generateFhevmKeys() (unsafe.Pointer, unsafe.Pointer, unsafe.Pointer) {
-	var keys = C.generate_fhevm_keys()
-	return keys.sks, keys.cks, keys.pks
-}
-
-func allGlobalKeysPresent() bool {
-	return sks != nil && cks != nil && pks != nil
-}
-
-func initGlobalKeysWithNewKeys() {
-	sks, cks, pks = generateFhevmKeys()
-	initCiphertextSizes()
-}
-
-func initCiphertextSizes() {
-	expandedFheCiphertextSize = make(map[FheUintType]uint)
-	compactFheCiphertextSize = make(map[FheUintType]uint)
-
-	expandedFheCiphertextSize[FheUint8] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint8).serialize()))
-	expandedFheCiphertextSize[FheUint16] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint16).serialize()))
-	expandedFheCiphertextSize[FheUint32] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint32).serialize()))
-	expandedFheCiphertextSize[FheUint64] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint64).serialize()))
-
-	compactFheCiphertextSize[FheUint8] = uint(len(encryptAndSerializeCompact(0, FheUint8)))
-	compactFheCiphertextSize[FheUint16] = uint(len(encryptAndSerializeCompact(0, FheUint16)))
-	compactFheCiphertextSize[FheUint32] = uint(len(encryptAndSerializeCompact(0, FheUint32)))
-	compactFheCiphertextSize[FheUint64] = uint(len(encryptAndSerializeCompact(0, FheUint64)))
-}
-
-func InitGlobalKeysFromFiles(keysDir string) error {
-	if _, err := os.Stat(keysDir); os.IsNotExist(err) {
-		return fmt.Errorf("init_keys: global keys directory doesn't exist (FHEVM_GO_KEYS_DIR): %s", keysDir)
-	}
-	// read keys from files
-	var sksPath = path.Join(keysDir, "sks")
-	sksBytes, err := os.ReadFile(sksPath)
-	if err != nil {
-		return err
-	}
-	var pksPath = path.Join(keysDir, "pks")
-	pksBytes, err := os.ReadFile(pksPath)
-	if err != nil {
-		return err
-	}
-
-	sks = C.deserialize_server_key(toDynamicBufferView(sksBytes))
-
-	pksHash = crypto.Keccak256Hash(pksBytes)
-	pks = C.deserialize_compact_public_key(toDynamicBufferView(pksBytes))
-
-	initCiphertextSizes()
-
-	fmt.Println("INFO: global keys loaded from: " + keysDir)
-
-	return nil
-}
-
-// initialize keys automatically only if FHEVM_GO_KEYS_DIR is set
-func init() {
-	var keysDirPath, present = os.LookupEnv("FHEVM_GO_KEYS_DIR")
-	if present {
-		err := InitGlobalKeysFromFiles(keysDirPath)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("INFO: global keys are initialized automatically using FHEVM_GO_KEYS_DIR env variable")
-	} else {
-		fmt.Println("INFO: global keys aren't initialized automatically (FHEVM_GO_KEYS_DIR env variable not set)")
-	}
-}
-
-func serialize(ptr unsafe.Pointer, t FheUintType) ([]byte, error) {
-	out := &C.DynamicBuffer{}
-	var ret C.int
-	switch t {
-	case FheUint8:
-		ret = C.serialize_fhe_uint8(ptr, out)
-	case FheUint16:
-		ret = C.serialize_fhe_uint16(ptr, out)
-	case FheUint32:
-		ret = C.serialize_fhe_uint32(ptr, out)
-	case FheUint64:
-		ret = C.serialize_fhe_uint64(ptr, out)
-	default:
-		panic("serialize: unexpected ciphertext type")
-	}
-	if ret != 0 {
-		return nil, errors.New("serialize: failed to serialize a ciphertext")
-	}
-	ser := C.GoBytes(unsafe.Pointer(out.pointer), C.int(out.length))
-	C.destroy_dynamic_buffer(out)
-	return ser, nil
-}
-
-func serializePublicKey(pks unsafe.Pointer) ([]byte, error) {
-	out := &C.DynamicBuffer{}
-	var ret C.int
-	ret = C.serialize_compact_public_key(pks, out)
-	if ret != 0 {
-		return nil, errors.New("serialize: failed to serialize public key")
-	}
-	ser := C.GoBytes(unsafe.Pointer(out.pointer), C.int(out.length))
-	C.destroy_dynamic_buffer(out)
-	return ser, nil
-}
 
 // Represents a TFHE ciphertext type, i.e. its bit capacity.
 type FheUintType uint8
@@ -1621,29 +1464,4 @@ func (ct *tfheCiphertext) getHash() common.Hash {
 	}
 	ct.computeHash()
 	return *ct.hash
-}
-
-func isValidType(t byte) bool {
-	if uint8(t) < uint8(FheUint8) || uint8(t) > uint8(FheUint64) {
-		return false
-	}
-	return true
-}
-
-func encryptAndSerializeCompact(value uint64, fheUintType FheUintType) []byte {
-	out := &C.DynamicBuffer{}
-	switch fheUintType {
-	case FheUint8:
-		C.public_key_encrypt_and_serialize_fhe_uint8_list(pks, C.uint8_t(value), out)
-	case FheUint16:
-		C.public_key_encrypt_and_serialize_fhe_uint16_list(pks, C.uint16_t(value), out)
-	case FheUint32:
-		C.public_key_encrypt_and_serialize_fhe_uint32_list(pks, C.uint32_t(value), out)
-	case FheUint64:
-		C.public_key_encrypt_and_serialize_fhe_uint64_list(pks, C.uint64_t(value), out)
-	}
-
-	ser := C.GoBytes(unsafe.Pointer(out.pointer), C.int(out.length))
-	C.destroy_dynamic_buffer(out)
-	return ser
 }
