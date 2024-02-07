@@ -27,6 +27,7 @@ const (
 	FheType_Euint8  FheType = 1
 	FheType_Euint16 FheType = 2
 	FheType_Euint32 FheType = 3
+	FheType_Euint64 FheType = 4
 )
 
 // Enum value maps for FheType.
