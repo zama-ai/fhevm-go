@@ -184,6 +184,7 @@ func verifyIfCiphertextHandle(handle common.Hash, env EVMEnvironment, contractAd
 	return nil
 }
 
+// This function is a modified copy from https://github.com/ethereum/go-ethereum
 func OpSload(pc *uint64, env EVMEnvironment, scope ScopeContext) ([]byte, error) {
 	loc := scope.GetStack().Peek()
 	hash := common.Hash(loc.Bytes32())
@@ -265,6 +266,7 @@ func persistIfVerifiedCiphertext(flagHandleLocation common.Hash, handle common.H
 }
 
 func OpSstore(pc *uint64, env EVMEnvironment, scope ScopeContext) ([]byte, error) {
+	// This function is a modified copy from https://github.com/ethereum/go-ethereum
 	if env.IsReadOnly() {
 		return nil, ErrWriteProtection
 	}
@@ -348,6 +350,7 @@ func RemoveVerifiedCipherextsAtCurrentDepth(env EVMEnvironment) {
 }
 
 func OpReturn(pc *uint64, env EVMEnvironment, scope ScopeContext) []byte {
+	// This function is a modified copy from https://github.com/ethereum/go-ethereum
 	offset, size := scope.GetStack().Pop(), scope.GetStack().Pop()
 	ret := scope.GetMemory().GetPtr(int64(offset.Uint64()), int64(size.Uint64()))
 	delegateCiphertextHandlesToCaller(env, ret)
@@ -355,6 +358,7 @@ func OpReturn(pc *uint64, env EVMEnvironment, scope ScopeContext) []byte {
 }
 
 func OpSelfdestruct(pc *uint64, env EVMEnvironment, scope ScopeContext) (beneficiary uint256.Int, balance *big.Int) {
+	// This function is a modified copy from https://github.com/ethereum/go-ethereum
 	beneficiary = scope.GetStack().Pop()
 	protectedStorage := fhevm_crypto.CreateProtectedStorageContractAddress(scope.GetContract().Address())
 	balance = env.GetBalance(scope.GetContract().Address())
