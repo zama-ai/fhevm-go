@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"math/big"
 	"math/bits"
-	"os"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -32,7 +31,6 @@ type PrecompiledContract interface {
 	Run(environment *EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) (ret []byte, err error)
 }
 // URL of the KMS gRPC endpoint
-var KmsEndpointAddr = os.Getenv("KMS_ENDPOINT_ADDR")
 var signatureFheAdd = makeKeccakSignature("fheAdd(uint256,uint256,bytes1)")
 var signatureCast = makeKeccakSignature("cast(uint256,bytes1)")
 var signatureDecrypt = makeKeccakSignature("decrypt(uint256)")
@@ -2120,7 +2118,7 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 			Proof:      proof,
 		}
 
-		conn, err := grpc.Dial(KmsEndpointAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.Dial(kms.KmsEndpointAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return nil, errors.New("kms unreachable")
 		}
@@ -2251,7 +2249,7 @@ func decryptValue(environment EVMEnvironment, ct *tfheCiphertext) (uint64, error
 		Proof:      proof,
 	}
 
-	conn, err := grpc.Dial(KmsEndpointAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(kms.KmsEndpointAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return 0, errors.New("kms unreachable")
 	}
