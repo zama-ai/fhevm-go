@@ -2099,6 +2099,8 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 			fheType = kms.FheType_Euint16
 		case FheUint32:
 			fheType = kms.FheType_Euint32
+		case FheUint64:
+			fheType = kms.FheType_Euint64
 		}
 
 		pubKey := input[32:64]
@@ -2230,6 +2232,8 @@ func decryptValue(environment EVMEnvironment, ct *tfheCiphertext) (uint64, error
 		fheType = kms.FheType_Euint16
 	case FheUint32:
 		fheType = kms.FheType_Euint32
+	case FheUint64:
+		fheType = kms.FheType_Euint64
 	}
 
 	// TODO: generate merkle proof for some data
