@@ -60,7 +60,7 @@ replace(
 
 ## Regenerate protobuff files
 
-To re-generate this file, install `protoc` and run protoc
+To re-generate these files, install `protoc`, `protoc-gen-go` and `protoc-gen-go-grpc` and run protoc
 `cd proto && protoc --go_out=../kms --go_opt=paths=source_relative --go-grpc_out=../kms --go-grpc_opt=paths=source_relative kms.proto && cd ..`.
 
 ## Documentation
