@@ -30,7 +30,7 @@ type PrecompiledContract interface {
 	RequiredGas(environment *EVMEnvironment, input []byte) uint64 // RequiredGas calculates the contract gas use
 	Run(environment *EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) (ret []byte, err error)
 }
-// URL of the KMS gRPC endpoint
+
 var signatureFheAdd = makeKeccakSignature("fheAdd(uint256,uint256,bytes1)")
 var signatureCast = makeKeccakSignature("cast(uint256,bytes1)")
 var signatureDecrypt = makeKeccakSignature("decrypt(uint256)")
