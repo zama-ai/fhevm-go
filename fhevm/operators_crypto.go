@@ -69,6 +69,19 @@ func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr
 			"ctBytes64", hex.EncodeToString(ctBytes[:minInt(len(ctBytes), 64)]))
 		return nil, err
 	}
+
+	if tomlConfig.Fhevm.MockOpsFlag {
+		logger.Info("[Caution!!] MockOpsFlag is enabled, decrypting ciphertext. Please make sure you're not using it in production.")
+		plaintext, err := decryptValue(environment, ct)
+		if err != nil {
+			logger.Error("verifyCiphertext failed to decrypt input ciphertext")
+			return nil, err
+		}
+		ct = new(tfhe.TfheCiphertext)
+		pt := big.NewInt(int64(plaintext))
+		ct = ct.TrivialEncrypt(*pt, ctType)
+	}
+
 	ctHash := ct.GetHash()
 	importCiphertext(environment, ct)
 	if environment.IsCommitting() {
