@@ -17,6 +17,7 @@ import (
 	"github.com/holiman/uint256"
 	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
 	kms "github.com/zama-ai/fhevm-go/kms"
+	"go.opentelemetry.io/otel"
 	"golang.org/x/crypto/chacha20"
 	"golang.org/x/crypto/nacl/box"
 	"google.golang.org/grpc"
@@ -169,7 +170,10 @@ func FheLibRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	}
 }
 
-func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, ctx context.Context) ([]byte, error) {
+	fmt.Println("CALL: FheLibRun 10.0 --- fhevm --- precompompiles.go")
+	ctxChild, span := otel.Tracer("fhevm").Start(ctx, "FheLibRun")
+	defer span.End()
 	logger := environment.GetLogger()
 	if len(input) < 4 {
 		err := errors.New("input must contain at least 4 bytes for method signature")
@@ -181,7 +185,7 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	switch signature {
 	case signatureFheAdd:
 		bwCompatBytes := input[4:minInt(69, len(input))]
-		return fheAddRun(environment, caller, addr, bwCompatBytes, readOnly)
+		return fheAddRun(environment, caller, addr, bwCompatBytes, readOnly, ctxChild)
 	case signatureCast:
 		bwCompatBytes := input[4:minInt(37, len(input))]
 		return castRun(environment, caller, addr, bwCompatBytes, readOnly)
@@ -739,7 +743,10 @@ func trivialEncryptRequiredGas(environment EVMEnvironment, input []byte) uint64 
 }
 
 // Implementations
-func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, ctx context.Context) ([]byte, error) {
+	fmt.Println("CALL: fheAddRun 100.0 --- fhevm --- precompiles.go")
+	_, span := otel.Tracer("fhevm").Start(ctx, "FheAdd")
+	defer span.End()
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -802,6 +809,7 @@ func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 }
 
 func fheSubRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+	fmt.Println("CALL: fheSubRun 101.0 --- fhevm --- precompiles.go")
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -926,6 +934,7 @@ func fheMulRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 }
 
 func fheLeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+	fmt.Println("CALL: fheLeRun 102.0 --- fhevm --- precompiles.go")
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -2005,6 +2014,7 @@ func fheIfThenElseRun(environment EVMEnvironment, caller common.Address, addr co
 }
 
 func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+	fmt.Println("CALL: verifyCiphertextRun 11.0 --- fhev --- precompiles.go")
 	logger := environment.GetLogger()
 	if len(input) <= 1 {
 		msg := "verifyCiphertext Run() input needs to contain a ciphertext and one byte for its type"
