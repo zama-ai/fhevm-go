@@ -263,7 +263,7 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		bwCompatBytes := input[4:minInt(5, len(input))]
 		return fheRandRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheRandBounded:
-		bwCompatBytes := input[4:minInt(69, len(input))]
+		bwCompatBytes := input[4:minInt(37, len(input))]
 		return fheRandBoundedRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheIfThenElse:
 		bwCompatBytes := input[4:minInt(100, len(input))]
