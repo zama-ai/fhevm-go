@@ -31,7 +31,7 @@ func homeDir() string {
 func init() {
 	home := homeDir()
 
-	f, err := os.Open(home + "/.ethermintd/config/node_config.toml")
+	f, err := os.Open(home + ".inco/config/node_config.toml")
 	if err != nil {
 		fmt.Println("failed to open node_config.toml file")
 		return
