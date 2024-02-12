@@ -2,6 +2,7 @@ package fhevm
 
 import (
 	"bytes"
+	"context"
 	"math/big"
 	"sync"
 	"testing"
@@ -158,6 +159,11 @@ type MockEVMEnvironment struct {
 	ethCall     bool
 	readOnly    bool
 	fhevmParams FhevmParams
+}
+
+func (*MockEVMEnvironment) OtelContext() context.Context {
+	// can also return nil and disable Otel
+	return context.TODO()
 }
 
 func (environment *MockEVMEnvironment) GetState(addr common.Address, hash common.Hash) common.Hash {

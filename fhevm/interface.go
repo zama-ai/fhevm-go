@@ -1,6 +1,7 @@
 package fhevm
 
 import (
+	"context"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -33,6 +34,12 @@ type EVMEnvironment interface {
 
 	FhevmData() *FhevmData
 	FhevmParams() *FhevmParams
+
+	// This should return the context used for OpenTelemetry in the current EVM.
+	// It should be considered the root context for every op that runs in the EVM, and all spans created from this context
+	// would be child spans for what has been already created using the context.
+	// Implementations returning nil would disable OpenTelemetry on the fhEVM
+	OtelContext() context.Context
 }
 
 type FhevmData struct {

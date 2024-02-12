@@ -11,6 +11,7 @@ import (
 	crypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
+	"go.opentelemetry.io/otel"
 )
 
 var zero = common.BytesToHash(uint256.NewInt(0).Bytes())
@@ -186,6 +187,10 @@ func verifyIfCiphertextHandle(handle common.Hash, env EVMEnvironment, contractAd
 
 // This function is a modified copy from https://github.com/ethereum/go-ethereum
 func OpSload(pc *uint64, env EVMEnvironment, scope ScopeContext) ([]byte, error) {
+	if otelCtx := env.OtelContext(); otelCtx != nil {
+		_, span := otel.Tracer("fhevm").Start(otelCtx, "OpSload")
+		defer span.End()
+	}
 	loc := scope.GetStack().Peek()
 	hash := common.Hash(loc.Bytes32())
 	val := env.GetState(scope.GetContract().Address(), hash)
@@ -267,6 +272,10 @@ func persistIfVerifiedCiphertext(flagHandleLocation common.Hash, handle common.H
 
 func OpSstore(pc *uint64, env EVMEnvironment, scope ScopeContext) ([]byte, error) {
 	// This function is a modified copy from https://github.com/ethereum/go-ethereum
+	if otelCtx := env.OtelContext(); otelCtx != nil {
+		_, span := otel.Tracer("fhevm").Start(otelCtx, "OpSstore")
+		defer span.End()
+	}
 	if env.IsReadOnly() {
 		return nil, ErrWriteProtection
 	}
@@ -351,6 +360,10 @@ func RemoveVerifiedCipherextsAtCurrentDepth(env EVMEnvironment) {
 
 func OpReturn(pc *uint64, env EVMEnvironment, scope ScopeContext) []byte {
 	// This function is a modified copy from https://github.com/ethereum/go-ethereum
+	if otelCtx := env.OtelContext(); otelCtx != nil {
+		_, span := otel.Tracer("fhevm").Start(otelCtx, "OpReturn")
+		defer span.End()
+	}
 	offset, size := scope.GetStack().Pop(), scope.GetStack().Pop()
 	ret := scope.GetMemory().GetPtr(int64(offset.Uint64()), int64(size.Uint64()))
 	delegateCiphertextHandlesToCaller(env, ret)
