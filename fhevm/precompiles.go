@@ -170,29 +170,44 @@ func FheLibRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	}
 }
 
-func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, ctx context.Context) ([]byte, error) {
-	fmt.Println("CALL: FheLibRun 10.0 --- fhevm --- precompompiles.go")
-	ctxChild, span := otel.Tracer("fhevm").Start(ctx, "FheLibRun")
-	defer span.End()
+func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 	if len(input) < 4 {
 		err := errors.New("input must contain at least 4 bytes for method signature")
 		logger.Error("fheLib precompile error", "err", err, "input", hex.EncodeToString(input))
 		return nil, err
 	}
+	otelCtx := environment.OtelContext()
+	tracer := otel.Tracer("fhevm")
 	// first 4 bytes are for the function signature
 	signature := binary.BigEndian.Uint32(input[0:4])
 	switch signature {
 	case signatureFheAdd:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheAdd")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
-		return fheAddRun(environment, caller, addr, bwCompatBytes, readOnly, ctxChild)
+		return fheAddRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureCast:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheCast")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(37, len(input))]
 		return castRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureDecrypt:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheDecrypt")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(36, len(input))]
 		return decryptRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFhePubKey:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fhePubKey")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(5, len(input))]
 		precompileBytes, err := fhePubKeyRun(environment, caller, addr, bwCompatBytes, readOnly)
 		if err != nil {
@@ -204,75 +219,171 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		outputBytes = append(outputBytes, precompileBytes...)
 		return padArrayTo32Multiple(outputBytes), nil
 	case signatureTrivialEncrypt:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheTrivialEncrypt")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(37, len(input))]
 		return trivialEncryptRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheSub:
+		if otelCtx := environment.OtelContext(); otelCtx != nil {
+			_, span := otel.Tracer("fhevm").Start(otelCtx, "fheSub")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheSubRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheMul:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheMul")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheMulRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheLe:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheLe")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheLeRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheLt:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheLt")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheLtRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheEq:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheAdd")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheEqRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheGe:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheAdd")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheGeRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheGt:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheAdd")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheGtRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheShl:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheShl")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheShlRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheShr:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheShr")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheShrRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheNe:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheNe")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheNeRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheMin:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheMin")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheMinRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheMax:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheMax")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheMaxRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheNeg:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheNeg")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(36, len(input))]
 		return fheNegRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheNot:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheNot")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(36, len(input))]
 		return fheNotRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheDiv:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheDiv")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheDivRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheRem:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheRem")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheRemRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheBitAnd:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheBitAnd")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheBitAndRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheBitOr:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheBitOr")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheBitOrRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheBitXor:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheBitXor")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(69, len(input))]
 		return fheBitXorRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheRand:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheRand")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(5, len(input))]
 		return fheRandRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheRandBounded:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheRandBounded")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(37, len(input))]
 		return fheRandBoundedRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureFheIfThenElse:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheIfThenElse")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(100, len(input))]
 		return fheIfThenElseRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureVerifyCiphertext:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheVerifyCiphertext")
+			defer span.End()
+		}
 		// first 32 bytes of the payload is offset, then 32 bytes are size of byte array
 		if len(input) <= 68 {
 			err := errors.New("verifyCiphertext(bytes) must contain at least 68 bytes for selector, byte offset and size")
@@ -290,6 +401,10 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		bwCompatBytes := input[bytesStart:minInt(bytesEnd, len(input))]
 		return verifyCiphertextRun(environment, caller, addr, bwCompatBytes, readOnly)
 	case signatureReencrypt:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheReencrypt")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(68, len(input))]
 		precompileBytes, err := reencryptRun(environment, caller, addr, bwCompatBytes, readOnly)
 		if err != nil {
@@ -301,6 +416,10 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		outputBytes = append(outputBytes, precompileBytes...)
 		return padArrayTo32Multiple(outputBytes), nil
 	case signatureOptimisticRequire:
+		if otelCtx != nil {
+			_, span := tracer.Start(otelCtx, "fheOptimisticRequire")
+			defer span.End()
+		}
 		bwCompatBytes := input[4:minInt(36, len(input))]
 		return optimisticRequireRun(environment, caller, addr, bwCompatBytes, readOnly)
 	default:
@@ -743,10 +862,7 @@ func trivialEncryptRequiredGas(environment EVMEnvironment, input []byte) uint64 
 }
 
 // Implementations
-func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, ctx context.Context) ([]byte, error) {
-	fmt.Println("CALL: fheAddRun 100.0 --- fhevm --- precompiles.go")
-	_, span := otel.Tracer("fhevm").Start(ctx, "FheAdd")
-	defer span.End()
+func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -809,7 +925,6 @@ func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 }
 
 func fheSubRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
-	fmt.Println("CALL: fheSubRun 101.0 --- fhevm --- precompiles.go")
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -934,7 +1049,6 @@ func fheMulRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 }
 
 func fheLeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
-	fmt.Println("CALL: fheLeRun 102.0 --- fhevm --- precompiles.go")
 	logger := environment.GetLogger()
 
 	isScalar, err := isScalarOp(input)
@@ -2014,7 +2128,6 @@ func fheIfThenElseRun(environment EVMEnvironment, caller common.Address, addr co
 }
 
 func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
-	fmt.Println("CALL: verifyCiphertextRun 11.0 --- fhev --- precompiles.go")
 	logger := environment.GetLogger()
 	if len(input) <= 1 {
 		msg := "verifyCiphertext Run() input needs to contain a ciphertext and one byte for its type"
