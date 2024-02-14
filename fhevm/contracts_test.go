@@ -2,6 +2,7 @@ package fhevm
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"math/big"
@@ -63,18 +64,18 @@ func toPrecompileInputNoScalar(isScalar bool, hashes ...common.Hash) []byte {
 func evaluateRemainingOptimisticRequiresWithoutKms(environment EVMEnvironment) (bool, error) {
 	requires := environment.FhevmData().optimisticRequires
 	len := len(requires)
-	defer func() { environment.FhevmData().optimisticRequires = make([]*tfheCiphertext, 0) }()
+	defer func() { environment.FhevmData().resetOptimisticRequires() }()
 	if len != 0 {
-		var cumulative *tfheCiphertext = requires[0]
+		var cumulative *TfheCiphertext = requires[0]
 		var err error
 		for i := 1; i < len; i++ {
-			cumulative, err = cumulative.bitand(requires[i])
+			cumulative, err = cumulative.Bitand(requires[i])
 			if err != nil {
 				environment.GetLogger().Error("evaluateRemainingOptimisticRequires bitand failed", "err", err)
 				return false, err
 			}
 		}
-		result, err := cumulative.decrypt()
+		result, err := cumulative.Decrypt()
 		return result.Uint64() != 0, err
 	}
 	return true, nil
@@ -113,7 +114,7 @@ func decryptRunWithoutKms(environment EVMEnvironment, caller common.Address, add
 		return nil, ErrExecutionReverted
 	}
 
-	plaintext, err := ct.ciphertext.decrypt()
+	plaintext, err := ct.ciphertext.Decrypt()
 	if err != nil {
 		logger.Error("decrypt failed", "err", err)
 		return nil, err
@@ -159,6 +160,14 @@ func toLibPrecompileInputNoScalar(method string, hashes ...common.Hash) []byte {
 	return ret
 }
 
+// verifyCiphertext expect a certain format: mainly some padding and the size of the buffer
+func prepareInputForVerifyCiphertext(input []byte) []byte {
+	padding := make([]byte, 60)
+	size := make([]byte, 4)
+	binary.BigEndian.PutUint32(size, uint32(len(input)))
+	return append(append(padding, size...), input...)
+}
+
 func VerifyCiphertext(t *testing.T, fheUintType FheUintType) {
 	var value uint64
 	switch fheUintType {
@@ -177,19 +186,19 @@ func VerifyCiphertext(t *testing.T, fheUintType FheUintType) {
 	addr := common.Address{}
 	readOnly := false
 	compact := encryptAndSerializeCompact(value, fheUintType)
-	input := append(compact, byte(fheUintType))
+	input := prepareInputForVerifyCiphertext(append(compact, byte(fheUintType)))
 	out, err := verifyCiphertextRun(environment, addr, addr, input, readOnly)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	ct := new(tfheCiphertext)
-	if err = ct.deserializeCompact(compact, fheUintType); err != nil {
+	ct := new(TfheCiphertext)
+	if err = ct.DeserializeCompact(compact, fheUintType); err != nil {
 		t.Fatalf(err.Error())
 	}
-	if common.BytesToHash(out) != ct.getHash() {
+	if common.BytesToHash(out) != ct.GetHash() {
 		t.Fatalf("output hash in verifyCipertext is incorrect")
 	}
-	res := getVerifiedCiphertextFromEVM(environment, ct.getHash())
+	res := getVerifiedCiphertextFromEVM(environment, ct.GetHash())
 	if res == nil {
 		t.Fatalf("verifyCiphertext must have verified given ciphertext")
 	}
@@ -213,7 +222,7 @@ func VerifyCiphertextBadType(t *testing.T, actualType FheUintType, metadataType 
 	addr := common.Address{}
 	readOnly := false
 	compact := encryptAndSerializeCompact(value, actualType)
-	input := append(compact, byte(metadataType))
+	input := prepareInputForVerifyCiphertext(append(compact, byte(metadataType)))
 	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly)
 	if err == nil {
 		t.Fatalf("verifyCiphertext must have failed on type mismatch")
@@ -246,11 +255,11 @@ func TrivialEncrypt(t *testing.T, fheUintType FheUintType) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	ct := new(tfheCiphertext).trivialEncrypt(value, fheUintType)
-	if common.BytesToHash(out) != ct.getHash() {
+	ct := new(TfheCiphertext).TrivialEncrypt(value, fheUintType)
+	if common.BytesToHash(out) != ct.GetHash() {
 		t.Fatalf("output hash in verifyCipertext is incorrect")
 	}
-	res := getVerifiedCiphertextFromEVM(environment, ct.getHash())
+	res := getVerifiedCiphertextFromEVM(environment, ct.GetHash())
 	if res == nil {
 		t.Fatalf("verifyCiphertext must have verified given ciphertext")
 	}
@@ -280,12 +289,12 @@ func FheLibAdd(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toLibPrecompileInput(signature, scalar, lhsHash, rhsHash)
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
@@ -296,7 +305,7 @@ func FheLibAdd(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != expected {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 	}
@@ -325,12 +334,12 @@ func FheLibSub(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toLibPrecompileInput(signature, scalar, lhsHash, rhsHash)
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
@@ -341,7 +350,7 @@ func FheLibSub(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != expected {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 	}
@@ -370,12 +379,12 @@ func FheLibMul(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toLibPrecompileInput(signature, scalar, lhsHash, rhsHash)
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
@@ -386,7 +395,7 @@ func FheLibMul(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != expected {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 	}
@@ -414,12 +423,12 @@ func FheLibLe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 
 	// lhs <= rhs
@@ -432,7 +441,7 @@ func FheLibLe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != 0 {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 0)
 	}
@@ -450,7 +459,7 @@ func FheLibLe(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err = res.ciphertext.decrypt()
+		decrypted, err = res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != 1 {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 1)
 		}
@@ -480,12 +489,12 @@ func FheLibLt(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 
 	// lhs < rhs
@@ -498,7 +507,7 @@ func FheLibLt(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != 0 {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 0)
 	}
@@ -516,7 +525,7 @@ func FheLibLt(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err = res.ciphertext.decrypt()
+		decrypted, err = res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != 1 {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 1)
 		}
@@ -545,12 +554,12 @@ func FheLibEq(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	// lhs == rhs
 	input1 := toLibPrecompileInput(signature, scalar, lhsHash, rhsHash)
@@ -562,7 +571,7 @@ func FheLibEq(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != 0 {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 0)
 	}
@@ -590,12 +599,12 @@ func FheLibGe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	// lhs >= rhs
 	input1 := toLibPrecompileInput(signature, scalar, lhsHash, rhsHash)
@@ -607,7 +616,7 @@ func FheLibGe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != 1 {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 1)
 	}
@@ -624,7 +633,7 @@ func FheLibGe(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err = res.ciphertext.decrypt()
+		decrypted, err = res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != 0 {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 0)
 		}
@@ -654,12 +663,12 @@ func FheLibGt(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	// lhs > rhs
 	input1 := toLibPrecompileInput(signature, scalar, lhsHash, rhsHash)
@@ -671,7 +680,7 @@ func FheLibGt(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != 1 {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 1)
 	}
@@ -689,7 +698,7 @@ func FheLibGt(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err = res.ciphertext.decrypt()
+		decrypted, err = res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != 0 {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 0)
 		}
@@ -719,12 +728,12 @@ func FheLibShl(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toLibPrecompileInput(signature, scalar, lhsHash, rhsHash)
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
@@ -735,7 +744,7 @@ func FheLibShl(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != expected {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 	}
@@ -764,12 +773,12 @@ func FheLibShr(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toLibPrecompileInput(signature, scalar, lhsHash, rhsHash)
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
@@ -780,7 +789,7 @@ func FheLibShr(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != expected {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 	}
@@ -808,12 +817,12 @@ func FheLibNe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	// lhs == rhs
 	input1 := toLibPrecompileInput(signature, scalar, lhsHash, rhsHash)
@@ -825,7 +834,7 @@ func FheLibNe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != 1 {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 1)
 	}
@@ -854,12 +863,12 @@ func FheLibMin(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 
 	input := toLibPrecompileInput(signature, scalar, lhsHash, rhsHash)
@@ -871,7 +880,7 @@ func FheLibMin(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != rhs {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), rhs)
 	}
@@ -888,7 +897,7 @@ func FheLibMin(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err = res.ciphertext.decrypt()
+		decrypted, err = res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != rhs {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), rhs)
 		}
@@ -918,12 +927,12 @@ func FheLibMax(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 
 	input := toLibPrecompileInput(signature, scalar, lhsHash, rhsHash)
@@ -935,7 +944,7 @@ func FheLibMax(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != lhs {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), lhs)
 	}
@@ -952,7 +961,7 @@ func FheLibMax(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err = res.ciphertext.decrypt()
+		decrypted, err = res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != lhs {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), lhs)
 		}
@@ -982,7 +991,7 @@ func FheLibNeg(t *testing.T, fheUintType FheUintType) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	ptHash := verifyCiphertextInTestMemory(environment, pt, depth, fheUintType).getHash()
+	ptHash := verifyCiphertextInTestMemory(environment, pt, depth, fheUintType).GetHash()
 
 	input := toLibPrecompileInputNoScalar(signature, ptHash)
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
@@ -993,7 +1002,7 @@ func FheLibNeg(t *testing.T, fheUintType FheUintType) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != expected {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 	}
@@ -1022,7 +1031,7 @@ func FheLibNot(t *testing.T, fheUintType FheUintType) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	ptHash := verifyCiphertextInTestMemory(environment, pt, depth, fheUintType).getHash()
+	ptHash := verifyCiphertextInTestMemory(environment, pt, depth, fheUintType).GetHash()
 
 	input := toLibPrecompileInputNoScalar(signature, ptHash)
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
@@ -1033,7 +1042,7 @@ func FheLibNot(t *testing.T, fheUintType FheUintType) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != expected {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 	}
@@ -1063,12 +1072,12 @@ func FheLibDiv(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toLibPrecompileInput(signature, scalar, lhsHash, rhsHash)
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
@@ -1080,7 +1089,7 @@ func FheLibDiv(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err := res.ciphertext.decrypt()
+		decrypted, err := res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != expected {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 		}
@@ -1114,12 +1123,12 @@ func FheLibRem(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toLibPrecompileInput(signature, scalar, lhsHash, rhsHash)
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
@@ -1131,7 +1140,7 @@ func FheLibRem(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err := res.ciphertext.decrypt()
+		decrypted, err := res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != expected {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 		}
@@ -1165,12 +1174,12 @@ func FheLibBitAnd(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toLibPrecompileInput(signature, scalar, lhsHash, rhsHash)
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
@@ -1186,7 +1195,7 @@ func FheLibBitAnd(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err := res.ciphertext.decrypt()
+		decrypted, err := res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != expected {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 		}
@@ -1216,12 +1225,12 @@ func FheLibBitOr(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toLibPrecompileInput(signature, scalar, lhsHash, rhsHash)
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
@@ -1237,7 +1246,7 @@ func FheLibBitOr(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err := res.ciphertext.decrypt()
+		decrypted, err := res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != expected {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 		}
@@ -1267,12 +1276,12 @@ func FheLibBitXor(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toLibPrecompileInput(signature, scalar, lhsHash, rhsHash)
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
@@ -1288,7 +1297,7 @@ func FheLibBitXor(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err := res.ciphertext.decrypt()
+		decrypted, err := res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != expected {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 		}
@@ -1318,7 +1327,7 @@ func FheLibRand(t *testing.T, fheUintType FheUintType) {
 	}
 
 	hash := common.BytesToHash(out)
-	decrypted, err := environment.FhevmData().verifiedCiphertexts[hash].ciphertext.decrypt()
+	decrypted, err := environment.FhevmData().verifiedCiphertexts[hash].ciphertext.Decrypt()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -1370,7 +1379,7 @@ func FheLibRandBounded(t *testing.T, fheUintType FheUintType, upperBound64 uint6
 	}
 
 	hash := common.BytesToHash(out)
-	decrypted, err := environment.FhevmData().verifiedCiphertexts[hash].ciphertext.decrypt()
+	decrypted, err := environment.FhevmData().verifiedCiphertexts[hash].ciphertext.Decrypt()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -1404,9 +1413,9 @@ func FheLibIfThenElse(t *testing.T, fheUintType FheUintType, condition uint64) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	firstHash := verifyCiphertextInTestMemory(environment, condition, depth, FheUint8).getHash()
-	secondHash := verifyCiphertextInTestMemory(environment, second, depth, fheUintType).getHash()
-	thirdHash := verifyCiphertextInTestMemory(environment, third, depth, fheUintType).getHash()
+	firstHash := verifyCiphertextInTestMemory(environment, condition, depth, FheUint8).GetHash()
+	secondHash := verifyCiphertextInTestMemory(environment, second, depth, fheUintType).GetHash()
+	thirdHash := verifyCiphertextInTestMemory(environment, third, depth, fheUintType).GetHash()
 	input := toLibPrecompileInputNoScalar(signature, firstHash, secondHash, thirdHash)
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
 	if err != nil {
@@ -1417,7 +1426,7 @@ func FheLibIfThenElse(t *testing.T, fheUintType FheUintType, condition uint64) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || condition == 1 && decrypted.Uint64() != second || condition == 0 && decrypted.Uint64() != third {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 1)
 	}
@@ -1452,11 +1461,11 @@ func LibTrivialEncrypt(t *testing.T, fheUintType FheUintType) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	ct := new(tfheCiphertext).trivialEncrypt(value, fheUintType)
-	if common.BytesToHash(out) != ct.getHash() {
+	ct := new(TfheCiphertext).TrivialEncrypt(value, fheUintType)
+	if common.BytesToHash(out) != ct.GetHash() {
 		t.Fatalf("output hash in verifyCipertext is incorrect")
 	}
-	res := getVerifiedCiphertextFromEVM(environment, ct.getHash())
+	res := getVerifiedCiphertextFromEVM(environment, ct.GetHash())
 	if res == nil {
 		t.Fatalf("verifyCiphertext must have verified given ciphertext")
 	}
@@ -1483,7 +1492,7 @@ func LibDecrypt(t *testing.T, fheUintType FheUintType) {
 	addr := common.Address{}
 	readOnly := false
 	input := make([]byte, 0)
-	hash := verifyCiphertextInTestMemory(environment, value, depth, fheUintType).getHash()
+	hash := verifyCiphertextInTestMemory(environment, value, depth, fheUintType).GetHash()
 	input = append(input, signatureBytes...)
 	input = append(input, hash.Bytes()...)
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
@@ -1559,7 +1568,7 @@ func TestLibCast(t *testing.T) {
 	environment.ethCall = true
 	toEncrypt := 7
 	fheUintType := FheUint8
-	encCiphertext := verifyCiphertextInTestMemory(environment, uint64(toEncrypt), depth, fheUintType).getHash()
+	encCiphertext := verifyCiphertextInTestMemory(environment, uint64(toEncrypt), depth, fheUintType).GetHash()
 	addr := common.Address{}
 	readOnly := false
 	input := make([]byte, 0)
@@ -1594,12 +1603,12 @@ func FheAdd(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
 	out, err := fheAddRun(environment, addr, addr, input, readOnly)
@@ -1610,7 +1619,7 @@ func FheAdd(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != expected {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 	}
@@ -1638,12 +1647,12 @@ func FheSub(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
 	out, err := fheSubRun(environment, addr, addr, input, readOnly)
@@ -1654,7 +1663,7 @@ func FheSub(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != expected {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 	}
@@ -1682,12 +1691,12 @@ func FheMul(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
 	out, err := fheMulRun(environment, addr, addr, input, readOnly)
@@ -1698,7 +1707,7 @@ func FheMul(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != expected {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 	}
@@ -1726,12 +1735,12 @@ func FheDiv(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
 	out, err := fheDivRun(environment, addr, addr, input, readOnly)
@@ -1743,7 +1752,7 @@ func FheDiv(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err := res.ciphertext.decrypt()
+		decrypted, err := res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != expected {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 		}
@@ -1776,12 +1785,12 @@ func FheRem(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
 	out, err := fheRemRun(environment, addr, addr, input, readOnly)
@@ -1793,7 +1802,7 @@ func FheRem(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err := res.ciphertext.decrypt()
+		decrypted, err := res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != expected {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 		}
@@ -1826,12 +1835,12 @@ func FheBitAnd(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
 	out, err := fheBitAndRun(environment, addr, addr, input, readOnly)
@@ -1847,7 +1856,7 @@ func FheBitAnd(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err := res.ciphertext.decrypt()
+		decrypted, err := res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != expected {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 		}
@@ -1876,12 +1885,12 @@ func FheBitOr(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
 	out, err := fheBitOrRun(environment, addr, addr, input, readOnly)
@@ -1897,7 +1906,7 @@ func FheBitOr(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err := res.ciphertext.decrypt()
+		decrypted, err := res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != expected {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 		}
@@ -1926,12 +1935,12 @@ func FheBitXor(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
 	out, err := fheBitXorRun(environment, addr, addr, input, readOnly)
@@ -1947,7 +1956,7 @@ func FheBitXor(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err := res.ciphertext.decrypt()
+		decrypted, err := res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != expected {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 		}
@@ -1976,12 +1985,12 @@ func FheShl(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
 	out, err := fheShlRun(environment, addr, addr, input, readOnly)
@@ -1992,7 +2001,7 @@ func FheShl(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != expected {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 	}
@@ -2020,12 +2029,12 @@ func FheShr(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
 	out, err := fheShrRun(environment, addr, addr, input, readOnly)
@@ -2036,7 +2045,7 @@ func FheShr(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != expected {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 	}
@@ -2063,12 +2072,12 @@ func FheEq(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	// lhs == rhs
 	input1 := toPrecompileInput(scalar, lhsHash, rhsHash)
@@ -2080,7 +2089,7 @@ func FheEq(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != 0 {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 0)
 	}
@@ -2107,12 +2116,12 @@ func FheNe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	// lhs == rhs
 	input1 := toPrecompileInput(scalar, lhsHash, rhsHash)
@@ -2124,7 +2133,7 @@ func FheNe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != 1 {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 1)
 	}
@@ -2151,12 +2160,12 @@ func FheGe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	// lhs >= rhs
 	input1 := toPrecompileInput(scalar, lhsHash, rhsHash)
@@ -2168,7 +2177,7 @@ func FheGe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != 1 {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 1)
 	}
@@ -2185,7 +2194,7 @@ func FheGe(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err = res.ciphertext.decrypt()
+		decrypted, err = res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != 0 {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 0)
 		}
@@ -2214,12 +2223,12 @@ func FheGt(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	// lhs > rhs
 	input1 := toPrecompileInput(scalar, lhsHash, rhsHash)
@@ -2231,7 +2240,7 @@ func FheGt(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != 1 {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 1)
 	}
@@ -2249,7 +2258,7 @@ func FheGt(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err = res.ciphertext.decrypt()
+		decrypted, err = res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != 0 {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 0)
 		}
@@ -2277,12 +2286,12 @@ func FheLe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 
 	// lhs <= rhs
@@ -2295,7 +2304,7 @@ func FheLe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != 0 {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 0)
 	}
@@ -2313,7 +2322,7 @@ func FheLe(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err = res.ciphertext.decrypt()
+		decrypted, err = res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != 1 {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 1)
 		}
@@ -2342,12 +2351,12 @@ func FheLt(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 
 	// lhs < rhs
@@ -2360,7 +2369,7 @@ func FheLt(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != 0 {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 0)
 	}
@@ -2378,7 +2387,7 @@ func FheLt(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err = res.ciphertext.decrypt()
+		decrypted, err = res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != 1 {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 1)
 		}
@@ -2407,12 +2416,12 @@ func FheMin(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
@@ -2424,7 +2433,7 @@ func FheMin(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != rhs {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), rhs)
 	}
@@ -2441,7 +2450,7 @@ func FheMin(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err = res.ciphertext.decrypt()
+		decrypted, err = res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != rhs {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), rhs)
 		}
@@ -2470,12 +2479,12 @@ func FheMax(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
 	if scalar {
 		rhsHash = common.BytesToHash(big.NewInt(int64(rhs)).Bytes())
 	} else {
-		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
@@ -2487,7 +2496,7 @@ func FheMax(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != lhs {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), lhs)
 	}
@@ -2504,7 +2513,7 @@ func FheMax(t *testing.T, fheUintType FheUintType, scalar bool) {
 		if res == nil {
 			t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 		}
-		decrypted, err = res.ciphertext.decrypt()
+		decrypted, err = res.ciphertext.Decrypt()
 		if err != nil || decrypted.Uint64() != lhs {
 			t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), lhs)
 		}
@@ -2533,7 +2542,7 @@ func FheNeg(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	ptHash := verifyCiphertextInTestMemory(environment, pt, depth, fheUintType).getHash()
+	ptHash := verifyCiphertextInTestMemory(environment, pt, depth, fheUintType).GetHash()
 
 	input := make([]byte, 0)
 	input = append(input, ptHash.Bytes()...)
@@ -2545,7 +2554,7 @@ func FheNeg(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != expected {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 	}
@@ -2573,7 +2582,7 @@ func FheNot(t *testing.T, fheUintType FheUintType, scalar bool) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	ptHash := verifyCiphertextInTestMemory(environment, pt, depth, fheUintType).getHash()
+	ptHash := verifyCiphertextInTestMemory(environment, pt, depth, fheUintType).GetHash()
 
 	input := make([]byte, 0)
 	input = append(input, ptHash.Bytes()...)
@@ -2585,7 +2594,7 @@ func FheNot(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != expected {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), expected)
 	}
@@ -2612,9 +2621,9 @@ func FheIfThenElse(t *testing.T, fheUintType FheUintType, condition uint64) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	conditionHash := verifyCiphertextInTestMemory(environment, condition, depth, fheUintType).getHash()
-	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).getHash()
-	rhsHash := verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).getHash()
+	conditionHash := verifyCiphertextInTestMemory(environment, condition, depth, fheUintType).GetHash()
+	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
+	rhsHash := verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 
 	input1 := toPrecompileInputNoScalar(false, conditionHash, lhsHash, rhsHash)
 	out, err := fheIfThenElseRun(environment, addr, addr, input1, readOnly)
@@ -2625,7 +2634,7 @@ func FheIfThenElse(t *testing.T, fheUintType FheUintType, condition uint64) {
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	decrypted, err := res.ciphertext.decrypt()
+	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || condition == 1 && decrypted.Uint64() != lhs || condition == 0 && decrypted.Uint64() != rhs {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 0)
 	}
@@ -2648,7 +2657,7 @@ func Decrypt(t *testing.T, fheUintType FheUintType) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	hash := verifyCiphertextInTestMemory(environment, value, depth, fheUintType).getHash()
+	hash := verifyCiphertextInTestMemory(environment, value, depth, fheUintType).GetHash()
 	out, err := decryptRunWithoutKms(environment, addr, addr, hash.Bytes(), readOnly)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -2679,7 +2688,7 @@ func FheRand(t *testing.T, fheUintType FheUintType) {
 	}
 
 	hash := common.BytesToHash(out)
-	_, err = environment.FhevmData().verifiedCiphertexts[hash].ciphertext.decrypt()
+	_, err = environment.FhevmData().verifiedCiphertexts[hash].ciphertext.Decrypt()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -2693,7 +2702,7 @@ func TestVerifyCiphertextInvalidType(t *testing.T) {
 	readOnly := false
 	invalidType := FheUintType(255)
 	compact := encryptAndSerializeCompact(0, FheUint64)
-	input := append(compact, byte(invalidType))
+	input := prepareInputForVerifyCiphertext(append(compact, byte(invalidType)))
 	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly)
 	if err == nil {
 		t.Fatalf("verifyCiphertext must have failed on invalid ciphertext type")
@@ -2725,7 +2734,7 @@ func TestCastInvalidType(t *testing.T) {
 	addr := common.Address{}
 	readOnly := false
 	invalidType := FheUintType(255)
-	hash := verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).getHash()
+	hash := verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).GetHash()
 	input := make([]byte, 0)
 	input = append(input, hash.Bytes()...)
 	input = append(input, byte(invalidType))
@@ -2743,7 +2752,7 @@ func TestVerifyCiphertextInvalidSize(t *testing.T) {
 	readOnly := false
 	ctType := FheUint32
 	compact := encryptAndSerializeCompact(0, ctType)
-	input := append(compact[:len(compact)-1], byte(ctType))
+	input := prepareInputForVerifyCiphertext(append(compact[:len(compact)-1], byte(ctType)))
 	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly)
 	if err == nil {
 		t.Fatalf("verifyCiphertext must have failed on invalid ciphertext size")
@@ -2808,7 +2817,8 @@ func TestVerifyCiphertextBadCiphertext(t *testing.T) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	_, err := verifyCiphertextRun(environment, addr, addr, make([]byte, 10), readOnly)
+	input := prepareInputForVerifyCiphertext(make([]byte, 10))
+	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly)
 	if err == nil {
 		t.Fatalf("verifyCiphertext must fail on bad ciphertext input")
 	}
@@ -3622,7 +3632,7 @@ func TestUnknownCiphertextHandle(t *testing.T) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	hash := verifyCiphertextInTestMemory(environment, 2, depth, FheUint8).getHash()
+	hash := verifyCiphertextInTestMemory(environment, 2, depth, FheUint8).GetHash()
 
 	ct := getVerifiedCiphertext(environment, hash)
 	if ct == nil {
@@ -3641,7 +3651,7 @@ func TestCiphertextNotVerifiedWithoutReturn(t *testing.T) {
 	environment := newTestEVMEnvironment()
 	environment.depth = 1
 	verifiedDepth := 2
-	hash := verifyCiphertextInTestMemory(environment, 1, verifiedDepth, FheUint8).getHash()
+	hash := verifyCiphertextInTestMemory(environment, 1, verifiedDepth, FheUint8).GetHash()
 
 	ct := getVerifiedCiphertext(environment, hash)
 	if ct != nil {
@@ -3653,7 +3663,7 @@ func TestCiphertextNotAutomaticallyDelegated(t *testing.T) {
 	environment := newTestEVMEnvironment()
 	environment.depth = 3
 	verifiedDepth := 2
-	hash := verifyCiphertextInTestMemory(environment, 1, verifiedDepth, FheUint8).getHash()
+	hash := verifyCiphertextInTestMemory(environment, 1, verifiedDepth, FheUint8).GetHash()
 
 	ct := getVerifiedCiphertext(environment, hash)
 	if ct != nil {
@@ -3664,7 +3674,7 @@ func TestCiphertextNotAutomaticallyDelegated(t *testing.T) {
 func TestCiphertextVerificationConditions(t *testing.T) {
 	environment := newTestEVMEnvironment()
 	verifiedDepth := 2
-	hash := verifyCiphertextInTestMemory(environment, 1, verifiedDepth, FheUint8).getHash()
+	hash := verifyCiphertextInTestMemory(environment, 1, verifiedDepth, FheUint8).GetHash()
 
 	environment.depth = verifiedDepth
 	ctPtr := getVerifiedCiphertext(environment, hash)
@@ -3885,7 +3895,7 @@ func TestLibOneTrueOptimisticRequire(t *testing.T) {
 	addr := common.Address{}
 	readOnly := false
 	input := make([]byte, 0)
-	hash := verifyCiphertextInTestMemory(environment, value, depth, FheUint8).getHash()
+	hash := verifyCiphertextInTestMemory(environment, value, depth, FheUint8).GetHash()
 	input = append(input, signatureBytes...)
 	input = append(input, hash.Bytes()...)
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
@@ -3912,7 +3922,7 @@ func TestOneFalseOptimisticRequire(t *testing.T) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	hash := verifyCiphertextInTestMemory(environment, value, depth, FheUint8).getHash()
+	hash := verifyCiphertextInTestMemory(environment, value, depth, FheUint8).GetHash()
 	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -3936,14 +3946,14 @@ func TestTwoTrueOptimisticRequires(t *testing.T) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	hash := verifyCiphertextInTestMemory(environment, value, depth, FheUint8).getHash()
+	hash := verifyCiphertextInTestMemory(environment, value, depth, FheUint8).GetHash()
 	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if len(out) != 0 {
 		t.Fatalf("require expected output len of 0, got %v", len(out))
 	}
-	hash = verifyCiphertextInTestMemory(environment, value, depth, FheUint8).getHash()
+	hash = verifyCiphertextInTestMemory(environment, value, depth, FheUint8).GetHash()
 	out, err = optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -3968,7 +3978,7 @@ func TestOptimisticRequireTwiceOnSameCiphertext(t *testing.T) {
 	addr := common.Address{}
 	readOnly := false
 	ct := verifyCiphertextInTestMemory(environment, value, depth, FheUint8)
-	hash := ct.getHash()
+	hash := ct.GetHash()
 	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -3997,14 +4007,14 @@ func TestOneFalseAndOneTrueOptimisticRequire(t *testing.T) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	hash := verifyCiphertextInTestMemory(environment, 0, depth, FheUint8).getHash()
+	hash := verifyCiphertextInTestMemory(environment, 0, depth, FheUint8).GetHash()
 	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if len(out) != 0 {
 		t.Fatalf("require expected output len of 0, got %v", len(out))
 	}
-	hash = verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).getHash()
+	hash = verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).GetHash()
 	out, err = optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -4028,7 +4038,7 @@ func TestDecryptWithFalseOptimisticRequire(t *testing.T) {
 	addr := common.Address{}
 	readOnly := false
 	// Call optimistic require with a false value and expect it succeeds.
-	hash := verifyCiphertextInTestMemory(environment, 0, depth, FheUint8).getHash()
+	hash := verifyCiphertextInTestMemory(environment, 0, depth, FheUint8).GetHash()
 	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -4053,7 +4063,7 @@ func TestDecryptWithTrueOptimisticRequire(t *testing.T) {
 	addr := common.Address{}
 	readOnly := false
 	// Call optimistic require with a false value and expect it succeeds.
-	hash := verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).getHash()
+	hash := verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).GetHash()
 	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -4082,7 +4092,7 @@ func TestDecryptInTransactionDisabled(t *testing.T) {
 	environment.fhevmParams.DisableDecryptionsInTransaction = true
 	addr := common.Address{}
 	readOnly := false
-	hash := verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).getHash()
+	hash := verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).GetHash()
 	// Call decrypt and expect it to fail due to disabling of decryptions during commit
 	_, err := decryptRunWithoutKms(environment, addr, addr, hash.Bytes(), readOnly)
 	if err == nil {

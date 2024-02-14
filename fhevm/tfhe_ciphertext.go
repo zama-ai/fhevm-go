@@ -23,15 +23,26 @@ const (
 	FheUint64 FheUintType = 3
 )
 
+func isValidFheType(t byte) bool {
+	if uint8(t) < uint8(FheUint8) || uint8(t) > uint8(FheUint64) {
+		return false
+	}
+	return true
+}
+
 // Represents an expanded TFHE ciphertext.
-type tfheCiphertext struct {
+type TfheCiphertext struct {
 	serialization []byte
 	hash          *common.Hash
 	fheUintType   FheUintType
 }
 
+func (ct *TfheCiphertext) Type() FheUintType {
+	return ct.fheUintType
+}
+
 // Deserializes a TFHE ciphertext.
-func (ct *tfheCiphertext) deserialize(in []byte, t FheUintType) error {
+func (ct *TfheCiphertext) Deserialize(in []byte, t FheUintType) error {
 	switch t {
 	case FheUint8:
 		ptr := C.deserialize_fhe_uint8(toDynamicBufferView((in)))
@@ -69,7 +80,7 @@ func (ct *tfheCiphertext) deserialize(in []byte, t FheUintType) error {
 // Deserializes a compact TFHE ciphetext.
 // Note: After the compact TFHE ciphertext has been serialized, subsequent calls to serialize()
 // will produce non-compact ciphertext serialziations.
-func (ct *tfheCiphertext) deserializeCompact(in []byte, t FheUintType) error {
+func (ct *TfheCiphertext) DeserializeCompact(in []byte, t FheUintType) error {
 	switch t {
 	case FheUint8:
 		ptr := C.deserialize_compact_fhe_uint8(toDynamicBufferView((in)))
@@ -125,7 +136,7 @@ func (ct *tfheCiphertext) deserializeCompact(in []byte, t FheUintType) error {
 
 // Encrypts a value as a TFHE ciphertext, using the compact public FHE key.
 // The resulting ciphertext is automaticaly expanded.
-func (ct *tfheCiphertext) encrypt(value big.Int, t FheUintType) *tfheCiphertext {
+func (ct *TfheCiphertext) Encrypt(value big.Int, t FheUintType) *TfheCiphertext {
 	var ptr unsafe.Pointer
 	var err error
 	switch t {
@@ -165,7 +176,7 @@ func (ct *tfheCiphertext) encrypt(value big.Int, t FheUintType) *tfheCiphertext 
 	return ct
 }
 
-func (ct *tfheCiphertext) trivialEncrypt(value big.Int, t FheUintType) *tfheCiphertext {
+func (ct *TfheCiphertext) TrivialEncrypt(value big.Int, t FheUintType) *TfheCiphertext {
 	var ptr unsafe.Pointer
 	var err error
 	switch t {
@@ -205,17 +216,17 @@ func (ct *tfheCiphertext) trivialEncrypt(value big.Int, t FheUintType) *tfheCiph
 	return ct
 }
 
-func (ct *tfheCiphertext) serialize() []byte {
+func (ct *TfheCiphertext) Serialize() []byte {
 	return ct.serialization
 }
 
-func (ct *tfheCiphertext) executeUnaryCiphertextOperation(rhs *tfheCiphertext,
+func (ct *TfheCiphertext) executeUnaryCiphertextOperation(rhs *TfheCiphertext,
 	op8 func(ct unsafe.Pointer) unsafe.Pointer,
 	op16 func(ct unsafe.Pointer) unsafe.Pointer,
 	op32 func(ct unsafe.Pointer) unsafe.Pointer,
-	op64 func(ct unsafe.Pointer) unsafe.Pointer) (*tfheCiphertext, error) {
+	op64 func(ct unsafe.Pointer) unsafe.Pointer) (*TfheCiphertext, error) {
 
-	res := new(tfheCiphertext)
+	res := new(TfheCiphertext)
 	res.fheUintType = ct.fheUintType
 	res_ser := &C.DynamicBuffer{}
 	switch ct.fheUintType {
@@ -294,16 +305,16 @@ func (ct *tfheCiphertext) executeUnaryCiphertextOperation(rhs *tfheCiphertext,
 	return res, nil
 }
 
-func (lhs *tfheCiphertext) executeBinaryCiphertextOperation(rhs *tfheCiphertext,
+func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 	op8 func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
 	op16 func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
 	op32 func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
-	op64 func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer) (*tfheCiphertext, error) {
+	op64 func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer) (*TfheCiphertext, error) {
 	if lhs.fheUintType != rhs.fheUintType {
 		return nil, errors.New("binary operations are only well-defined for identical types")
 	}
 
-	res := new(tfheCiphertext)
+	res := new(TfheCiphertext)
 	res.fheUintType = lhs.fheUintType
 	res_ser := &C.DynamicBuffer{}
 	switch lhs.fheUintType {
@@ -406,16 +417,16 @@ func (lhs *tfheCiphertext) executeBinaryCiphertextOperation(rhs *tfheCiphertext,
 	return res, nil
 }
 
-func (first *tfheCiphertext) executeTernaryCiphertextOperation(lhs *tfheCiphertext, rhs *tfheCiphertext,
+func (first *TfheCiphertext) executeTernaryCiphertextOperation(lhs *TfheCiphertext, rhs *TfheCiphertext,
 	op8 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
 	op16 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
 	op32 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
-	op64 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer) (*tfheCiphertext, error) {
+	op64 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer) (*TfheCiphertext, error) {
 	if lhs.fheUintType != rhs.fheUintType {
 		return nil, errors.New("ternary operations are only well-defined for identical types")
 	}
 
-	res := new(tfheCiphertext)
+	res := new(TfheCiphertext)
 	res.fheUintType = lhs.fheUintType
 	res_ser := &C.DynamicBuffer{}
 	switch lhs.fheUintType {
@@ -542,12 +553,12 @@ func (first *tfheCiphertext) executeTernaryCiphertextOperation(lhs *tfheCipherte
 	return res, nil
 }
 
-func (lhs *tfheCiphertext) executeBinaryScalarOperation(rhs uint64,
+func (lhs *TfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 	op8 func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer,
 	op16 func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer,
 	op32 func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer,
-	op64 func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer) (*tfheCiphertext, error) {
-	res := new(tfheCiphertext)
+	op64 func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer) (*TfheCiphertext, error) {
+	res := new(TfheCiphertext)
 	res.fheUintType = lhs.fheUintType
 	res_ser := &C.DynamicBuffer{}
 	switch lhs.fheUintType {
@@ -630,7 +641,7 @@ func (lhs *tfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 	return res, nil
 }
 
-func (lhs *tfheCiphertext) add(rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Add(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.add_fhe_uint8(lhs, rhs, sks)
@@ -646,7 +657,7 @@ func (lhs *tfheCiphertext) add(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) scalarAdd(rhs uint64) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) ScalarAdd(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
 		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
 			return C.scalar_add_fhe_uint8(lhs, rhs, sks)
@@ -662,7 +673,7 @@ func (lhs *tfheCiphertext) scalarAdd(rhs uint64) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) sub(rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Sub(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.sub_fhe_uint8(lhs, rhs, sks)
@@ -678,7 +689,7 @@ func (lhs *tfheCiphertext) sub(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) scalarSub(rhs uint64) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) ScalarSub(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
 		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
 			return C.scalar_sub_fhe_uint8(lhs, rhs, sks)
@@ -694,7 +705,7 @@ func (lhs *tfheCiphertext) scalarSub(rhs uint64) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) mul(rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Mul(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.mul_fhe_uint8(lhs, rhs, sks)
@@ -710,7 +721,7 @@ func (lhs *tfheCiphertext) mul(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) scalarMul(rhs uint64) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) ScalarMul(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
 		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
 			return C.scalar_mul_fhe_uint8(lhs, rhs, sks)
@@ -726,7 +737,7 @@ func (lhs *tfheCiphertext) scalarMul(rhs uint64) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) scalarDiv(rhs uint64) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) ScalarDiv(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
 		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
 			return C.scalar_div_fhe_uint8(lhs, rhs, sks)
@@ -742,7 +753,7 @@ func (lhs *tfheCiphertext) scalarDiv(rhs uint64) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) scalarRem(rhs uint64) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) ScalarRem(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
 		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
 			return C.scalar_rem_fhe_uint8(lhs, rhs, sks)
@@ -758,7 +769,7 @@ func (lhs *tfheCiphertext) scalarRem(rhs uint64) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) bitand(rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Bitand(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.bitand_fhe_uint8(lhs, rhs, sks)
@@ -774,7 +785,7 @@ func (lhs *tfheCiphertext) bitand(rhs *tfheCiphertext) (*tfheCiphertext, error) 
 		})
 }
 
-func (lhs *tfheCiphertext) bitor(rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Bitor(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.bitor_fhe_uint8(lhs, rhs, sks)
@@ -790,7 +801,7 @@ func (lhs *tfheCiphertext) bitor(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) bitxor(rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Bitxor(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.bitxor_fhe_uint8(lhs, rhs, sks)
@@ -806,7 +817,7 @@ func (lhs *tfheCiphertext) bitxor(rhs *tfheCiphertext) (*tfheCiphertext, error) 
 		})
 }
 
-func (lhs *tfheCiphertext) shl(rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Shl(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.shl_fhe_uint8(lhs, rhs, sks)
@@ -822,7 +833,7 @@ func (lhs *tfheCiphertext) shl(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) scalarShl(rhs uint64) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) ScalarShl(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
 		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
 			return C.scalar_shl_fhe_uint8(lhs, rhs, sks)
@@ -838,7 +849,7 @@ func (lhs *tfheCiphertext) scalarShl(rhs uint64) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) shr(rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Shr(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.shr_fhe_uint8(lhs, rhs, sks)
@@ -854,7 +865,7 @@ func (lhs *tfheCiphertext) shr(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) scalarShr(rhs uint64) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) ScalarShr(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
 		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
 			return C.scalar_shr_fhe_uint8(lhs, rhs, sks)
@@ -870,7 +881,7 @@ func (lhs *tfheCiphertext) scalarShr(rhs uint64) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) eq(rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Eq(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.eq_fhe_uint8(lhs, rhs, sks)
@@ -886,7 +897,7 @@ func (lhs *tfheCiphertext) eq(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) scalarEq(rhs uint64) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) ScalarEq(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
 		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
 			return C.scalar_eq_fhe_uint8(lhs, rhs, sks)
@@ -902,7 +913,7 @@ func (lhs *tfheCiphertext) scalarEq(rhs uint64) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) ne(rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Ne(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.ne_fhe_uint8(lhs, rhs, sks)
@@ -918,7 +929,7 @@ func (lhs *tfheCiphertext) ne(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) scalarNe(rhs uint64) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) ScalarNe(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
 		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
 			return C.scalar_ne_fhe_uint8(lhs, rhs, sks)
@@ -934,7 +945,7 @@ func (lhs *tfheCiphertext) scalarNe(rhs uint64) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) ge(rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Ge(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.ge_fhe_uint8(lhs, rhs, sks)
@@ -950,7 +961,7 @@ func (lhs *tfheCiphertext) ge(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) scalarGe(rhs uint64) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) ScalarGe(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
 		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
 			return C.scalar_ge_fhe_uint8(lhs, rhs, sks)
@@ -966,7 +977,7 @@ func (lhs *tfheCiphertext) scalarGe(rhs uint64) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) gt(rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Gt(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.gt_fhe_uint8(lhs, rhs, sks)
@@ -982,7 +993,7 @@ func (lhs *tfheCiphertext) gt(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) scalarGt(rhs uint64) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) ScalarGt(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
 		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
 			return C.scalar_gt_fhe_uint8(lhs, rhs, sks)
@@ -998,7 +1009,7 @@ func (lhs *tfheCiphertext) scalarGt(rhs uint64) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) le(rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Le(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.le_fhe_uint8(lhs, rhs, sks)
@@ -1014,7 +1025,7 @@ func (lhs *tfheCiphertext) le(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) scalarLe(rhs uint64) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) ScalarLe(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
 		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
 			return C.scalar_le_fhe_uint8(lhs, rhs, sks)
@@ -1031,7 +1042,7 @@ func (lhs *tfheCiphertext) scalarLe(rhs uint64) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) lt(rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Lt(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.lt_fhe_uint8(lhs, rhs, sks)
@@ -1047,7 +1058,7 @@ func (lhs *tfheCiphertext) lt(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) scalarLt(rhs uint64) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) ScalarLt(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
 		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
 			return C.scalar_lt_fhe_uint8(lhs, rhs, sks)
@@ -1063,7 +1074,7 @@ func (lhs *tfheCiphertext) scalarLt(rhs uint64) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) min(rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Min(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.min_fhe_uint8(lhs, rhs, sks)
@@ -1079,7 +1090,7 @@ func (lhs *tfheCiphertext) min(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) scalarMin(rhs uint64) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) ScalarMin(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
 		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
 			return C.scalar_min_fhe_uint8(lhs, rhs, sks)
@@ -1095,7 +1106,7 @@ func (lhs *tfheCiphertext) scalarMin(rhs uint64) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) max(rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Max(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.max_fhe_uint8(lhs, rhs, sks)
@@ -1111,7 +1122,7 @@ func (lhs *tfheCiphertext) max(rhs *tfheCiphertext) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) scalarMax(rhs uint64) (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) ScalarMax(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
 		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
 			return C.scalar_max_fhe_uint8(lhs, rhs, sks)
@@ -1127,7 +1138,7 @@ func (lhs *tfheCiphertext) scalarMax(rhs uint64) (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) neg() (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Neg() (*TfheCiphertext, error) {
 	return lhs.executeUnaryCiphertextOperation(lhs,
 		func(lhs unsafe.Pointer) unsafe.Pointer {
 			return C.neg_fhe_uint8(lhs, sks)
@@ -1143,7 +1154,7 @@ func (lhs *tfheCiphertext) neg() (*tfheCiphertext, error) {
 		})
 }
 
-func (lhs *tfheCiphertext) not() (*tfheCiphertext, error) {
+func (lhs *TfheCiphertext) Not() (*TfheCiphertext, error) {
 	return lhs.executeUnaryCiphertextOperation(lhs,
 		func(lhs unsafe.Pointer) unsafe.Pointer {
 			return C.not_fhe_uint8(lhs, sks)
@@ -1159,7 +1170,7 @@ func (lhs *tfheCiphertext) not() (*tfheCiphertext, error) {
 		})
 }
 
-func (condition *tfheCiphertext) ifThenElse(lhs *tfheCiphertext, rhs *tfheCiphertext) (*tfheCiphertext, error) {
+func (condition *TfheCiphertext) IfThenElse(lhs *TfheCiphertext, rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return condition.executeTernaryCiphertextOperation(lhs, rhs,
 		func(condition unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.if_then_else_fhe_uint8(condition, lhs, rhs, sks)
@@ -1175,12 +1186,12 @@ func (condition *tfheCiphertext) ifThenElse(lhs *tfheCiphertext, rhs *tfheCipher
 		})
 }
 
-func (ct *tfheCiphertext) castTo(castToType FheUintType) (*tfheCiphertext, error) {
+func (ct *TfheCiphertext) CastTo(castToType FheUintType) (*TfheCiphertext, error) {
 	if ct.fheUintType == castToType {
 		return nil, errors.New("casting to same type is not supported")
 	}
 
-	res := new(tfheCiphertext)
+	res := new(TfheCiphertext)
 	res.fheUintType = castToType
 
 	switch ct.fheUintType {
@@ -1401,7 +1412,7 @@ func (ct *tfheCiphertext) castTo(castToType FheUintType) (*tfheCiphertext, error
 	return res, nil
 }
 
-func (ct *tfheCiphertext) decrypt() (big.Int, error) {
+func (ct *TfheCiphertext) Decrypt() (big.Int, error) {
 	if cks == nil {
 		return *new(big.Int).SetUint64(0), errors.New("cks is not initialized")
 	}
@@ -1453,12 +1464,12 @@ func (ct *tfheCiphertext) decrypt() (big.Int, error) {
 	return *new(big.Int).SetUint64(value), nil
 }
 
-func (ct *tfheCiphertext) computeHash() {
+func (ct *TfheCiphertext) computeHash() {
 	hash := common.BytesToHash(crypto.Keccak256(ct.serialization))
 	ct.hash = &hash
 }
 
-func (ct *tfheCiphertext) getHash() common.Hash {
+func (ct *TfheCiphertext) GetHash() common.Hash {
 	if ct.hash != nil {
 		return *ct.hash
 	}

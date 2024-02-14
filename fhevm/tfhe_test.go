@@ -34,9 +34,9 @@ func TfheEncryptDecrypt(t *testing.T, fheUintType FheUintType) {
 	case FheUint64:
 		val.SetUint64(13333377777777777)
 	}
-	ct := new(tfheCiphertext)
-	ct.encrypt(val, fheUintType)
-	res, err := ct.decrypt()
+	ct := new(TfheCiphertext)
+	ct.Encrypt(val, fheUintType)
+	res, err := ct.Decrypt()
 	if err != nil || res.Uint64() != val.Uint64() {
 		t.Fatalf("%d != %d", val.Uint64(), res.Uint64())
 	}
@@ -54,9 +54,9 @@ func TfheTrivialEncryptDecrypt(t *testing.T, fheUintType FheUintType) {
 	case FheUint64:
 		val.SetUint64(13333377777777777)
 	}
-	ct := new(tfheCiphertext)
-	ct.trivialEncrypt(val, fheUintType)
-	res, err := ct.decrypt()
+	ct := new(TfheCiphertext)
+	ct.TrivialEncrypt(val, fheUintType)
+	res, err := ct.Decrypt()
 	if err != nil || res.Uint64() != val.Uint64() {
 		t.Fatalf("%d != %d", val.Uint64(), res.Uint64())
 	}
@@ -74,15 +74,15 @@ func TfheSerializeDeserialize(t *testing.T, fheUintType FheUintType) {
 	case FheUint64:
 		val = *big.NewInt(13333377777777777)
 	}
-	ct1 := new(tfheCiphertext)
-	ct1.encrypt(val, fheUintType)
-	ct1Ser := ct1.serialize()
-	ct2 := new(tfheCiphertext)
-	err := ct2.deserialize(ct1Ser, fheUintType)
+	ct1 := new(TfheCiphertext)
+	ct1.Encrypt(val, fheUintType)
+	ct1Ser := ct1.Serialize()
+	ct2 := new(TfheCiphertext)
+	err := ct2.Deserialize(ct1Ser, fheUintType)
 	if err != nil {
 		t.Fatalf("deserialization failed")
 	}
-	ct2Ser := ct2.serialize()
+	ct2Ser := ct2.Serialize()
 	if !bytes.Equal(ct1Ser, ct2Ser) {
 		t.Fatalf("serialization is non-deterministic")
 	}
@@ -102,25 +102,25 @@ func TfheSerializeDeserializeCompact(t *testing.T, fheUintType FheUintType) {
 	}
 
 	ser := encryptAndSerializeCompact(val, fheUintType)
-	ct1 := new(tfheCiphertext)
-	err := ct1.deserializeCompact(ser, fheUintType)
+	ct1 := new(TfheCiphertext)
+	err := ct1.DeserializeCompact(ser, fheUintType)
 	if err != nil {
 		t.Fatalf("ct1 compact deserialization failed")
 	}
-	ct1Ser := ct1.serialize()
+	ct1Ser := ct1.Serialize()
 
-	ct2 := new(tfheCiphertext)
-	err = ct2.deserialize(ct1Ser, fheUintType)
+	ct2 := new(TfheCiphertext)
+	err = ct2.Deserialize(ct1Ser, fheUintType)
 	if err != nil {
 		t.Fatalf("ct2 deserialization failed")
 	}
 
-	ct2Ser := ct2.serialize()
+	ct2Ser := ct2.Serialize()
 	if !bytes.Equal(ct1Ser, ct2Ser) {
 		t.Fatalf("serialization is non-deterministic")
 	}
 
-	decrypted, err := ct2.decrypt()
+	decrypted, err := ct2.Decrypt()
 	if err != nil || uint64(decrypted.Uint64()) != val {
 		t.Fatalf("decrypted value is incorrect")
 	}
@@ -138,25 +138,25 @@ func TfheTrivialSerializeDeserialize(t *testing.T, fheUintType FheUintType) {
 	case FheUint64:
 		val = *big.NewInt(13333377777777777)
 	}
-	ct1 := new(tfheCiphertext)
-	ct1.trivialEncrypt(val, fheUintType)
-	ct1Ser := ct1.serialize()
-	ct2 := new(tfheCiphertext)
-	err := ct2.deserialize(ct1Ser, fheUintType)
+	ct1 := new(TfheCiphertext)
+	ct1.TrivialEncrypt(val, fheUintType)
+	ct1Ser := ct1.Serialize()
+	ct2 := new(TfheCiphertext)
+	err := ct2.Deserialize(ct1Ser, fheUintType)
 	if err != nil {
 		t.Fatalf("deserialization failed")
 	}
-	ct2Ser := ct2.serialize()
+	ct2Ser := ct2.Serialize()
 	if !bytes.Equal(ct1Ser, ct2Ser) {
 		t.Fatalf("trivial serialization is non-deterministic")
 	}
 }
 
 func TfheDeserializeFailure(t *testing.T, fheUintType FheUintType) {
-	ct := new(tfheCiphertext)
+	ct := new(TfheCiphertext)
 	input := make([]byte, 1)
 	input[0] = 42
-	err := ct.deserialize(input, fheUintType)
+	err := ct.Deserialize(input, fheUintType)
 	if err == nil {
 		t.Fatalf("deserialization must have failed")
 	}
@@ -175,20 +175,20 @@ func TfheDeserializeCompact(t *testing.T, fheUintType FheUintType) {
 		val = 13333377777777777
 	}
 	ser := encryptAndSerializeCompact(val, fheUintType)
-	ct := new(tfheCiphertext)
-	err := ct.deserializeCompact(ser, fheUintType)
+	ct := new(TfheCiphertext)
+	err := ct.DeserializeCompact(ser, fheUintType)
 	if err != nil {
 		t.Fatalf("compact deserialization failed")
 	}
-	decryptedVal, err := ct.decrypt()
+	decryptedVal, err := ct.Decrypt()
 	if err != nil || uint64(decryptedVal.Uint64()) != val {
 		t.Fatalf("compact deserialization wrong decryption")
 	}
 }
 
 func TfheDeserializeCompactFailure(t *testing.T, fheUintType FheUintType) {
-	ct := new(tfheCiphertext)
-	err := ct.deserializeCompact(make([]byte, 10), fheUintType)
+	ct := new(TfheCiphertext)
+	err := ct.DeserializeCompact(make([]byte, 10), fheUintType)
 	if err == nil {
 		t.Fatalf("compact deserialization must have failed")
 	}
@@ -211,12 +211,12 @@ func TfheAdd(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(133337777777777)
 	}
 	expected := new(big.Int).Add(&a, &b)
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes, _ := ctA.add(ctB)
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes, _ := ctA.Add(ctB)
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected.Uint64() {
 		t.Fatalf("%d != %d", expected.Uint64(), res.Uint64())
 	}
@@ -239,10 +239,10 @@ func TfheScalarAdd(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(133337777777777)
 	}
 	expected := new(big.Int).Add(&a, &b)
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctRes, _ := ctA.scalarAdd(b.Uint64())
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes, _ := ctA.ScalarAdd(b.Uint64())
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected.Uint64() {
 		t.Fatalf("%d != %d", expected.Uint64(), res.Uint64())
 	}
@@ -265,12 +265,12 @@ func TfheSub(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(133337777777777)
 	}
 	expected := new(big.Int).Sub(&a, &b)
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes, _ := ctA.sub(ctB)
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes, _ := ctA.Sub(ctB)
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected.Uint64() {
 		t.Fatalf("%d != %d", expected.Uint64(), res.Uint64())
 	}
@@ -293,10 +293,10 @@ func TfheScalarSub(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(133337777777777)
 	}
 	expected := new(big.Int).Sub(&a, &b)
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctRes, _ := ctA.scalarSub(b.Uint64())
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes, _ := ctA.ScalarSub(b.Uint64())
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected.Uint64() {
 		t.Fatalf("%d != %d", expected.Uint64(), res.Uint64())
 	}
@@ -319,12 +319,12 @@ func TfheMul(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(133)
 	}
 	expected := new(big.Int).Mul(&a, &b)
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes, _ := ctA.mul(ctB)
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes, _ := ctA.Mul(ctB)
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected.Uint64() {
 		t.Fatalf("%d != %d", expected.Uint64(), res.Uint64())
 	}
@@ -347,10 +347,10 @@ func TfheScalarMul(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(133)
 	}
 	expected := new(big.Int).Mul(&a, &b)
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctRes, _ := ctA.scalarMul(b.Uint64())
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes, _ := ctA.ScalarMul(b.Uint64())
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected.Uint64() {
 		t.Fatalf("%d != %d", expected.Uint64(), res.Uint64())
 	}
@@ -373,10 +373,10 @@ func TfheScalarDiv(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(1337)
 	}
 	expected := new(big.Int).Div(&a, &b)
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctRes, _ := ctA.scalarDiv(b.Uint64())
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes, _ := ctA.ScalarDiv(b.Uint64())
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected.Uint64() {
 		t.Fatalf("%d != %d", expected.Uint64(), res.Uint64())
 	}
@@ -399,10 +399,10 @@ func TfheScalarRem(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(1337)
 	}
 	expected := new(big.Int).Rem(&a, &b)
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctRes, _ := ctA.scalarRem(b.Uint64())
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes, _ := ctA.ScalarRem(b.Uint64())
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected.Uint64() {
 		t.Fatalf("%d != %d", expected.Uint64(), res.Uint64())
 	}
@@ -425,12 +425,12 @@ func TfheBitAnd(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(1337)
 	}
 	expected := a.Uint64() & b.Uint64()
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes, _ := ctA.bitand(ctB)
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes, _ := ctA.Bitand(ctB)
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected {
 		t.Fatalf("%d != %d", expected, res.Uint64())
 	}
@@ -453,12 +453,12 @@ func TfheBitOr(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(1337)
 	}
 	expected := a.Uint64() | b.Uint64()
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes, _ := ctA.bitor(ctB)
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes, _ := ctA.Bitor(ctB)
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected {
 		t.Fatalf("%d != %d", expected, res.Uint64())
 	}
@@ -481,12 +481,12 @@ func TfheBitXor(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(1337)
 	}
 	expected := a.Uint64() ^ b.Uint64()
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes, _ := ctA.bitxor(ctB)
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes, _ := ctA.Bitxor(ctB)
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected {
 		t.Fatalf("%d != %d", expected, res.Uint64())
 	}
@@ -509,12 +509,12 @@ func TfheShl(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(45)
 	}
 	expected := new(big.Int).Lsh(&a, uint(b.Uint64()))
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes, _ := ctA.shl(ctB)
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes, _ := ctA.Shl(ctB)
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected.Uint64() {
 		t.Fatalf("%d != %d", expected.Uint64(), res.Uint64())
 	}
@@ -537,10 +537,10 @@ func TfheScalarShl(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(45)
 	}
 	expected := new(big.Int).Lsh(&a, uint(b.Uint64()))
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctRes, _ := ctA.scalarShl(b.Uint64())
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes, _ := ctA.ScalarShl(b.Uint64())
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected.Uint64() {
 		t.Fatalf("%d != %d", expected.Uint64(), res.Uint64())
 	}
@@ -563,12 +563,12 @@ func TfheShr(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(1337)
 	}
 	expected := new(big.Int).Rsh(&a, uint(b.Uint64()))
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes, _ := ctA.shr(ctB)
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes, _ := ctA.Shr(ctB)
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected.Uint64() {
 		t.Fatalf("%d != %d", expected.Uint64(), res.Uint64())
 	}
@@ -591,10 +591,10 @@ func TfheScalarShr(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(1337)
 	}
 	expected := new(big.Int).Rsh(&a, uint(b.Uint64()))
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctRes, _ := ctA.scalarShr(b.Uint64())
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes, _ := ctA.ScalarShr(b.Uint64())
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected.Uint64() {
 		t.Fatalf("%d != %d", expected.Uint64(), res.Uint64())
 	}
@@ -623,12 +623,12 @@ func TfheEq(t *testing.T, fheUintType FheUintType) {
 	} else {
 		expected = 0
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes, _ := ctA.eq(ctB)
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes, _ := ctA.Eq(ctB)
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected {
 		t.Fatalf("%d != %d", expected, res.Uint64())
 	}
@@ -657,10 +657,10 @@ func TfheScalarEq(t *testing.T, fheUintType FheUintType) {
 	} else {
 		expected = 0
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctRes, _ := ctA.scalarEq(b.Uint64())
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes, _ := ctA.ScalarEq(b.Uint64())
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected {
 		t.Fatalf("%d != %d", expected, res.Uint64())
 	}
@@ -689,12 +689,12 @@ func TfheNe(t *testing.T, fheUintType FheUintType) {
 	} else {
 		expected = 0
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes, _ := ctA.ne(ctB)
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes, _ := ctA.Ne(ctB)
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected {
 		t.Fatalf("%d != %d", expected, res.Uint64())
 	}
@@ -723,10 +723,10 @@ func TfheScalarNe(t *testing.T, fheUintType FheUintType) {
 	} else {
 		expected = 0
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctRes, _ := ctA.scalarNe(b.Uint64())
-	res, err := ctRes.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes, _ := ctA.ScalarNe(b.Uint64())
+	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected {
 		t.Fatalf("%d != %d", expected, res.Uint64())
 	}
@@ -748,14 +748,14 @@ func TfheGe(t *testing.T, fheUintType FheUintType) {
 		a.SetUint64(13371337)
 		b.SetUint64(1337)
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes1, _ := ctA.ge(ctB)
-	ctRes2, _ := ctB.ge(ctA)
-	res1, err1 := ctRes1.decrypt()
-	res2, err2 := ctRes2.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes1, _ := ctA.Ge(ctB)
+	ctRes2, _ := ctB.Ge(ctA)
+	res1, err1 := ctRes1.Decrypt()
+	res2, err2 := ctRes2.Decrypt()
 	if err1 != nil || res1.Uint64() != 1 {
 		t.Fatalf("%d != %d", 1, res1.Uint64())
 	}
@@ -780,10 +780,10 @@ func TfheScalarGe(t *testing.T, fheUintType FheUintType) {
 		a.SetUint64(13371337)
 		b.SetUint64(1337)
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctRes1, _ := ctA.scalarGe(b.Uint64())
-	res1, err := ctRes1.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes1, _ := ctA.ScalarGe(b.Uint64())
+	res1, err := ctRes1.Decrypt()
 	if err != nil || res1.Uint64() != 1 {
 		t.Fatalf("%d != %d", 0, res1.Uint64())
 	}
@@ -805,14 +805,14 @@ func TfheGt(t *testing.T, fheUintType FheUintType) {
 		a.SetUint64(13371337)
 		b.SetUint64(1337)
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes1, _ := ctA.gt(ctB)
-	ctRes2, _ := ctB.gt(ctA)
-	res1, err1 := ctRes1.decrypt()
-	res2, err2 := ctRes2.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes1, _ := ctA.Gt(ctB)
+	ctRes2, _ := ctB.Gt(ctA)
+	res1, err1 := ctRes1.Decrypt()
+	res2, err2 := ctRes2.Decrypt()
 	if err1 != nil || res1.Uint64() != 1 {
 		t.Fatalf("%d != %d", 0, res1.Uint64())
 	}
@@ -837,10 +837,10 @@ func TfheScalarGt(t *testing.T, fheUintType FheUintType) {
 		a.SetUint64(13371337)
 		b.SetUint64(1337)
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctRes1, _ := ctA.scalarGt(b.Uint64())
-	res1, err := ctRes1.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes1, _ := ctA.ScalarGt(b.Uint64())
+	res1, err := ctRes1.Decrypt()
 	if err != nil || res1.Uint64() != 1 {
 		t.Fatalf("%d != %d", 0, res1.Uint64())
 	}
@@ -862,14 +862,14 @@ func TfheLe(t *testing.T, fheUintType FheUintType) {
 		a.SetUint64(13371337)
 		b.SetUint64(1337)
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes1, _ := ctA.le(ctB)
-	ctRes2, _ := ctB.le(ctA)
-	res1, err1 := ctRes1.decrypt()
-	res2, err2 := ctRes2.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes1, _ := ctA.Le(ctB)
+	ctRes2, _ := ctB.Le(ctA)
+	res1, err1 := ctRes1.Decrypt()
+	res2, err2 := ctRes2.Decrypt()
 	if err1 != nil || res1.Uint64() != 0 {
 		t.Fatalf("%d != %d", 0, res1.Uint64())
 	}
@@ -894,10 +894,10 @@ func TfheScalarLe(t *testing.T, fheUintType FheUintType) {
 		a.SetUint64(13371337)
 		b.SetUint64(1337)
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctRes1, _ := ctA.scalarLe(b.Uint64())
-	res1, err := ctRes1.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes1, _ := ctA.ScalarLe(b.Uint64())
+	res1, err := ctRes1.Decrypt()
 	if err != nil || res1.Uint64() != 0 {
 		t.Fatalf("%d != %d", 0, res1.Uint64())
 	}
@@ -919,14 +919,14 @@ func TfheLt(t *testing.T, fheUintType FheUintType) {
 		a.SetUint64(13371337)
 		b.SetUint64(1337)
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes1, _ := ctA.lt(ctB)
-	ctRes2, _ := ctB.lt(ctA)
-	res1, err1 := ctRes1.decrypt()
-	res2, err2 := ctRes2.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes1, _ := ctA.Lt(ctB)
+	ctRes2, _ := ctB.Lt(ctA)
+	res1, err1 := ctRes1.Decrypt()
+	res2, err2 := ctRes2.Decrypt()
 	if err1 != nil || res1.Uint64() != 0 {
 		t.Fatalf("%d != %d", 0, res1.Uint64())
 	}
@@ -951,10 +951,10 @@ func TfheScalarLt(t *testing.T, fheUintType FheUintType) {
 		a.SetUint64(13371337)
 		b.SetUint64(1337)
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctRes1, _ := ctA.scalarLt(b.Uint64())
-	res1, err := ctRes1.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes1, _ := ctA.ScalarLt(b.Uint64())
+	res1, err := ctRes1.Decrypt()
 	if err != nil || res1.Uint64() != 0 {
 		t.Fatalf("%d != %d", 0, res1.Uint64())
 	}
@@ -976,14 +976,14 @@ func TfheMin(t *testing.T, fheUintType FheUintType) {
 		a.SetUint64(13371337)
 		b.SetUint64(1337)
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes1, _ := ctA.min(ctB)
-	ctRes2, _ := ctB.min(ctA)
-	res1, err1 := ctRes1.decrypt()
-	res2, err2 := ctRes2.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes1, _ := ctA.Min(ctB)
+	ctRes2, _ := ctB.Min(ctA)
+	res1, err1 := ctRes1.Decrypt()
+	res2, err2 := ctRes2.Decrypt()
 	if err1 != nil || res1.Uint64() != b.Uint64() {
 		t.Fatalf("%d != %d", b.Uint64(), res1.Uint64())
 	}
@@ -1008,10 +1008,10 @@ func TfheScalarMin(t *testing.T, fheUintType FheUintType) {
 		a.SetUint64(13371337)
 		b.SetUint64(1337)
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctRes1, _ := ctA.scalarMin(b.Uint64())
-	res1, err1 := ctRes1.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes1, _ := ctA.ScalarMin(b.Uint64())
+	res1, err1 := ctRes1.Decrypt()
 	if err1 != nil || res1.Uint64() != b.Uint64() {
 		t.Fatalf("%d != %d", 0, res1.Uint64())
 	}
@@ -1033,14 +1033,14 @@ func TfheMax(t *testing.T, fheUintType FheUintType) {
 		a.SetUint64(13371337)
 		b.SetUint64(1337)
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes1, _ := ctA.max(ctB)
-	ctRes2, _ := ctB.max(ctA)
-	res1, err1 := ctRes1.decrypt()
-	res2, err2 := ctRes2.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes1, _ := ctA.Max(ctB)
+	ctRes2, _ := ctB.Max(ctA)
+	res1, err1 := ctRes1.Decrypt()
+	res2, err2 := ctRes2.Decrypt()
 	if err1 != nil || res1.Uint64() != a.Uint64() {
 		t.Fatalf("%d != %d", b.Uint64(), res1.Uint64())
 	}
@@ -1065,10 +1065,10 @@ func TfheScalarMax(t *testing.T, fheUintType FheUintType) {
 		a.SetUint64(13371337)
 		b.SetUint64(1337)
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctRes1, _ := ctA.scalarMax(b.Uint64())
-	res1, err1 := ctRes1.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes1, _ := ctA.ScalarMax(b.Uint64())
+	res1, err1 := ctRes1.Decrypt()
 	if err1 != nil || res1.Uint64() != a.Uint64() {
 		t.Fatalf("%d != %d", 0, res1.Uint64())
 	}
@@ -1092,10 +1092,10 @@ func TfheNeg(t *testing.T, fheUintType FheUintType) {
 		a.SetUint64(13333377777777777)
 		expected = uint64(-uint64(a.Uint64()))
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctRes1, _ := ctA.neg()
-	res1, err1 := ctRes1.decrypt()
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes1, _ := ctA.Neg()
+	res1, err1 := ctRes1.Decrypt()
 	if err1 != nil || res1.Uint64() != expected {
 		t.Fatalf("%d != %d", res1.Uint64(), expected)
 	}
@@ -1118,11 +1118,11 @@ func TfheNot(t *testing.T, fheUintType FheUintType) {
 		a.SetUint64(13333377777777777)
 		expected = uint64(^uint64(a.Uint64()))
 	}
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
 
-	ctRes1, _ := ctA.not()
-	res1, err1 := ctRes1.decrypt()
+	ctRes1, _ := ctA.Not()
+	res1, err1 := ctRes1.Decrypt()
 	if err1 != nil || res1.Uint64() != expected {
 		t.Fatalf("%d != %d", res1.Uint64(), expected)
 	}
@@ -1146,18 +1146,18 @@ func TfheIfThenElse(t *testing.T, fheUintType FheUintType) {
 		a.SetUint64(13333377777777777)
 		b.SetUint64(133337)
 	}
-	ctCondition := new(tfheCiphertext)
-	ctCondition.encrypt(condition, fheUintType)
-	ctCondition2 := new(tfheCiphertext)
-	ctCondition2.encrypt(condition2, fheUintType)
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintType)
-	ctB := new(tfheCiphertext)
-	ctB.encrypt(b, fheUintType)
-	ctRes1, _ := ctCondition.ifThenElse(ctA, ctB)
-	ctRes2, _ := ctCondition2.ifThenElse(ctA, ctB)
-	res1, err1 := ctRes1.decrypt()
-	res2, err2 := ctRes2.decrypt()
+	ctCondition := new(TfheCiphertext)
+	ctCondition.Encrypt(condition, fheUintType)
+	ctCondition2 := new(TfheCiphertext)
+	ctCondition2.Encrypt(condition2, fheUintType)
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes1, _ := ctCondition.IfThenElse(ctA, ctB)
+	ctRes2, _ := ctCondition2.IfThenElse(ctA, ctB)
+	res1, err1 := ctRes1.Decrypt()
+	res2, err2 := ctRes2.Decrypt()
 	if err1 != nil || res1.Uint64() != a.Uint64() {
 		t.Fatalf("%d != %d", 0, res1.Uint64())
 	}
@@ -1191,9 +1191,9 @@ func TfheCast(t *testing.T, fheUintTypeFrom FheUintType, fheUintTypeTo FheUintTy
 		modulus = uint64(math.Pow(2, 64))
 	}
 
-	ctA := new(tfheCiphertext)
-	ctA.encrypt(a, fheUintTypeFrom)
-	ctRes, err := ctA.castTo(fheUintTypeTo)
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintTypeFrom)
+	ctRes, err := ctA.CastTo(fheUintTypeTo)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1201,7 +1201,7 @@ func TfheCast(t *testing.T, fheUintTypeFrom FheUintType, fheUintTypeTo FheUintTy
 	if ctRes.fheUintType != fheUintTypeTo {
 		t.Fatalf("type %d != type %d", ctA.fheUintType, fheUintTypeTo)
 	}
-	res, err := ctRes.decrypt()
+	res, err := ctRes.Decrypt()
 	expected := a.Uint64() % modulus
 	if err != nil || res.Uint64() != expected {
 		t.Fatalf("%d != %d", res.Uint64(), expected)

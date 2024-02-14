@@ -47,7 +47,22 @@ func (from *depthSet) clone() (to *depthSet) {
 
 type verifiedCiphertext struct {
 	verifiedDepths *depthSet
-	ciphertext     *tfheCiphertext
+	ciphertext     *TfheCiphertext
+}
+
+// Returns the type of the verified ciphertext
+func (vc *verifiedCiphertext) fheUintType() FheUintType {
+	return vc.ciphertext.fheUintType
+}
+
+// Returns the serialization of the verified ciphertext
+func (vc *verifiedCiphertext) serialization() []byte {
+	return vc.ciphertext.serialization
+}
+
+// Returns the hash of the verified ciphertext
+func (vc *verifiedCiphertext) hash() common.Hash {
+	return vc.ciphertext.GetHash()
 }
 
 type PrivilegedMemory struct {
@@ -55,12 +70,12 @@ type PrivilegedMemory struct {
 	VerifiedCiphertexts map[common.Hash]*verifiedCiphertext
 
 	// All optimistic requires encountered up to that point in the txn execution
-	OptimisticRequires []*tfheCiphertext
+	optimisticRequires []*TfheCiphertext
 }
 
 var PrivilegedMempory *PrivilegedMemory = &PrivilegedMemory{
 	make(map[common.Hash]*verifiedCiphertext),
-	make([]*tfheCiphertext, 0),
+	make([]*TfheCiphertext, 0),
 }
 
 // Evaluate remaining optimistic requires when Interpreter.Run get an errStopToken

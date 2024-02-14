@@ -19,8 +19,18 @@ import (
 // Expanded TFHE ciphertext sizes by type, in bytes.
 var expandedFheCiphertextSize map[FheUintType]uint
 
+func GetExpandedFheCiphertextSize(t FheUintType) (size uint, found bool) {
+	size, found = expandedFheCiphertextSize[t]
+	return
+}
+
 // Compact TFHE ciphertext sizes by type, in bytes.
 var compactFheCiphertextSize map[FheUintType]uint
+
+func GetCompactFheCiphertextSize(t FheUintType) (size uint, found bool) {
+	size, found = compactFheCiphertextSize[t]
+	return
+}
 
 // server key: evaluation key
 var sks unsafe.Pointer
@@ -31,6 +41,11 @@ var cks unsafe.Pointer
 // public key
 var pks unsafe.Pointer
 var pksHash common.Hash
+
+// Get public key hash
+func GetPksHash() common.Hash {
+	return pksHash
+}
 
 // Generate keys for the fhevm (sks, cks, psk)
 func generateFhevmKeys() (unsafe.Pointer, unsafe.Pointer, unsafe.Pointer) {
@@ -51,10 +66,10 @@ func initCiphertextSizes() {
 	expandedFheCiphertextSize = make(map[FheUintType]uint)
 	compactFheCiphertextSize = make(map[FheUintType]uint)
 
-	expandedFheCiphertextSize[FheUint8] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint8).serialize()))
-	expandedFheCiphertextSize[FheUint16] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint16).serialize()))
-	expandedFheCiphertextSize[FheUint32] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint32).serialize()))
-	expandedFheCiphertextSize[FheUint64] = uint(len(new(tfheCiphertext).trivialEncrypt(*big.NewInt(0), FheUint64).serialize()))
+	expandedFheCiphertextSize[FheUint8] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint8).Serialize()))
+	expandedFheCiphertextSize[FheUint16] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint16).Serialize()))
+	expandedFheCiphertextSize[FheUint32] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint32).Serialize()))
+	expandedFheCiphertextSize[FheUint64] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint64).Serialize()))
 
 	compactFheCiphertextSize[FheUint8] = uint(len(encryptAndSerializeCompact(0, FheUint8)))
 	compactFheCiphertextSize[FheUint16] = uint(len(encryptAndSerializeCompact(0, FheUint16)))
