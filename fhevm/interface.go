@@ -47,14 +47,24 @@ type FhevmData struct {
 	verifiedCiphertexts map[common.Hash]*verifiedCiphertext
 
 	// All optimistic requires encountered up to that point in the txn execution
-	optimisticRequires []*tfheCiphertext
+	optimisticRequires []*TfheCiphertext
 
 	nextCiphertextHashOnGasEst uint256.Int
+}
+
+// Set the optimisticRequires array to an empty array
+func (data *FhevmData) resetOptimisticRequires() {
+	data.optimisticRequires = make([]*TfheCiphertext, 0)
+}
+
+// Append one ciphertext to the optimisticRequires array
+func (data *FhevmData) appendOptimisticRequires(ct *TfheCiphertext) {
+	data.optimisticRequires = append(data.optimisticRequires, ct)
 }
 
 func NewFhevmData() FhevmData {
 	return FhevmData{
 		verifiedCiphertexts: make(map[common.Hash]*verifiedCiphertext),
-		optimisticRequires:  make([]*tfheCiphertext, 0),
+		optimisticRequires:  make([]*TfheCiphertext, 0),
 	}
 }

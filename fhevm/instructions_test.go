@@ -39,18 +39,18 @@ func init() {
 	)
 }
 
-func verifyCiphertextInTestMemory(environment EVMEnvironment, value uint64, depth int, t FheUintType) *tfheCiphertext {
+func verifyCiphertextInTestMemory(environment EVMEnvironment, value uint64, depth int, t FheUintType) *TfheCiphertext {
 	// Simulate as if the ciphertext is compact and comes externally.
 	ser := encryptAndSerializeCompact(uint64(value), t)
-	ct := new(tfheCiphertext)
-	err := ct.deserializeCompact(ser, t)
+	ct := new(TfheCiphertext)
+	err := ct.DeserializeCompact(ser, t)
 	if err != nil {
 		panic(err)
 	}
 	return verifyTfheCiphertextInTestMemory(environment, ct, depth)
 }
 
-func verifyTfheCiphertextInTestMemory(environment EVMEnvironment, ct *tfheCiphertext, depth int) *tfheCiphertext {
+func verifyTfheCiphertextInTestMemory(environment EVMEnvironment, ct *TfheCiphertext, depth int) *TfheCiphertext {
 	verifiedCiphertext := importCiphertextToEVMAtDepth(environment, ct, depth)
 	return verifiedCiphertext.ciphertext
 }
@@ -243,7 +243,7 @@ func TestProtectedStorageSstoreSload(t *testing.T) {
 	depth := 1
 	environment.depth = depth
 	ct := verifyCiphertextInTestMemory(environment, 2, depth, FheUint32)
-	ctHash := ct.getHash()
+	ctHash := ct.GetHash()
 	scope := newTestScopeConext()
 	loc := uint256.NewInt(10)
 	value := uint256FromBig(ctHash.Big())
@@ -271,7 +271,7 @@ func TestProtectedStorageSstoreSload(t *testing.T) {
 	if ctAfterSload == nil {
 		t.Fatalf("expected ciphertext is verified after sload")
 	}
-	if !bytes.Equal(ct.serialize(), ctAfterSload.ciphertext.serialize()) {
+	if !bytes.Equal(ct.Serialize(), ctAfterSload.ciphertext.Serialize()) {
 		t.Fatalf("expected ciphertext after sload is the same as original")
 	}
 }
@@ -281,7 +281,7 @@ func TestProtectedStorageGarbageCollectionNoFlaggedLocation(t *testing.T) {
 	pc := uint64(0)
 	depth := 1
 	environment.depth = depth
-	ctHash := verifyCiphertextInTestMemory(environment, 2, depth, FheUint8).getHash()
+	ctHash := verifyCiphertextInTestMemory(environment, 2, depth, FheUint8).GetHash()
 	scope := newTestScopeConext()
 	loc := uint256.NewInt(10)
 	locHash := common.BytesToHash(loc.Bytes())
@@ -333,7 +333,7 @@ func TestProtectedStorageGarbageCollection(t *testing.T) {
 	pc := uint64(0)
 	depth := 1
 	environment.depth = depth
-	ctHash := verifyCiphertextInTestMemory(environment, 2, depth, FheUint8).getHash()
+	ctHash := verifyCiphertextInTestMemory(environment, 2, depth, FheUint8).GetHash()
 	scope := newTestScopeConext()
 	loc := uint256.NewInt(10)
 	locHash := common.BytesToHash(loc.Bytes())
@@ -446,7 +446,7 @@ func TestOpReturnDelegation(t *testing.T) {
 	depth := 2
 	scope := newTestScopeConext()
 	ct := verifyCiphertextInTestMemory(environment, 2, depth, FheUint8)
-	ctHash := ct.getHash()
+	ctHash := ct.GetHash()
 
 	offset := uint256.NewInt(0)
 	length := uint256.NewInt(32)
@@ -460,7 +460,7 @@ func TestOpReturnDelegation(t *testing.T) {
 	if ctAfterOp == nil {
 		t.Fatalf("expected ciphertext is still verified after the return op")
 	}
-	if !bytes.Equal(ct.serialize(), ctAfterOp.ciphertext.serialize()) {
+	if !bytes.Equal(ct.Serialize(), ctAfterOp.ciphertext.Serialize()) {
 		t.Fatalf("expected ciphertext after the return op is the same as original")
 	}
 }
@@ -470,7 +470,7 @@ func TestOpReturnUnverifyIfNotReturned(t *testing.T) {
 	pc := uint64(0)
 	depth := 2
 	scope := newTestScopeConext()
-	ctHash := verifyCiphertextInTestMemory(environment, 2, depth, FheUint8).getHash()
+	ctHash := verifyCiphertextInTestMemory(environment, 2, depth, FheUint8).GetHash()
 
 	offset := uint256.NewInt(0)
 	len := uint256.NewInt(32)
@@ -492,7 +492,7 @@ func TestOpReturnDoesNotUnverifyIfNotVerified(t *testing.T) {
 	pc := uint64(0)
 	scope := newTestScopeConext()
 	ct := verifyCiphertextInTestMemory(environment, 2, 4, FheUint8)
-	ctHash := ct.getHash()
+	ctHash := ct.GetHash()
 
 	// Return from depth 3 to depth 2. However, ct is not verified at 3 and, hence, cannot
 	// be passed from 3 to 2. However, we expect that ct remains verified at 4.
@@ -519,7 +519,7 @@ func TestOpReturnDoesNotUnverifyIfNotVerified(t *testing.T) {
 	if ctAt4 == nil {
 		t.Fatalf("expected ciphertext is still verified at 4")
 	}
-	if !bytes.Equal(ct.serialize(), ctAt4.ciphertext.serialize()) {
+	if !bytes.Equal(ct.Serialize(), ctAt4.ciphertext.Serialize()) {
 		t.Fatalf("expected ciphertext after the return op is the same as original")
 	}
 	if ctAt4.verifiedDepths.count() != 1 || !ctAt4.verifiedDepths.has(environment.depth) {

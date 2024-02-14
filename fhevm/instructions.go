@@ -173,8 +173,8 @@ func verifyIfCiphertextHandle(handle common.Hash, env EVMEnvironment, contractAd
 			protectedSlotIdx.AddUint64(protectedSlotIdx, 1)
 		}
 
-		ct := new(tfheCiphertext)
-		err := ct.deserialize(ctBytes, metadata.fheUintType)
+		ct := new(TfheCiphertext)
+		err := ct.Deserialize(ctBytes, metadata.fheUintType)
 		if err != nil {
 			msg := "opSload failed to deserialize a ciphertext"
 			env.GetLogger().Error(msg, "err", err)
@@ -239,7 +239,7 @@ func persistIfVerifiedCiphertext(flagHandleLocation common.Hash, handle common.H
 		}
 		ctPart32 := make([]byte, 32)
 		partIdx := 0
-		ctBytes := verifiedCiphertext.ciphertext.serialize()
+		ctBytes := verifiedCiphertext.ciphertext.Serialize()
 		for i, b := range ctBytes {
 			if i%32 == 0 && i != 0 {
 				env.SetState(protectedStorage, ciphertextSlot.Bytes32(), common.BytesToHash(ctPart32))
@@ -314,7 +314,7 @@ func DelegateCiphertextHandlesInArgs(env EVMEnvironment, args []byte) (verified 
 		if contains(args, key.Bytes()) && isVerifiedAtCurrentDepth(env, verifiedCiphertext) {
 			if env.IsCommitting() {
 				env.GetLogger().Info("delegateCiphertextHandlesInArgs",
-					"handle", verifiedCiphertext.ciphertext.getHash().Hex(),
+					"handle", verifiedCiphertext.ciphertext.GetHash().Hex(),
 					"fromDepth", env.GetDepth(),
 					"toDepth", env.GetDepth()+1)
 			}
@@ -336,7 +336,7 @@ func delegateCiphertextHandlesToCaller(env EVMEnvironment, ret []byte) {
 		if contains(ret, key.Bytes()) && isVerifiedAtCurrentDepth(env, verifiedCiphertext) {
 			if env.IsCommitting() {
 				env.GetLogger().Info("opReturn making ciphertext available to caller",
-					"handle", verifiedCiphertext.ciphertext.getHash().Hex(),
+					"handle", verifiedCiphertext.ciphertext.GetHash().Hex(),
 					"fromDepth", env.GetDepth(),
 					"toDepth", env.GetDepth()-1)
 			}
@@ -350,7 +350,7 @@ func RemoveVerifiedCipherextsAtCurrentDepth(env EVMEnvironment) {
 	for _, verifiedCiphertext := range env.FhevmData().verifiedCiphertexts {
 		if env.IsCommitting() {
 			env.GetLogger().Info("Run removing ciphertext from depth",
-				"handle", verifiedCiphertext.ciphertext.getHash().Hex(),
+				"handle", verifiedCiphertext.ciphertext.GetHash().Hex(),
 				"depth", env.GetDepth())
 		}
 		// Delete the current EVM depth from the set of verified depths.

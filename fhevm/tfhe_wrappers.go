@@ -47,23 +47,18 @@ func serialize(ptr unsafe.Pointer, t FheUintType) ([]byte, error) {
 	return ser, nil
 }
 
-func serializePublicKey(pks unsafe.Pointer) ([]byte, error) {
+func serializePublicKey() ([]byte, error) {
+	if pks == nil {
+		return nil, errors.New("serialize: no public key available")
+	}
 	out := &C.DynamicBuffer{}
-	var ret C.int
-	ret = C.serialize_compact_public_key(pks, out)
+	ret := C.serialize_compact_public_key(pks, out)
 	if ret != 0 {
 		return nil, errors.New("serialize: failed to serialize public key")
 	}
 	ser := C.GoBytes(unsafe.Pointer(out.pointer), C.int(out.length))
 	C.destroy_dynamic_buffer(out)
 	return ser, nil
-}
-
-func isValidType(t byte) bool {
-	if uint8(t) < uint8(FheUint8) || uint8(t) > uint8(FheUint64) {
-		return false
-	}
-	return true
 }
 
 func encryptAndSerializeCompact(value uint64, fheUintType FheUintType) []byte {
