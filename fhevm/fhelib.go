@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // A method available in the fhelib precompile that can run and estimate gas
@@ -17,7 +18,7 @@ type FheLibMethod struct {
 	// types of the arguments that the fhelib function take. format is "(type1,type2...)" (e.g "(uint256,bytes1)")
 	arg_types           string
 	requiredGasFunction func(environment EVMEnvironment, input []byte) uint64
-	runFunction         func(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error)
+	runFunction         func(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error)
 }
 
 func (fheLibMethod *FheLibMethod) Name() string {
@@ -37,8 +38,8 @@ func (fheLibMethod *FheLibMethod) RequiredGas(environment EVMEnvironment, input 
 	return fheLibMethod.requiredGasFunction(environment, input)
 }
 
-func (fheLibMethod *FheLibMethod) Run(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
-	return fheLibMethod.runFunction(environment, caller, addr, input, readOnly)
+func (fheLibMethod *FheLibMethod) Run(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+	return fheLibMethod.runFunction(environment, caller, addr, input, readOnly, runSpan)
 }
 
 // Mapping between function signatures and the functions to call
