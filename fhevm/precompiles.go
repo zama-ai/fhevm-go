@@ -49,9 +49,14 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	// remove function signature
 	input = input[4:]
 	// trace function execution
-	_, span := otel.Tracer("fhevm").Start(environment.OtelContext(), fheLibMethod.name)
-	ret, err = fheLibMethod.Run(environment, caller, addr, input, readOnly)
-	span.End()
+
+	if ctx := environment.OtelContext(); ctx != nil {
+		_, span := otel.Tracer("fhevm").Start(ctx, fheLibMethod.name)
+		ret, err = fheLibMethod.Run(environment, caller, addr, input, readOnly, span)
+		span.End()
+	} else {
+		ret, err = fheLibMethod.Run(environment, caller, addr, input, readOnly, nil)
+	}
 
 	return
 }

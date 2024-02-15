@@ -23,6 +23,21 @@ const (
 	FheUint64 FheUintType = 3
 )
 
+func (t FheUintType) String() string {
+	switch t {
+	case FheUint8:
+		return "fheUint8"
+	case FheUint16:
+		return "fheUint16"
+	case FheUint32:
+		return "fheUint32"
+	case FheUint64:
+		return "fheUint64"
+	default:
+		return "unknownFheUintType"
+	}
+}
+
 func isValidFheType(t byte) bool {
 	if uint8(t) < uint8(FheUint8) || uint8(t) > uint8(FheUint64) {
 		return false

@@ -16,12 +16,13 @@ import (
 	"github.com/holiman/uint256"
 	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
 	"github.com/zama-ai/fhevm-go/kms"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/chacha20"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -34,6 +35,7 @@ func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	if !isScalar {
 		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
 			logger.Error("fheAdd inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -62,6 +64,7 @@ func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	} else {
 		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheAdd scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -85,7 +88,7 @@ func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheSubRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheSubRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -98,6 +101,7 @@ func fheSubRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	if !isScalar {
 		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
 			logger.Error("fheSub inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -126,6 +130,7 @@ func fheSubRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	} else {
 		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheSub scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -149,7 +154,7 @@ func fheSubRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheMulRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheMulRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -162,6 +167,7 @@ func fheMulRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	if !isScalar {
 		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
 			logger.Error("fheMul inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -190,6 +196,7 @@ func fheMulRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	} else {
 		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheMul scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -213,7 +220,7 @@ func fheMulRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheLeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheLeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -226,6 +233,7 @@ func fheLeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 	if !isScalar {
 		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
 			logger.Error("fheLe inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -254,6 +262,7 @@ func fheLeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 	} else {
 		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheLe scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -277,7 +286,7 @@ func fheLeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 	}
 }
 
-func fheLtRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheLtRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -290,6 +299,7 @@ func fheLtRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 	if !isScalar {
 		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
 			logger.Error("fheLt inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -318,6 +328,7 @@ func fheLtRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 	} else {
 		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheLt scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -341,7 +352,7 @@ func fheLtRun(environment EVMEnvironment, caller common.Address, addr common.Add
 	}
 }
 
-func fheEqRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheEqRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -354,6 +365,7 @@ func fheEqRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 	if !isScalar {
 		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
 			logger.Error("fheEq inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -382,6 +394,7 @@ func fheEqRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 	} else {
 		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheEq scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -405,7 +418,7 @@ func fheEqRun(environment EVMEnvironment, caller common.Address, addr common.Add
 	}
 }
 
-func fheGeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheGeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -418,6 +431,7 @@ func fheGeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 	if !isScalar {
 		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
 			logger.Error("fheGe inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -446,6 +460,7 @@ func fheGeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 	} else {
 		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheGe scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -469,7 +484,7 @@ func fheGeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 	}
 }
 
-func fheGtRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheGtRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -482,6 +497,7 @@ func fheGtRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 	if !isScalar {
 		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
 			logger.Error("fheGt inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -510,6 +526,7 @@ func fheGtRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 	} else {
 		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheGt scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -533,7 +550,7 @@ func fheGtRun(environment EVMEnvironment, caller common.Address, addr common.Add
 	}
 }
 
-func fheShlRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheShlRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -546,6 +563,7 @@ func fheShlRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	if !isScalar {
 		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
 			logger.Error("fheShl inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -574,6 +592,7 @@ func fheShlRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	} else {
 		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheShl scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -597,7 +616,7 @@ func fheShlRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheShrRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheShrRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -610,6 +629,7 @@ func fheShrRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	if !isScalar {
 		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
 			logger.Error("fheShr inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -638,6 +658,7 @@ func fheShrRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	} else {
 		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheShr scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -661,7 +682,7 @@ func fheShrRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheNeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheNeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -674,6 +695,7 @@ func fheNeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 	if !isScalar {
 		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
 			logger.Error("fheNe inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -702,6 +724,7 @@ func fheNeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 	} else {
 		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheNe scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -725,7 +748,7 @@ func fheNeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 	}
 }
 
-func fheMinRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheMinRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -738,6 +761,7 @@ func fheMinRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	if !isScalar {
 		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
 			logger.Error("fheMin inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -766,6 +790,7 @@ func fheMinRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	} else {
 		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheMin scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -789,7 +814,7 @@ func fheMinRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheMaxRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheMaxRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -802,6 +827,7 @@ func fheMaxRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	if !isScalar {
 		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
 			logger.Error("fheMax inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -830,6 +856,7 @@ func fheMaxRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	} else {
 		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheMax scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -853,7 +880,7 @@ func fheMaxRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheNegRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheNegRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(32, len(input))]
 
 	logger := environment.GetLogger()
@@ -871,6 +898,7 @@ func fheNegRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		logger.Error(msg, msg, "input", hex.EncodeToString(input))
 		return nil, errors.New(msg)
 	}
+	otelDescribeOperandsFheTypes(runSpan, ct.fheUintType())
 
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() && !environment.IsEthCall() {
@@ -889,7 +917,7 @@ func fheNegRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	return resultHash[:], nil
 }
 
-func fheNotRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheNotRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(32, len(input))]
 
 	logger := environment.GetLogger()
@@ -907,6 +935,7 @@ func fheNotRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		logger.Error(msg, msg, "input", hex.EncodeToString(input))
 		return nil, errors.New(msg)
 	}
+	otelDescribeOperandsFheTypes(runSpan, ct.fheUintType())
 
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() && !environment.IsEthCall() {
@@ -925,7 +954,7 @@ func fheNotRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	return resultHash[:], nil
 }
 
-func fheDivRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheDivRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -942,6 +971,7 @@ func fheDivRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		return nil, err
 	} else {
 		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheDiv scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -965,7 +995,7 @@ func fheDivRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheRemRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheRemRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -982,6 +1012,7 @@ func fheRemRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		return nil, err
 	} else {
 		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheRem scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
@@ -1005,7 +1036,7 @@ func fheRemRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-func fheBitAndRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheBitAndRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -1023,6 +1054,7 @@ func fheBitAndRun(environment EVMEnvironment, caller common.Address, addr common
 	}
 
 	lhs, rhs, err := get2VerifiedOperands(environment, input)
+	otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 	if err != nil {
 		logger.Error("fheBitAnd inputs not verified", "err", err)
 		return nil, err
@@ -1051,7 +1083,7 @@ func fheBitAndRun(environment EVMEnvironment, caller common.Address, addr common
 	return resultHash[:], nil
 }
 
-func fheBitOrRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheBitOrRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -1069,6 +1101,7 @@ func fheBitOrRun(environment EVMEnvironment, caller common.Address, addr common.
 	}
 
 	lhs, rhs, err := get2VerifiedOperands(environment, input)
+	otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 	if err != nil {
 		logger.Error("fheBitOr inputs not verified", "err", err)
 		return nil, err
@@ -1097,7 +1130,7 @@ func fheBitOrRun(environment EVMEnvironment, caller common.Address, addr common.
 	return resultHash[:], nil
 }
 
-func fheBitXorRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheBitXorRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -1115,6 +1148,7 @@ func fheBitXorRun(environment EVMEnvironment, caller common.Address, addr common
 	}
 
 	lhs, rhs, err := get2VerifiedOperands(environment, input)
+	otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 	if err != nil {
 		logger.Error("fheBitXor inputs not verified", "err", err)
 		return nil, err
@@ -1261,7 +1295,7 @@ func generateRandom(environment EVMEnvironment, caller common.Address, resultTyp
 	return ctHash[:], nil
 }
 
-func fheRandRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheRandRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(1, len(input))]
 
 	logger := environment.GetLogger()
@@ -1276,11 +1310,12 @@ func fheRandRun(environment EVMEnvironment, caller common.Address, addr common.A
 		return nil, errors.New(msg)
 	}
 	resultType := FheUintType(input[0])
+	otelDescribeOperandsFheTypes(runSpan, resultType)
 	var noUpperBound *uint64 = nil
 	return generateRandom(environment, caller, resultType, noUpperBound)
 }
 
-func fheRandBoundedRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheRandBoundedRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(33, len(input))]
 
 	logger := environment.GetLogger()
@@ -1290,6 +1325,7 @@ func fheRandBoundedRun(environment EVMEnvironment, caller common.Address, addr c
 		return nil, errors.New(msg)
 	}
 	randType, bound, err := parseRandUpperBoundInput(input)
+	otelDescribeOperandsFheTypes(runSpan, randType)
 	if err != nil {
 		msg := "fheRandBounded bound error"
 		logger.Error(msg, "input", hex.EncodeToString(input), "err", err)
@@ -1299,11 +1335,12 @@ func fheRandBoundedRun(environment EVMEnvironment, caller common.Address, addr c
 	return generateRandom(environment, caller, randType, &bound64)
 }
 
-func fheIfThenElseRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fheIfThenElseRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(96, len(input))]
 
 	logger := environment.GetLogger()
 	first, second, third, err := get3VerifiedOperands(environment, input)
+	otelDescribeOperands(runSpan, encryptedOperand(*first), encryptedOperand(*second), encryptedOperand(*third))
 	if err != nil {
 		logger.Error("fheIfThenElse inputs not verified", "err", err, "input", hex.EncodeToString(input))
 		return nil, err
@@ -1332,7 +1369,7 @@ func fheIfThenElseRun(environment EVMEnvironment, caller common.Address, addr co
 	return resultHash[:], nil
 }
 
-func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	logger := environment.GetLogger()
 	// first 32 bytes of the payload is offset, then 32 bytes are size of byte array
 	if len(input) <= 68 {
@@ -1364,6 +1401,7 @@ func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr
 		return nil, errors.New(msg)
 	}
 	ctType := FheUintType(ctTypeByte)
+	otelDescribeOperandsFheTypes(runSpan, ctType)
 
 	expectedSize, found := GetCompactFheCiphertextSize(ctType)
 	if !found || expectedSize != uint(len(ctBytes)) {
@@ -1396,7 +1434,7 @@ func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr
 	return ctHash.Bytes(), nil
 }
 
-func reencryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func reencryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(64, len(input))]
 	// precompileBytes, err := reencryptRun(environment, caller, addr, bwCompatBytes, readOnly)
 
@@ -1413,6 +1451,7 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 	}
 	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
 	if ct != nil {
+		otelDescribeOperandsFheTypes(runSpan, ct.fheUintType())
 		// Make sure we don't decrypt before any optimistic requires are checked.
 		// optReqResult, optReqErr := evaluateRemainingOptimisticRequires(environment)
 		// if optReqErr != nil {
@@ -1481,7 +1520,7 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 	return nil, errors.New(msg)
 }
 
-func optimisticRequireRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func optimisticRequireRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(32, len(input))]
 
 	logger := environment.GetLogger()
@@ -1496,6 +1535,7 @@ func optimisticRequireRun(environment EVMEnvironment, caller common.Address, add
 		logger.Error(msg, "input", hex.EncodeToString(input))
 		return nil, errors.New(msg)
 	}
+	otelDescribeOperandsFheTypes(runSpan, ct.fheUintType())
 	// If we are doing gas estimation, don't do anything as we would assume all requires are true.
 	if !environment.IsCommitting() && !environment.IsEthCall() {
 		return nil, nil
@@ -1509,7 +1549,7 @@ func optimisticRequireRun(environment EVMEnvironment, caller common.Address, add
 	return nil, nil
 }
 
-func decryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func decryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(32, len(input))]
 
 	logger := environment.GetLogger()
@@ -1530,6 +1570,7 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 		logger.Error(msg, "input", hex.EncodeToString(input))
 		return nil, errors.New(msg)
 	}
+	otelDescribeOperandsFheTypes(runSpan, ct.fheUintType())
 
 	// If we are doing gas estimation, skip decryption and make sure we return the maximum possible value.
 	// We need that, because non-zero bytes cost more than zero bytes in some contexts (e.g. SSTORE or memory operations).
@@ -1631,7 +1672,7 @@ func evaluateRemainingOptimisticRequires(environment EVMEnvironment) (bool, erro
 	return true, nil
 }
 
-func castRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func castRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(33, len(input))]
 
 	logger := environment.GetLogger()
@@ -1652,6 +1693,8 @@ func castRun(environment EVMEnvironment, caller common.Address, addr common.Addr
 		return nil, errors.New("invalid type provided")
 	}
 	castToType := FheUintType(input[32])
+
+	otelDescribeOperandsFheTypes(runSpan, ct.fheUintType(), castToType)
 
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() && !environment.IsEthCall() {
@@ -1680,7 +1723,7 @@ func castRun(environment EVMEnvironment, caller common.Address, addr common.Addr
 var fhePubKeyHashPrecompile = common.BytesToAddress([]byte{93})
 var fhePubKeyHashSlot = common.Hash{}
 
-func fhePubKeyRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func fhePubKeyRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(1, len(input))]
 
 	existing := environment.GetState(fhePubKeyHashPrecompile, fhePubKeyHashSlot)
@@ -1705,7 +1748,7 @@ func fhePubKeyRun(environment EVMEnvironment, caller common.Address, addr common
 	return padArrayTo32Multiple(outputBytes), nil
 }
 
-func trivialEncryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
+func trivialEncryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(33, len(input))]
 
 	logger := environment.GetLogger()
@@ -1717,6 +1760,7 @@ func trivialEncryptRun(environment EVMEnvironment, caller common.Address, addr c
 
 	valueToEncrypt := *new(big.Int).SetBytes(input[0:32])
 	encryptToType := FheUintType(input[32])
+	otelDescribeOperandsFheTypes(runSpan, encryptToType)
 
 	ct := new(TfheCiphertext).TrivialEncrypt(valueToEncrypt, encryptToType)
 

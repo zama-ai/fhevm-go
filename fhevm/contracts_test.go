@@ -187,7 +187,7 @@ func VerifyCiphertext(t *testing.T, fheUintType FheUintType) {
 	readOnly := false
 	compact := encryptAndSerializeCompact(value, fheUintType)
 	input := prepareInputForVerifyCiphertext(append(compact, byte(fheUintType)))
-	out, err := verifyCiphertextRun(environment, addr, addr, input, readOnly)
+	out, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -223,7 +223,7 @@ func VerifyCiphertextBadType(t *testing.T, actualType FheUintType, metadataType 
 	readOnly := false
 	compact := encryptAndSerializeCompact(value, actualType)
 	input := prepareInputForVerifyCiphertext(append(compact, byte(metadataType)))
-	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly)
+	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
 	if err == nil {
 		t.Fatalf("verifyCiphertext must have failed on type mismatch")
 	}
@@ -251,7 +251,7 @@ func TrivialEncrypt(t *testing.T, fheUintType FheUintType) {
 	readOnly := false
 	valueBytes := make([]byte, 32)
 	input := append(value.FillBytes(valueBytes), byte(fheUintType))
-	out, err := trivialEncryptRun(environment, addr, addr, input, readOnly)
+	out, err := trivialEncryptRun(environment, addr, addr, input, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -1611,7 +1611,7 @@ func FheAdd(t *testing.T, fheUintType FheUintType, scalar bool) {
 		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheAddRun(environment, addr, addr, input, readOnly)
+	out, err := fheAddRun(environment, addr, addr, input, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -1655,7 +1655,7 @@ func FheSub(t *testing.T, fheUintType FheUintType, scalar bool) {
 		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheSubRun(environment, addr, addr, input, readOnly)
+	out, err := fheSubRun(environment, addr, addr, input, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -1699,7 +1699,7 @@ func FheMul(t *testing.T, fheUintType FheUintType, scalar bool) {
 		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheMulRun(environment, addr, addr, input, readOnly)
+	out, err := fheMulRun(environment, addr, addr, input, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -1743,7 +1743,7 @@ func FheDiv(t *testing.T, fheUintType FheUintType, scalar bool) {
 		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheDivRun(environment, addr, addr, input, readOnly)
+	out, err := fheDivRun(environment, addr, addr, input, readOnly, nil)
 	if scalar {
 		if err != nil {
 			t.Fatalf(err.Error())
@@ -1793,7 +1793,7 @@ func FheRem(t *testing.T, fheUintType FheUintType, scalar bool) {
 		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheRemRun(environment, addr, addr, input, readOnly)
+	out, err := fheRemRun(environment, addr, addr, input, readOnly, nil)
 	if scalar {
 		if err != nil {
 			t.Fatalf(err.Error())
@@ -1843,7 +1843,7 @@ func FheBitAnd(t *testing.T, fheUintType FheUintType, scalar bool) {
 		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheBitAndRun(environment, addr, addr, input, readOnly)
+	out, err := fheBitAndRun(environment, addr, addr, input, readOnly, nil)
 	if scalar {
 		if err == nil {
 			t.Fatalf("scalar bit and should have failed")
@@ -1893,7 +1893,7 @@ func FheBitOr(t *testing.T, fheUintType FheUintType, scalar bool) {
 		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheBitOrRun(environment, addr, addr, input, readOnly)
+	out, err := fheBitOrRun(environment, addr, addr, input, readOnly, nil)
 	if scalar {
 		if err == nil {
 			t.Fatalf("scalar bit or should have failed")
@@ -1943,7 +1943,7 @@ func FheBitXor(t *testing.T, fheUintType FheUintType, scalar bool) {
 		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheBitXorRun(environment, addr, addr, input, readOnly)
+	out, err := fheBitXorRun(environment, addr, addr, input, readOnly, nil)
 	if scalar {
 		if err == nil {
 			t.Fatalf("scalar bit xor should have failed")
@@ -1993,7 +1993,7 @@ func FheShl(t *testing.T, fheUintType FheUintType, scalar bool) {
 		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheShlRun(environment, addr, addr, input, readOnly)
+	out, err := fheShlRun(environment, addr, addr, input, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -2037,7 +2037,7 @@ func FheShr(t *testing.T, fheUintType FheUintType, scalar bool) {
 		rhsHash = verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 	}
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheShrRun(environment, addr, addr, input, readOnly)
+	out, err := fheShrRun(environment, addr, addr, input, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -2081,7 +2081,7 @@ func FheEq(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 	// lhs == rhs
 	input1 := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheEqRun(environment, addr, addr, input1, readOnly)
+	out, err := fheEqRun(environment, addr, addr, input1, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -2125,7 +2125,7 @@ func FheNe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 	// lhs == rhs
 	input1 := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheNeRun(environment, addr, addr, input1, readOnly)
+	out, err := fheNeRun(environment, addr, addr, input1, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -2169,7 +2169,7 @@ func FheGe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 	// lhs >= rhs
 	input1 := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheGeRun(environment, addr, addr, input1, readOnly)
+	out, err := fheGeRun(environment, addr, addr, input1, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -2186,7 +2186,7 @@ func FheGe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if !scalar {
 		// rhs >= lhs
 		input2 := toPrecompileInput(false, rhsHash, lhsHash)
-		out, err = fheGeRun(environment, addr, addr, input2, readOnly)
+		out, err = fheGeRun(environment, addr, addr, input2, readOnly, nil)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -2232,7 +2232,7 @@ func FheGt(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 	// lhs > rhs
 	input1 := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheGtRun(environment, addr, addr, input1, readOnly)
+	out, err := fheGtRun(environment, addr, addr, input1, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -2250,7 +2250,7 @@ func FheGt(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if !scalar {
 		// rhs > lhs
 		input2 := toPrecompileInput(false, rhsHash, lhsHash)
-		out, err = fheGtRun(environment, addr, addr, input2, readOnly)
+		out, err = fheGtRun(environment, addr, addr, input2, readOnly, nil)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -2296,7 +2296,7 @@ func FheLe(t *testing.T, fheUintType FheUintType, scalar bool) {
 
 	// lhs <= rhs
 	input1 := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheLeRun(environment, addr, addr, input1, readOnly)
+	out, err := fheLeRun(environment, addr, addr, input1, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -2314,7 +2314,7 @@ func FheLe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if !scalar {
 		// rhs <= lhs
 		input2 := toPrecompileInput(false, rhsHash, lhsHash)
-		out, err = fheLeRun(environment, addr, addr, input2, readOnly)
+		out, err = fheLeRun(environment, addr, addr, input2, readOnly, nil)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -2361,7 +2361,7 @@ func FheLt(t *testing.T, fheUintType FheUintType, scalar bool) {
 
 	// lhs < rhs
 	input1 := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheLtRun(environment, addr, addr, input1, readOnly)
+	out, err := fheLtRun(environment, addr, addr, input1, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -2379,7 +2379,7 @@ func FheLt(t *testing.T, fheUintType FheUintType, scalar bool) {
 	if !scalar {
 		// rhs < lhs
 		input2 := toPrecompileInput(false, rhsHash, lhsHash)
-		out, err = fheLtRun(environment, addr, addr, input2, readOnly)
+		out, err = fheLtRun(environment, addr, addr, input2, readOnly, nil)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -2425,7 +2425,7 @@ func FheMin(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheMinRun(environment, addr, addr, input, readOnly)
+	out, err := fheMinRun(environment, addr, addr, input, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -2442,7 +2442,7 @@ func FheMin(t *testing.T, fheUintType FheUintType, scalar bool) {
 	// operators expect the scalar to be on the rhs.
 	if !scalar {
 		input2 := toPrecompileInput(false, rhsHash, lhsHash)
-		out, err = fheMinRun(environment, addr, addr, input2, readOnly)
+		out, err = fheMinRun(environment, addr, addr, input2, readOnly, nil)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -2488,7 +2488,7 @@ func FheMax(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 
 	input := toPrecompileInput(scalar, lhsHash, rhsHash)
-	out, err := fheMaxRun(environment, addr, addr, input, readOnly)
+	out, err := fheMaxRun(environment, addr, addr, input, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -2505,7 +2505,7 @@ func FheMax(t *testing.T, fheUintType FheUintType, scalar bool) {
 	// operators expect the scalar to be on the rhs.
 	if !scalar {
 		input2 := toPrecompileInput(false, rhsHash, lhsHash)
-		out, err = fheMaxRun(environment, addr, addr, input2, readOnly)
+		out, err = fheMaxRun(environment, addr, addr, input2, readOnly, nil)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -2546,7 +2546,7 @@ func FheNeg(t *testing.T, fheUintType FheUintType, scalar bool) {
 
 	input := make([]byte, 0)
 	input = append(input, ptHash.Bytes()...)
-	out, err := fheNegRun(environment, addr, addr, input, readOnly)
+	out, err := fheNegRun(environment, addr, addr, input, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -2586,7 +2586,7 @@ func FheNot(t *testing.T, fheUintType FheUintType, scalar bool) {
 
 	input := make([]byte, 0)
 	input = append(input, ptHash.Bytes()...)
-	out, err := fheNotRun(environment, addr, addr, input, readOnly)
+	out, err := fheNotRun(environment, addr, addr, input, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -2626,7 +2626,7 @@ func FheIfThenElse(t *testing.T, fheUintType FheUintType, condition uint64) {
 	rhsHash := verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 
 	input1 := toPrecompileInputNoScalar(false, conditionHash, lhsHash, rhsHash)
-	out, err := fheIfThenElseRun(environment, addr, addr, input1, readOnly)
+	out, err := fheIfThenElseRun(environment, addr, addr, input1, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -2677,7 +2677,7 @@ func FheRand(t *testing.T, fheUintType FheUintType) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	out, err := fheRandRun(environment, addr, addr, []byte{byte(fheUintType)}, readOnly)
+	out, err := fheRandRun(environment, addr, addr, []byte{byte(fheUintType)}, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if len(out) != 32 {
@@ -2703,7 +2703,7 @@ func TestVerifyCiphertextInvalidType(t *testing.T) {
 	invalidType := FheUintType(255)
 	compact := encryptAndSerializeCompact(0, FheUint64)
 	input := prepareInputForVerifyCiphertext(append(compact, byte(invalidType)))
-	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly)
+	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
 	if err == nil {
 		t.Fatalf("verifyCiphertext must have failed on invalid ciphertext type")
 	}
@@ -2724,7 +2724,7 @@ func TestTrivialEncryptInvalidType(t *testing.T) {
 	invalidType := FheUintType(255)
 	input := make([]byte, 32)
 	input = append(input, byte(invalidType))
-	trivialEncryptRun(environment, addr, addr, input, readOnly)
+	trivialEncryptRun(environment, addr, addr, input, readOnly, nil)
 }
 
 func TestCastInvalidType(t *testing.T) {
@@ -2738,7 +2738,7 @@ func TestCastInvalidType(t *testing.T) {
 	input := make([]byte, 0)
 	input = append(input, hash.Bytes()...)
 	input = append(input, byte(invalidType))
-	_, err := castRun(environment, addr, addr, input, readOnly)
+	_, err := castRun(environment, addr, addr, input, readOnly, nil)
 	if err == nil {
 		t.Fatalf("cast must have failed on invalid ciphertext type")
 	}
@@ -2753,7 +2753,7 @@ func TestVerifyCiphertextInvalidSize(t *testing.T) {
 	ctType := FheUint32
 	compact := encryptAndSerializeCompact(0, ctType)
 	input := prepareInputForVerifyCiphertext(append(compact[:len(compact)-1], byte(ctType)))
-	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly)
+	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
 	if err == nil {
 		t.Fatalf("verifyCiphertext must have failed on invalid ciphertext size")
 	}
@@ -2818,7 +2818,7 @@ func TestVerifyCiphertextBadCiphertext(t *testing.T) {
 	addr := common.Address{}
 	readOnly := false
 	input := prepareInputForVerifyCiphertext(make([]byte, 10))
-	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly)
+	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
 	if err == nil {
 		t.Fatalf("verifyCiphertext must fail on bad ciphertext input")
 	}
@@ -3701,7 +3701,7 @@ func TestFheRandInvalidInput(t *testing.T) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	_, err := fheRandRun(environment, addr, addr, []byte{}, readOnly)
+	_, err := fheRandRun(environment, addr, addr, []byte{}, readOnly, nil)
 	if err == nil {
 		t.Fatalf("fheRand expected failure on invalid type")
 	}
@@ -3716,7 +3716,7 @@ func TestFheRandInvalidType(t *testing.T) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	_, err := fheRandRun(environment, addr, addr, []byte{byte(254)}, readOnly)
+	_, err := fheRandRun(environment, addr, addr, []byte{byte(254)}, readOnly, nil)
 	if err == nil {
 		t.Fatalf("fheRand expected failure on invalid type")
 	}
@@ -3735,7 +3735,7 @@ func TestFheRandBoundedInvalidType(t *testing.T) {
 	upperBound := uint256.NewInt(8).Bytes32()
 	input = append(input, upperBound[:]...)
 	input = append(input, byte(254))
-	_, err := fheRandBoundedRun(environment, addr, addr, input, readOnly)
+	_, err := fheRandBoundedRun(environment, addr, addr, input, readOnly, nil)
 	if err == nil {
 		t.Fatalf("fheRandBounded expected failure on invalid type")
 	}
@@ -3754,7 +3754,7 @@ func FheRandBoundedInvalidBound(t *testing.T, fheUintType FheUintType, bound *ui
 	upperBound := bound.Bytes32()
 	input = append(input, upperBound[:]...)
 	input = append(input, byte(fheUintType))
-	_, err := fheRandBoundedRun(environment, addr, addr, input, readOnly)
+	_, err := fheRandBoundedRun(environment, addr, addr, input, readOnly, nil)
 	if err == nil {
 		t.Fatalf("fheRandBounded expected failure on invalid bound")
 	}
@@ -3810,7 +3810,7 @@ func TestFheRandEthCall(t *testing.T) {
 	environment.ethCall = true
 	addr := common.Address{}
 	readOnly := true
-	_, err := fheRandRun(environment, addr, addr, []byte{byte(FheUint8)}, readOnly)
+	_, err := fheRandRun(environment, addr, addr, []byte{byte(FheUint8)}, readOnly, nil)
 	if err == nil {
 		t.Fatalf("fheRand expected failure on EthCall")
 	}
@@ -3830,7 +3830,7 @@ func TestFheRandBoundedEthCall(t *testing.T) {
 	upperBound := uint256.NewInt(4).Bytes32()
 	input = append(input, upperBound[:]...)
 	input = append(input, byte(FheUint8))
-	_, err := fheRandBoundedRun(environment, addr, addr, input, readOnly)
+	_, err := fheRandBoundedRun(environment, addr, addr, input, readOnly, nil)
 	if err == nil {
 		t.Fatalf("fheRandBounded expected failure on EthCall")
 	}
@@ -3923,7 +3923,7 @@ func TestOneFalseOptimisticRequire(t *testing.T) {
 	addr := common.Address{}
 	readOnly := false
 	hash := verifyCiphertextInTestMemory(environment, value, depth, FheUint8).GetHash()
-	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if len(out) != 0 {
@@ -3947,14 +3947,14 @@ func TestTwoTrueOptimisticRequires(t *testing.T) {
 	addr := common.Address{}
 	readOnly := false
 	hash := verifyCiphertextInTestMemory(environment, value, depth, FheUint8).GetHash()
-	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if len(out) != 0 {
 		t.Fatalf("require expected output len of 0, got %v", len(out))
 	}
 	hash = verifyCiphertextInTestMemory(environment, value, depth, FheUint8).GetHash()
-	out, err = optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	out, err = optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if len(out) != 0 {
@@ -3979,13 +3979,13 @@ func TestOptimisticRequireTwiceOnSameCiphertext(t *testing.T) {
 	readOnly := false
 	ct := verifyCiphertextInTestMemory(environment, value, depth, FheUint8)
 	hash := ct.GetHash()
-	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if len(out) != 0 {
 		t.Fatalf("require expected output len of 0, got %v", len(out))
 	}
-	out, err = optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	out, err = optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if len(out) != 0 {
@@ -4008,14 +4008,14 @@ func TestOneFalseAndOneTrueOptimisticRequire(t *testing.T) {
 	addr := common.Address{}
 	readOnly := false
 	hash := verifyCiphertextInTestMemory(environment, 0, depth, FheUint8).GetHash()
-	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if len(out) != 0 {
 		t.Fatalf("require expected output len of 0, got %v", len(out))
 	}
 	hash = verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).GetHash()
-	out, err = optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	out, err = optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if len(out) != 0 {
@@ -4039,7 +4039,7 @@ func TestDecryptWithFalseOptimisticRequire(t *testing.T) {
 	readOnly := false
 	// Call optimistic require with a false value and expect it succeeds.
 	hash := verifyCiphertextInTestMemory(environment, 0, depth, FheUint8).GetHash()
-	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if len(out) != 0 {
@@ -4064,7 +4064,7 @@ func TestDecryptWithTrueOptimisticRequire(t *testing.T) {
 	readOnly := false
 	// Call optimistic require with a false value and expect it succeeds.
 	hash := verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).GetHash()
-	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly)
+	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if len(out) != 0 {
