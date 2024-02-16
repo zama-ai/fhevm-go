@@ -53,6 +53,9 @@ func FheLibRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	if ctx := environment.OtelContext(); ctx != nil {
 		_, span := otel.Tracer("fhevm").Start(ctx, fheLibMethod.name)
 		ret, err = fheLibMethod.Run(environment, caller, addr, input, readOnly, span)
+		if err != nil {
+			span.RecordError(err)
+		}
 		span.End()
 	} else {
 		ret, err = fheLibMethod.Run(environment, caller, addr, input, readOnly, nil)
