@@ -16,7 +16,7 @@ type FheLibMethod struct {
 	// name of the fhelib function
 	name string
 	// types of the arguments that the fhelib function take. format is "(type1,type2...)" (e.g "(uint256,bytes1)")
-	arg_types           string
+	argTypes            string
 	requiredGasFunction func(environment EVMEnvironment, input []byte) uint64
 	runFunction         func(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error)
 }
@@ -31,7 +31,7 @@ func makeKeccakSignature(input string) uint32 {
 
 // Return the computed signature by concatenating the name and the arg types of the method
 func (fheLibMethod *FheLibMethod) Signature() uint32 {
-	return makeKeccakSignature(fheLibMethod.name + fheLibMethod.arg_types)
+	return makeKeccakSignature(fheLibMethod.name + fheLibMethod.argTypes)
 }
 
 func (fheLibMethod *FheLibMethod) RequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -54,183 +54,189 @@ func GetFheLibMethod(signature uint32) (fheLibMethod *FheLibMethod, found bool) 
 var fhelibMethods = []*FheLibMethod{
 	{
 		name:                "fheAdd",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheAddSubRequiredGas,
 		runFunction:         fheAddRun,
 	},
 	{
 		name:                "fheSub",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheAddSubRequiredGas,
 		runFunction:         fheSubRun,
 	},
 	{
 		name:                "fheMul",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheMulRequiredGas,
 		runFunction:         fheMulRun,
 	},
 	{
 		name:                "fheDiv",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheDivRequiredGas,
 		runFunction:         fheDivRun,
 	},
 	{
 		name:                "fheRem",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheRemRequiredGas,
 		runFunction:         fheRemRun,
 	},
 	{
 		name:                "fheMin",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheMinRequiredGas,
 		runFunction:         fheMinRun,
 	},
 	{
 		name:                "fheMax",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheMaxRequiredGas,
 		runFunction:         fheMaxRun,
 	},
 	{
 		name:                "fheRand",
-		arg_types:           "(bytes1)",
+		argTypes:            "(bytes1)",
 		requiredGasFunction: fheRandRequiredGas,
 		runFunction:         fheRandRun,
 	},
 	{
 		name:                "fheRandBounded",
-		arg_types:           "(uint256,bytes1)",
+		argTypes:            "(uint256,bytes1)",
 		requiredGasFunction: fheRandBoundedRequiredGas,
 		runFunction:         fheRandBoundedRun,
 	},
 	{
 		name:                "cast",
-		arg_types:           "(uint256,bytes1)",
+		argTypes:            "(uint256,bytes1)",
 		requiredGasFunction: castRequiredGas,
 		runFunction:         castRun,
 	},
 	{
 		name:                "fheLe",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheLeRequiredGas,
 		runFunction:         fheLeRun,
 	},
 	{
 		name:                "fheLt",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheLtRequiredGas,
 		runFunction:         fheLtRun,
 	},
 	{
 		name:                "fheEq",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheEqRequiredGas,
 		runFunction:         fheEqRun,
 	},
 	{
 		name:                "fheGe",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheGeRequiredGas,
 		runFunction:         fheGeRun,
 	},
 	{
 		name:                "fheGt",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheGtRequiredGas,
 		runFunction:         fheGtRun,
 	},
 	{
 		name:                "fheShl",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheShlRequiredGas,
 		runFunction:         fheShlRun,
 	},
 	{
 		name:                "fheShr",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheShrRequiredGas,
 		runFunction:         fheShrRun,
 	},
 	{
 		name:                "fheNe",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheNeRequiredGas,
 		runFunction:         fheNeRun,
 	},
 	{
 		name:                "fheNeg",
-		arg_types:           "(uint256)",
+		argTypes:            "(uint256)",
 		requiredGasFunction: fheNegRequiredGas,
 		runFunction:         fheNegRun,
 	},
 	{
 		name:                "fheNot",
-		arg_types:           "(uint256)",
+		argTypes:            "(uint256)",
 		requiredGasFunction: fheNotRequiredGas,
 		runFunction:         fheNotRun,
 	},
 	{
 		name:                "fheBitAnd",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheBitAndRequiredGas,
 		runFunction:         fheBitAndRun,
 	},
 	{
 		name:                "fheBitOr",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheBitOrRequiredGas,
 		runFunction:         fheBitOrRun,
 	},
 	{
 		name:                "fheBitXor",
-		arg_types:           "(uint256,uint256,bytes1)",
+		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheBitXorRequiredGas,
 		runFunction:         fheBitXorRun,
 	},
 	{
 		name:                "fheIfThenElse",
-		arg_types:           "(uint256,uint256,uint256)",
+		argTypes:            "(uint256,uint256,uint256)",
 		requiredGasFunction: fheIfThenElseRequiredGas,
 		runFunction:         fheIfThenElseRun,
 	},
 	{
 		name:                "fhePubKey",
-		arg_types:           "(bytes1)",
+		argTypes:            "(bytes1)",
 		requiredGasFunction: fhePubKeyRequiredGas,
 		runFunction:         fhePubKeyRun,
 	},
 	{
 		name:                "trivialEncrypt",
-		arg_types:           "(uint256,bytes1)",
+		argTypes:            "(uint256,bytes1)",
 		requiredGasFunction: trivialEncryptRequiredGas,
 		runFunction:         trivialEncryptRun,
 	},
 	{
 		name:                "decrypt",
-		arg_types:           "(uint256)",
+		argTypes:            "(uint256)",
 		requiredGasFunction: decryptRequiredGas,
 		runFunction:         decryptRun,
 	},
 	{
 		name:                "reencrypt",
-		arg_types:           "(uint256,uint256)",
+		argTypes:            "(uint256,uint256)",
 		requiredGasFunction: reencryptRequiredGas,
 		runFunction:         reencryptRun,
 	},
 	{
 		name:                "verifyCiphertext",
-		arg_types:           "(bytes)",
+		argTypes:            "(bytes)",
 		requiredGasFunction: verifyCiphertextRequiredGas,
 		runFunction:         verifyCiphertextRun,
 	},
 	{
 		name:                "optimisticRequire",
-		arg_types:           "(uint256)",
+		argTypes:            "(uint256)",
 		requiredGasFunction: optimisticRequireRequiredGas,
 		runFunction:         optimisticRequireRun,
+	},
+	{
+		name:                "getCiphertext",
+		argTypes:            "(address,uint256)",
+		requiredGasFunction: getCiphertextRequiredGas,
+		runFunction:         getCiphertextRun,
 	},
 }
 

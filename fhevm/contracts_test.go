@@ -4101,3 +4101,213 @@ func TestDecryptInTransactionDisabled(t *testing.T) {
 		t.Fatalf("unexpected error for disabling decryption transactions, got %s", err.Error())
 	}
 }
+
+func TestFheLibGetCiphertextInvalidInputSize(t *testing.T) {
+	environment := newTestEVMEnvironment()
+	addr := common.Address{}
+	environment.ethCall = true
+	readOnly := true
+	input := make([]byte, 0)
+	zeroPadding := make([]byte, 12)
+	signature := crypto.Keccak256([]byte("getCiphertext(address,uint256)"))[0:4]
+	input = append(input, signature...)
+	input = append(input, zeroPadding...)
+	// missing input data...
+	_, err := FheLibRun(environment, addr, addr, input, readOnly)
+	if err == nil {
+		t.Fatalf("getCiphertext expected failure on bad input size")
+	}
+}
+
+func TestFheLibGetCiphertextNonEthCall(t *testing.T) {
+	environment := newTestEVMEnvironment()
+	pc := uint64(0)
+	depth := 1
+	environment.depth = depth
+	plaintext := uint64(2)
+	ct := verifyCiphertextInTestMemory(environment, plaintext, depth, FheUint32)
+	ctHash := ct.GetHash()
+	scope := newTestScopeConext()
+	loc := uint256.NewInt(10)
+	value := uint256FromBig(ctHash.Big())
+
+	// Setup and call SSTORE - it requires a location and a value to set there.
+	scope.pushToStack(value)
+	scope.pushToStack(loc)
+	_, err := OpSstore(&pc, environment, scope)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	// Call getCiphertext.
+	addr := common.Address{}
+	environment.ethCall = false
+	readOnly := true
+	input := make([]byte, 0)
+	zeroPadding := make([]byte, 12)
+	signature := crypto.Keccak256([]byte("getCiphertext(address,uint256)"))[0:4]
+	input = append(input, signature...)
+	input = append(input, zeroPadding...)
+	input = append(input, testContractAddress{}.Address().Bytes()...)
+	input = append(input, ctHash.Bytes()...)
+	_, err = FheLibRun(environment, addr, addr, input, readOnly)
+	if err == nil {
+		t.Fatalf("getCiphertext expected failure non-EthCall")
+	}
+}
+
+func TestFheLibGetCiphertextNonExistentHandle(t *testing.T) {
+	environment := newTestEVMEnvironment()
+	pc := uint64(0)
+	depth := 1
+	environment.depth = depth
+	plaintext := uint64(2)
+	ct := verifyCiphertextInTestMemory(environment, plaintext, depth, FheUint32)
+	ctHash := ct.GetHash()
+	scope := newTestScopeConext()
+	loc := uint256.NewInt(10)
+	value := uint256FromBig(ctHash.Big())
+
+	// Setup and call SSTORE - it requires a location and a value to set there.
+	scope.pushToStack(value)
+	scope.pushToStack(loc)
+	_, err := OpSstore(&pc, environment, scope)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	// Change ctHash to something that doesn't exist
+	ctHash[0]++
+
+	// Call getCiphertext.
+	addr := common.Address{}
+	environment.ethCall = true
+	readOnly := true
+	input := make([]byte, 0)
+	zeroPadding := make([]byte, 12)
+	signature := crypto.Keccak256([]byte("getCiphertext(address,uint256)"))[0:4]
+	input = append(input, signature...)
+	input = append(input, zeroPadding...)
+	input = append(input, testContractAddress{}.Address().Bytes()...)
+	input = append(input, ctHash.Bytes()...)
+	out, err := FheLibRun(environment, addr, addr, input, readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if len(out) != 0 {
+		t.Fatalf("getCiphertext expected empty output on non-existent handle")
+	}
+}
+
+func TestFheLibGetCiphertextWrongContractAddress(t *testing.T) {
+	environment := newTestEVMEnvironment()
+	pc := uint64(0)
+	depth := 1
+	environment.depth = depth
+	plaintext := uint64(2)
+	ct := verifyCiphertextInTestMemory(environment, plaintext, depth, FheUint32)
+	ctHash := ct.GetHash()
+	scope := newTestScopeConext()
+	loc := uint256.NewInt(10)
+	value := uint256FromBig(ctHash.Big())
+
+	// Setup and call SSTORE - it requires a location and a value to set there.
+	scope.pushToStack(value)
+	scope.pushToStack(loc)
+	_, err := OpSstore(&pc, environment, scope)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	// Call getCiphertext.
+	addr := common.Address{}
+	environment.ethCall = true
+	readOnly := true
+	contractAddress := testContractAddress{}.Address()
+	// Change address to another one that doesn't contain the handle.
+	contractAddress[0]++
+	input := make([]byte, 0)
+	zeroPadding := make([]byte, 12)
+	signature := crypto.Keccak256([]byte("getCiphertext(address,uint256)"))[0:4]
+	input = append(input, signature...)
+	input = append(input, zeroPadding...)
+	input = append(input, contractAddress.Bytes()...)
+	input = append(input, ctHash.Bytes()...)
+	out, err := FheLibRun(environment, addr, addr, input, readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if len(out) != 0 {
+		t.Fatalf("getCiphertext expected empty output on wrong contract address")
+	}
+}
+
+func FheLibGetCiphertext(t *testing.T, fheUintType FheUintType) {
+	environment := newTestEVMEnvironment()
+	pc := uint64(0)
+	depth := 1
+	environment.depth = depth
+	plaintext := uint64(2)
+	ct := verifyCiphertextInTestMemory(environment, plaintext, depth, fheUintType)
+	ctHash := ct.GetHash()
+	scope := newTestScopeConext()
+	loc := uint256.NewInt(10)
+	value := uint256FromBig(ctHash.Big())
+
+	// Setup and call SSTORE - it requires a location and a value to set there.
+	scope.pushToStack(value)
+	scope.pushToStack(loc)
+	_, err := OpSstore(&pc, environment, scope)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	// Call getCiphertext.
+	addr := common.Address{}
+	environment.ethCall = true
+	readOnly := true
+	input := make([]byte, 0)
+	zeroPadding := make([]byte, 12)
+	signature := crypto.Keccak256([]byte("getCiphertext(address,uint256)"))[0:4]
+	input = append(input, signature...)
+	input = append(input, zeroPadding...)
+	input = append(input, testContractAddress{}.Address().Bytes()...)
+	input = append(input, ctHash.Bytes()...)
+	out, err := FheLibRun(environment, addr, addr, input, readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	size, _ := GetExpandedFheCiphertextSize(fheUintType)
+	if size != uint(len(out)) {
+		t.Fatalf("getCiphertext returned ciphertext size of %d, expected %d", len(out), size)
+	}
+
+	outCt := new(TfheCiphertext)
+	err = outCt.Deserialize(out, fheUintType)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	decrypted, err := outCt.Decrypt()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if decrypted.Uint64() != plaintext {
+		t.Fatalf("getCiphertext returned ciphertext value of %d, expected %d", decrypted.Uint64(), plaintext)
+	}
+}
+
+func TestFheLibGetCiphertext8(t *testing.T) {
+	FheLibGetCiphertext(t, FheUint8)
+}
+
+func TestFheLibGetCiphertext16(t *testing.T) {
+	FheLibGetCiphertext(t, FheUint16)
+}
+
+func TestFheLibGetCiphertext32(t *testing.T) {
+	FheLibGetCiphertext(t, FheUint32)
+}
+
+func TestFheLibGetCiphertext64(t *testing.T) {
+	FheLibGetCiphertext(t, FheUint64)
+}

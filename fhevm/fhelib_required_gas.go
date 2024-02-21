@@ -431,6 +431,25 @@ func optimisticRequireRequiredGas(environment EVMEnvironment, input []byte) uint
 	return environment.FhevmParams().GasCosts.FheOptRequireBitAnd[FheUint8]
 }
 
+func getCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint64 {
+	input = input[:minInt(64, len(input))]
+
+	logger := environment.GetLogger()
+	if len(input) != 64 {
+		logger.Error("getCiphertext RequiredGas() input len must be 64 bytes",
+			"input", hex.EncodeToString(input), "len", len(input))
+		return 0
+	}
+
+	contractAddress := common.BytesToAddress(input[:32])
+	handle := common.BytesToHash(input[32:])
+	metadata := getCiphertextMetadataFromProtectedStorage(environment, contractAddress, handle)
+	if metadata == nil {
+		return GetNonExistentCiphertextGas
+	}
+	return environment.FhevmParams().GasCosts.FheGetCiphertext[metadata.fheUintType]
+}
+
 func castRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	input = input[:minInt(33, len(input))]
 
