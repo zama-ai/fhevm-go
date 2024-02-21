@@ -156,6 +156,12 @@ Now implement the `fhevm.EVMEnvironment` interface for `FhevmImplementation`:
 ```go
 func (evm *EVM) FhevmEnvironment() fhevm.EVMEnvironment { return &evm.fhevmEnvironment }
 
+// If you are using OpenTelemetry, you can return a context that the precompiled fhelib will use
+// to trace its internal functions. Otherwise, just return nil
+func (evm *FhevmImplementation) OtelContext() context.Context {
+       return nil
+}
+
 func (evm *FhevmImplementation) GetState(addr common.Address, hash common.Hash) common.Hash {
     return evm.interpreter.evm.StateDB.GetState(addr, hash)
 }
