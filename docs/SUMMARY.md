@@ -6,6 +6,7 @@
 ## Getting Started
 - [Initial Setup](getting_started/README.md)
 - [Integration](getting_started/Integration.md)
+- [FheLib Library](getting_started/FheLib.md)
 
 ## 🔗 Support
 

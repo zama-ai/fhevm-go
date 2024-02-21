@@ -1601,6 +1601,32 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 	return ret, nil
 }
 
+func getCiphertextRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+	input = input[:minInt(64, len(input))]
+
+	logger := environment.GetLogger()
+	if !environment.IsEthCall() {
+		msg := "getCiphertext only supported on EthCall"
+		logger.Error(msg)
+		return nil, errors.New(msg)
+	}
+	if len(input) != 64 {
+		msg := "getCiphertext input len must be 64 bytes"
+		logger.Error(msg, "input", hex.EncodeToString(input), "len", len(input))
+		return nil, errors.New(msg)
+	}
+
+	contractAddress := common.BytesToAddress(input[:32])
+	handle := common.BytesToHash(input[32:])
+
+	ciphertext := getCiphertextFromProtectedStoage(environment, contractAddress, handle)
+	if ciphertext == nil {
+		return make([]byte, 0), nil
+	}
+	otelDescribeOperandsFheTypes(runSpan, ciphertext.metadata.fheUintType)
+	return ciphertext.bytes, nil
+}
+
 func decryptValue(environment EVMEnvironment, ct *TfheCiphertext) (uint64, error) {
 
 	logger := environment.GetLogger()

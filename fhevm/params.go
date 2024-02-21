@@ -9,6 +9,8 @@ const EvmNetSstoreInitGas uint64 = 20000
 const AdjustFHEGas uint64 = 10000
 const ColdSloadCostEIP2929 uint64 = 2100
 
+const GetNonExistentCiphertextGas uint64 = 1000
+
 var (
 	// TODO: The values here are chosen somewhat arbitrarily (at least the 8 bit ones). Also, we don't
 	// take into account whether a ciphertext existed (either "current" or "original") for the given handle.
@@ -59,6 +61,7 @@ type GasCosts struct {
 	FheVerify           map[FheUintType]uint64
 	FheOptRequire       map[FheUintType]uint64
 	FheOptRequireBitAnd map[FheUintType]uint64
+	FheGetCiphertext    map[FheUintType]uint64
 }
 
 func DefaultGasCosts() GasCosts {
@@ -193,6 +196,12 @@ func DefaultGasCosts() GasCosts {
 			FheUint8:  20000,
 			FheUint16: 20000,
 			FheUint32: 20000,
+		},
+		FheGetCiphertext: map[FheUintType]uint64{
+			FheUint8:  12000,
+			FheUint16: 14000,
+			FheUint32: 18000,
+			FheUint64: 28000,
 		},
 	}
 }
