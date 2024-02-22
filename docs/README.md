@@ -6,7 +6,6 @@
 
 **fhevm-go** is an open-source library used to easily integrate the [fhEVM](https://docs.zama.ai/fhevm) into an EVM-compatible blockchain.
 
-
 ## Main features
 
 fhevm-go gives your EVM the ability to compute on encrypted data using fully homomorphic encryption by:
