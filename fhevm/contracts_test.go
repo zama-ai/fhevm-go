@@ -241,6 +241,8 @@ func VerifyCiphertextBadType(t *testing.T, actualType FheUintType, metadataType 
 func TrivialEncrypt(t *testing.T, fheUintType FheUintType) {
 	var value big.Int
 	switch fheUintType {
+	case FheBool:
+		value = *big.NewInt(1)
 	case FheUint4:
 		value = *big.NewInt(2)
 	case FheUint8:
@@ -1919,6 +1921,9 @@ func FheRem(t *testing.T, fheUintType FheUintType, scalar bool) {
 func FheBitAnd(t *testing.T, fheUintType FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
+	case FheBool:
+		lhs = 1
+		rhs = 0
 	case FheUint4:
 		lhs = 2
 		rhs = 1
@@ -3402,6 +3407,10 @@ func TestFheScalarRem64(t *testing.T) {
 	FheRem(t, FheUint64, true)
 }
 
+func TestFheBitAndBool(t *testing.T) {
+	FheBitAnd(t, FheBool, false)
+}
+
 func TestFheBitAnd8(t *testing.T) {
 	FheBitAnd(t, FheUint8, false)
 }
@@ -3694,6 +3703,10 @@ func TestFheScalarGt64(t *testing.T) {
 	FheGt(t, FheUint64, true)
 }
 
+func TestFheLe4(t *testing.T) {
+	FheLe(t, FheUint4, false)
+}
+
 func TestFheLe8(t *testing.T) {
 	FheLe(t, FheUint8, false)
 }
@@ -3708,6 +3721,10 @@ func TestFheLe32(t *testing.T) {
 
 func TestFheLe64(t *testing.T) {
 	FheLe(t, FheUint64, false)
+}
+
+func TestFheScalarLe4(t *testing.T) {
+	FheLe(t, FheUint4, true)
 }
 
 func TestFheScalarLe8(t *testing.T) {

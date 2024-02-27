@@ -27,6 +27,10 @@ const (
 
 func (t FheUintType) String() string {
 	switch t {
+	case FheBool:
+		return "fheBool"
+	case FheUint4:
+		return "fheUint4"
 	case FheUint8:
 		return "fheUint8"
 	case FheUint16:
@@ -635,7 +639,7 @@ func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 			ret := C.serialize_fhe_uint32(res_ptr, res_ser)
 			C.destroy_fhe_uint32(res_ptr)
 			if ret != 0 {
-				return nil, errors.New("8 bit binary op serialization failed")
+				return nil, errors.New("32 bit binary op serialization failed")
 			}
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
@@ -669,7 +673,7 @@ func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 			ret := C.serialize_fhe_uint64(res_ptr, res_ser)
 			C.destroy_fhe_uint64(res_ptr)
 			if ret != 0 {
-				return nil, errors.New("8 bit binary op serialization failed")
+				return nil, errors.New("64 bit binary op serialization failed")
 			}
 		}
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
