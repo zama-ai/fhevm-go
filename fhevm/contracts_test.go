@@ -463,7 +463,7 @@ func FheLibLe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != 0 {
-		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 0)
+		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), err)
 	}
 
 	// Inverting operands is only possible in the non scalar case as scalar
@@ -2439,7 +2439,7 @@ func FheLe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 	decrypted, err := res.ciphertext.Decrypt()
 	if err != nil || decrypted.Uint64() != 0 {
-		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 0)
+		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), err)
 	}
 
 	// Inverting operands is only possible in the non scalar case as scalar
@@ -2794,6 +2794,8 @@ func FheIfThenElse(t *testing.T, fheUintType FheUintType, condition uint64) {
 func Decrypt(t *testing.T, fheUintType FheUintType) {
 	var value uint64
 	switch fheUintType {
+	case FheBool:
+		value = 1
 	case FheUint4:
 		value = 2
 	case FheUint8:
