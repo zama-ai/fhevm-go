@@ -1497,7 +1497,7 @@ func FheLibIfThenElse(t *testing.T, fheUintType FheUintType, condition uint64) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	firstHash := verifyCiphertextInTestMemory(environment, condition, depth, FheUint8).GetHash()
+	firstHash := verifyCiphertextInTestMemory(environment, condition, depth, FheBool).GetHash()
 	secondHash := verifyCiphertextInTestMemory(environment, second, depth, fheUintType).GetHash()
 	thirdHash := verifyCiphertextInTestMemory(environment, third, depth, fheUintType).GetHash()
 	input := toLibPrecompileInputNoScalar(signature, firstHash, secondHash, thirdHash)
@@ -2772,7 +2772,7 @@ func FheIfThenElse(t *testing.T, fheUintType FheUintType, condition uint64) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	conditionHash := verifyCiphertextInTestMemory(environment, condition, depth, fheUintType).GetHash()
+	conditionHash := verifyCiphertextInTestMemory(environment, condition, depth, FheBool).GetHash()
 	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	rhsHash := verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 
@@ -3838,6 +3838,11 @@ func TestFheNot32(t *testing.T) {
 
 func TestFheNot64(t *testing.T) {
 	FheNot(t, FheUint64, false)
+}
+
+func TestFheIfThenElse4(t *testing.T) {
+	FheIfThenElse(t, FheUint4, 1)
+	FheIfThenElse(t, FheUint4, 0)
 }
 
 func TestFheIfThenElse8(t *testing.T) {

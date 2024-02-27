@@ -1276,9 +1276,9 @@ func TfheIfThenElse(t *testing.T, fheUintType FheUintType) {
 		b.SetUint64(133337)
 	}
 	ctCondition := new(TfheCiphertext)
-	ctCondition.Encrypt(condition, fheUintType)
+	ctCondition.Encrypt(condition, FheBool)
 	ctCondition2 := new(TfheCiphertext)
-	ctCondition2.Encrypt(condition2, fheUintType)
+	ctCondition2.Encrypt(condition2, FheBool)
 	ctA := new(TfheCiphertext)
 	ctA.Encrypt(a, fheUintType)
 	ctB := new(TfheCiphertext)

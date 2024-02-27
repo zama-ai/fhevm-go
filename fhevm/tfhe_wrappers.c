@@ -2295,9 +2295,7 @@ void* if_then_else_fhe_uint4(void* condition, void* ct1, void* ct2, void* sks)
 
 	checked_set_server_key(sks);
 
-	FheBool* cond = cast_4_bool(condition, sks);
-
-	const int r = fhe_uint4_if_then_else(cond, ct1, ct2, &result);
+	const int r = fhe_uint4_if_then_else(condition, ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -2308,9 +2306,7 @@ void* if_then_else_fhe_uint8(void* condition, void* ct1, void* ct2, void* sks)
 
 	checked_set_server_key(sks);
 
-	FheBool* cond = cast_8_bool(condition, sks);
-
-	const int r = fhe_uint8_if_then_else(cond, ct1, ct2, &result);
+	const int r = fhe_uint8_if_then_else(condition, ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -2321,9 +2317,7 @@ void* if_then_else_fhe_uint16(void* condition, void* ct1, void* ct2, void* sks)
 
 	checked_set_server_key(sks);
 
-	FheBool* cond = cast_8_bool(condition, sks);
-
-	const int r = fhe_uint16_if_then_else(cond, ct1, ct2, &result);
+	const int r = fhe_uint16_if_then_else(condition, ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -2334,9 +2328,7 @@ void* if_then_else_fhe_uint32(void* condition, void* ct1, void* ct2, void* sks)
 
 	checked_set_server_key(sks);
 
-	FheBool* cond = cast_8_bool(condition, sks);
-
-	const int r = fhe_uint32_if_then_else(cond, ct1, ct2, &result);
+	const int r = fhe_uint32_if_then_else(condition, ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -2347,9 +2339,7 @@ void* if_then_else_fhe_uint64(void* condition, void* ct1, void* ct2, void* sks)
 
 	checked_set_server_key(sks);
 
-	FheBool* cond = cast_8_bool(condition, sks);
-
-	const int r = fhe_uint64_if_then_else(cond, ct1, ct2, &result);
+	const int r = fhe_uint64_if_then_else(condition, ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }

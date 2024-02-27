@@ -367,7 +367,7 @@ func fheIfThenElseRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("IfThenElse op RequiredGas() inputs not verified", "err", err, "input", hex.EncodeToString(input))
 		return 0
 	}
-	if first.fheUintType() != FheUint8 {
+	if first.fheUintType() != FheBool {
 		logger.Error("IfThenElse op RequiredGas() invalid type for condition", "first", first.fheUintType())
 		return 0
 	}
