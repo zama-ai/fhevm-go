@@ -53,6 +53,26 @@ void checked_set_server_key(void *sks) {
 	assert(r == 0);
 }
 
+void* cast_4_bool(void* ct, void* sks) {
+	FheBool* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_ne(ct, 0, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_bool_4(void* ct, void* sks) {
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_bool_cast_into_fhe_uint4(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* cast_8_bool(void* ct, void* sks) {
 	FheBool* result = NULL;
 
@@ -101,6 +121,82 @@ void* cast_bool_64(void* ct, void* sks) {
 	const int r = fhe_bool_cast_into_fhe_uint64(ct, &result);
 	if(r != 0) return NULL;
 	return result;
+}
+
+int serialize_fhe_bool(void *ct, DynamicBuffer* out) {
+	return fhe_bool_serialize(ct, out);
+}
+
+void* deserialize_fhe_bool(DynamicBufferView in) {
+	FheBool* ct = NULL;
+	const int r = fhe_bool_deserialize(in, &ct);
+	if(r != 0) {
+		return NULL;
+	}
+	return ct;
+}
+
+void* deserialize_compact_fhe_bool(DynamicBufferView in) {
+	CompactFheBoolList* list = NULL;
+	FheBool* ct = NULL;
+
+	int r = compact_fhe_bool_list_deserialize(in, &list);
+	if(r != 0) {
+		return NULL;
+	}
+	size_t len = 0;
+	r = compact_fhe_bool_list_len(list, &len);
+	// Expect only 1 ciphertext in the list.
+	if(r != 0 || len != 1) {
+		r = compact_fhe_bool_list_destroy(list);
+		assert(r == 0);
+		return NULL;
+	}
+	r = compact_fhe_bool_list_expand(list, &ct, 1);
+	if(r != 0) {
+		ct = NULL;
+	}
+	r = compact_fhe_bool_list_destroy(list);
+	assert(r == 0);
+	return ct;
+}
+
+int serialize_fhe_uint4(void *ct, DynamicBuffer* out) {
+	return fhe_uint4_serialize(ct, out);
+}
+
+void* deserialize_fhe_uint4(DynamicBufferView in) {
+	FheUint4* ct = NULL;
+	const int r = fhe_uint4_deserialize(in, &ct);
+	if(r != 0) {
+		return NULL;
+	}
+	return ct;
+}
+
+void* deserialize_compact_fhe_uint4(DynamicBufferView in) {
+	CompactFheUint4List* list = NULL;
+	FheUint4* ct = NULL;
+
+	int r = compact_fhe_uint4_list_deserialize(in, &list);
+	if(r != 0) {
+		return NULL;
+	}
+	size_t len = 0;
+	r = compact_fhe_uint4_list_len(list, &len);
+	// Expect only 1 ciphertext in the list.
+	if(r != 0 || len != 1) {
+		r = compact_fhe_uint4_list_destroy(list);
+		assert(r == 0);
+		return NULL;
+	}
+	r = compact_fhe_uint4_list_expand(list, &ct, 1);
+	if(r != 0) {
+		ct = NULL;
+	}
+	r = compact_fhe_uint4_list_destroy(list);
+	assert(r == 0);
+	return ct;
 }
 
 int serialize_fhe_uint8(void *ct, DynamicBuffer* out) {
@@ -255,6 +351,16 @@ void* deserialize_compact_fhe_uint64(DynamicBufferView in) {
 	return ct;
 }
 
+void destroy_fhe_bool(void* ct) {
+	const int r = fhe_bool_destroy(ct);
+	assert(r == 0);
+}
+
+void destroy_fhe_uint4(void* ct) {
+	const int r = fhe_uint4_destroy(ct);
+	assert(r == 0);
+}
+
 void destroy_fhe_uint8(void* ct) {
 	const int r = fhe_uint8_destroy(ct);
 	assert(r == 0);
@@ -273,6 +379,17 @@ void destroy_fhe_uint32(void* ct) {
 void destroy_fhe_uint64(void* ct) {
 	const int r = fhe_uint64_destroy(ct);
 	assert(r == 0);
+}
+
+void* add_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_add(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
 }
 
 void* add_fhe_uint8(void* ct1, void* ct2, void* sks)
@@ -315,6 +432,17 @@ void* add_fhe_uint64(void* ct1, void* ct2, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint64_add(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_add_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_add(ct, pt, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -363,6 +491,17 @@ void* scalar_add_fhe_uint64(void* ct, uint64_t pt, void* sks)
 	return result;
 }
 
+void* sub_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_sub(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* sub_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
 	FheUint8* result = NULL;
@@ -403,6 +542,17 @@ void* sub_fhe_uint64(void* ct1, void* ct2, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint64_sub(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_sub_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_sub(ct, pt, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -451,6 +601,17 @@ void* scalar_sub_fhe_uint64(void* ct, uint64_t pt, void* sks)
 	return result;
 }
 
+void* mul_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_mul(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* mul_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
 	FheUint8* result = NULL;
@@ -491,6 +652,17 @@ void* mul_fhe_uint64(void* ct1, void* ct2, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint64_mul(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_mul_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_mul(ct, pt, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -539,6 +711,17 @@ void* scalar_mul_fhe_uint64(void* ct, uint64_t pt, void* sks)
 	return result;
 }
 
+void* scalar_div_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_div(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* scalar_div_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheUint8* result = NULL;
@@ -579,6 +762,17 @@ void* scalar_div_fhe_uint64(void* ct, uint64_t pt, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint64_scalar_div(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_rem_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_rem(ct, pt, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -627,6 +821,28 @@ void* scalar_rem_fhe_uint64(void* ct, uint64_t pt, void* sks)
 	return result;
 }
 
+void* bitand_fhe_bool(void* ct1, void* ct2, void* sks)
+{
+	FheBool* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_bool_bitand(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* bitand_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_bitand(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* bitand_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
 	FheUint8* result = NULL;
@@ -667,6 +883,28 @@ void* bitand_fhe_uint64(void* ct1, void* ct2, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint64_bitand(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* bitor_fhe_bool(void* ct1, void* ct2, void* sks)
+{
+	FheBool* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_bool_bitor(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* bitor_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_bitor(ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -715,6 +953,28 @@ void* bitor_fhe_uint64(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* bitxor_fhe_bool(void* ct1, void* ct2, void* sks)
+{
+	FheBool* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_bool_bitxor(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* bitxor_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_bitxor(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* bitxor_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
 	FheUint8* result = NULL;
@@ -755,6 +1015,17 @@ void* bitxor_fhe_uint64(void* ct1, void* ct2, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint64_bitxor(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* shl_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_shl(ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -803,6 +1074,17 @@ void* shl_fhe_uint64(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* scalar_shl_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_shl(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* scalar_shl_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheUint8* result = NULL;
@@ -843,6 +1125,17 @@ void* scalar_shl_fhe_uint64(void* ct, uint64_t pt, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint64_scalar_shl(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* shr_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_shr(ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -891,6 +1184,17 @@ void* shr_fhe_uint64(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* scalar_shr_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_shr(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* scalar_shr_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheUint8* result = NULL;
@@ -932,6 +1236,18 @@ void* scalar_shr_fhe_uint64(void* ct, uint64_t pt, void* sks)
 
 	const int r = fhe_uint64_scalar_shr(ct, pt, &result);
 	if(r != 0) return NULL;
+	return result;
+}
+
+void* eq_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_eq(ct1, ct2, &bool_result);
+	if(r != 0) return NULL;
+	FheUint4* result = cast_bool_4(bool_result, sks);
 	return result;
 }
 
@@ -983,6 +1299,18 @@ void* eq_fhe_uint64(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* scalar_eq_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_eq(ct, pt, &bool_result);
+	if(r != 0) return NULL;
+	FheUint4* result = cast_bool_4(bool_result, sks);
+	return result;
+}
+
 void* scalar_eq_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheBool* bool_result = NULL;
@@ -1028,6 +1356,18 @@ void* scalar_eq_fhe_uint64(void* ct, uint64_t pt, void* sks)
 	const int r = fhe_uint64_scalar_eq(ct, pt, &bool_result);
 	if(r != 0) return NULL;
 	FheUint64* result = cast_bool_64(bool_result, sks);
+	return result;
+}
+
+void* ne_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_ne(ct1, ct2, &bool_result);
+	if(r != 0) return NULL;
+	FheUint4* result = cast_bool_4(bool_result, sks);
 	return result;
 }
 
@@ -1079,6 +1419,18 @@ void* ne_fhe_uint64(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* scalar_ne_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_ne(ct, pt, &bool_result);
+	if(r != 0) return NULL;
+	FheUint4* result = cast_bool_4(bool_result, sks);
+	return result;
+}
+
 void* scalar_ne_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheBool* bool_result = NULL;
@@ -1124,6 +1476,18 @@ void* scalar_ne_fhe_uint64(void* ct, uint64_t pt, void* sks)
 	const int r = fhe_uint64_scalar_ne(ct, pt, &bool_result);
 	if(r != 0) return NULL;
 	FheUint64* result = cast_bool_64(bool_result, sks);
+	return result;
+}
+
+void* ge_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_ge(ct1, ct2, &bool_result);
+	if(r != 0) return NULL;
+	FheUint4* result = cast_bool_4(bool_result, sks);
 	return result;
 }
 
@@ -1175,6 +1539,18 @@ void* ge_fhe_uint64(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* scalar_ge_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_ge(ct, pt, &bool_result);
+	if(r != 0) return NULL;
+	FheUint4* result = cast_bool_4(bool_result, sks);
+	return result;
+}
+
 void* scalar_ge_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheBool* bool_result = NULL;
@@ -1220,6 +1596,18 @@ void* scalar_ge_fhe_uint64(void* ct, uint64_t pt, void* sks)
 	const int r = fhe_uint64_scalar_ge(ct, pt, &bool_result);
 	if(r != 0) return NULL;
 	FheUint64* result = cast_bool_32(bool_result, sks);
+	return result;
+}
+
+void* gt_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_gt(ct1, ct2, &bool_result);
+	if(r != 0) return NULL;
+	FheUint4* result = cast_bool_4(bool_result, sks);
 	return result;
 }
 
@@ -1271,6 +1659,18 @@ void* gt_fhe_uint64(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* scalar_gt_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_gt(ct, pt, &bool_result);
+	if(r != 0) return NULL;
+	FheUint4* result = cast_bool_4(bool_result, sks);
+	return result;
+}
+
 void* scalar_gt_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheBool* bool_result = NULL;
@@ -1316,6 +1716,18 @@ void* scalar_gt_fhe_uint64(void* ct, uint64_t pt, void* sks)
 	const int r = fhe_uint64_scalar_gt(ct, pt, &bool_result);
 	if(r != 0) return NULL;
 	FheUint64* result = cast_bool_64(bool_result, sks);
+	return result;
+}
+
+void* le_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_le(ct1, ct2, &bool_result);
+	if(r != 0) return NULL;
+	FheUint4* result = cast_bool_4(bool_result, sks);
 	return result;
 }
 
@@ -1367,6 +1779,18 @@ void* le_fhe_uint64(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* scalar_le_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_le(ct, pt, &bool_result);
+	if(r != 0) return NULL;
+	FheUint4* result = cast_bool_4(bool_result, sks);
+	return result;
+}
+
 void* scalar_le_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheBool* bool_result = NULL;
@@ -1412,6 +1836,18 @@ void* scalar_le_fhe_uint64(void* ct, uint64_t pt, void* sks)
 	const int r = fhe_uint64_scalar_le(ct, pt, &bool_result);
 	if(r != 0) return NULL;
 	FheUint64* result = cast_bool_64(bool_result, sks);
+	return result;
+}
+
+void* lt_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_lt(ct1, ct2, &bool_result);
+	if(r != 0) return NULL;
+	FheUint4* result = cast_bool_4(bool_result, sks);
 	return result;
 }
 
@@ -1463,6 +1899,18 @@ void* lt_fhe_uint64(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* scalar_lt_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheBool* bool_result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_lt(ct, pt, &bool_result);
+	if(r != 0) return NULL;
+	FheUint4* result = cast_bool_4(bool_result, sks);
+	return result;
+}
+
 void* scalar_lt_fhe_uint8(void* ct, uint8_t pt, void* sks)
 {
 	FheBool* bool_result = NULL;
@@ -1511,6 +1959,17 @@ void* scalar_lt_fhe_uint64(void* ct, uint64_t pt, void* sks)
 	return result;
 }
 
+void* min_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_min(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* min_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
 	FheUint8* result = NULL;
@@ -1551,6 +2010,17 @@ void* min_fhe_uint64(void* ct1, void* ct2, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint64_min(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_min_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_min(ct, pt, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -1599,6 +2069,17 @@ void* scalar_min_fhe_uint64(void* ct, uint64_t pt, void* sks)
 	return result;
 }
 
+void* max_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_max(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* max_fhe_uint8(void* ct1, void* ct2, void* sks)
 {
 	FheUint8* result = NULL;
@@ -1639,6 +2120,17 @@ void* max_fhe_uint64(void* ct1, void* ct2, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint64_max(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_max_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_max(ct, pt, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -1687,6 +2179,16 @@ void* scalar_max_fhe_uint64(void* ct, uint64_t pt, void* sks)
 	return result;
 }
 
+void* neg_fhe_uint4(void* ct, void* sks) {
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_neg(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* neg_fhe_uint8(void* ct, void* sks) {
 	FheUint8* result = NULL;
 
@@ -1727,6 +2229,26 @@ void* neg_fhe_uint64(void* ct, void* sks) {
 	return result;
 }
 
+void* not_fhe_bool(void* ct, void* sks) {
+	FheBool* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_bool_not(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* not_fhe_uint4(void* ct, void* sks) {
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_not(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* not_fhe_uint8(void* ct, void* sks) {
 	FheUint8* result = NULL;
 
@@ -1763,6 +2285,19 @@ void* not_fhe_uint64(void* ct, void* sks) {
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint64_not(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* if_then_else_fhe_uint4(void* condition, void* ct1, void* ct2, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	FheBool* cond = cast_4_bool(condition, sks);
+
+	const int r = fhe_uint4_if_then_else(cond, ct1, ct2, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -1819,6 +2354,18 @@ void* if_then_else_fhe_uint64(void* condition, void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+int decrypt_fhe_bool(void* cks, void* ct, bool* res)
+{
+	*res = false;
+	return fhe_bool_decrypt(ct, cks, res);
+}
+
+int decrypt_fhe_uint4(void* cks, void* ct, uint8_t* res)
+{
+	*res = 0;
+	return fhe_uint4_decrypt(ct, cks, res);
+}
+
 int decrypt_fhe_uint8(void* cks, void* ct, uint8_t* res)
 {
 	*res = 0;
@@ -1841,6 +2388,38 @@ int decrypt_fhe_uint64(void* cks, void* ct, uint64_t* res)
 {
 	*res = 0;
 	return fhe_uint64_decrypt(ct, cks, res);
+}
+
+void* public_key_encrypt_fhe_bool(void* pks, bool value) {
+	CompactFheBoolList* list = NULL;
+	FheBool* ct = NULL;
+
+	int r = compact_fhe_bool_list_try_encrypt_with_compact_public_key_bool(&value, 1, pks, &list);
+  	assert(r == 0);
+
+	r = compact_fhe_bool_list_expand(list, &ct, 1);
+	assert(r == 0);
+
+	r = compact_fhe_bool_list_destroy(list);
+	assert(r == 0);
+
+	return ct;
+}
+
+void* public_key_encrypt_fhe_uint4(void* pks, uint8_t value) {
+	CompactFheUint4List* list = NULL;
+	FheUint4* ct = NULL;
+
+	int r = compact_fhe_uint4_list_try_encrypt_with_compact_public_key_u8(&value, 1, pks, &list);
+  	assert(r == 0);
+
+	r = compact_fhe_uint4_list_expand(list, &ct, 1);
+	assert(r == 0);
+
+	r = compact_fhe_uint4_list_destroy(list);
+	assert(r == 0);
+
+	return ct;
 }
 
 void* public_key_encrypt_fhe_uint8(void* pks, uint8_t value) {
@@ -1907,6 +2486,28 @@ void* public_key_encrypt_fhe_uint64(void* pks, uint64_t value) {
 	return ct;
 }
 
+void* trivial_encrypt_fhe_bool(void* sks, bool value) {
+	FheBool* ct = NULL;
+
+	checked_set_server_key(sks);
+
+	int r = fhe_bool_try_encrypt_trivial_bool(value, &ct);
+  	assert(r == 0);
+
+	return ct;
+}
+
+void* trivial_encrypt_fhe_uint4(void* sks, uint8_t value) {
+	FheUint4* ct = NULL;
+
+	checked_set_server_key(sks);
+
+	int r = fhe_uint4_try_encrypt_trivial_u8(value, &ct);
+  	assert(r == 0);
+
+	return ct;
+}
+
 void* trivial_encrypt_fhe_uint8(void* sks, uint8_t value) {
 	FheUint8* ct = NULL;
 
@@ -1949,6 +2550,32 @@ void* trivial_encrypt_fhe_uint64(void* sks, uint64_t value) {
   	assert(r == 0);
 
 	return ct;
+}
+
+void public_key_encrypt_and_serialize_fhe_bool_list(void* pks, bool value, DynamicBuffer* out) {
+	CompactFheBoolList* list = NULL;
+
+	int r = compact_fhe_bool_list_try_encrypt_with_compact_public_key_bool(&value, 1, pks, &list);
+  	assert(r == 0);
+
+	r = compact_fhe_bool_list_serialize(list, out);
+	assert(r == 0);
+
+	r = compact_fhe_bool_list_destroy(list);
+	assert(r == 0);
+}
+
+void public_key_encrypt_and_serialize_fhe_uint4_list(void* pks, uint8_t value, DynamicBuffer* out) {
+	CompactFheUint4List* list = NULL;
+
+	int r = compact_fhe_uint4_list_try_encrypt_with_compact_public_key_u8(&value, 1, pks, &list);
+  	assert(r == 0);
+
+	r = compact_fhe_uint4_list_serialize(list, out);
+	assert(r == 0);
+
+	r = compact_fhe_uint4_list_destroy(list);
+	assert(r == 0);
 }
 
 void public_key_encrypt_and_serialize_fhe_uint8_list(void* pks, uint8_t value, DynamicBuffer* out) {
@@ -2003,6 +2630,57 @@ void public_key_encrypt_and_serialize_fhe_uint64_list(void* pks, uint64_t value,
 	assert(r == 0);
 }
 
+
+void* cast_4_8(void* ct, void* sks) {
+	FheUint8* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_cast_into_fhe_uint8(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_4_16(void* ct, void* sks) {
+	FheUint16* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_cast_into_fhe_uint16(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_4_32(void* ct, void* sks) {
+	FheUint32* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_cast_into_fhe_uint32(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_4_64(void* ct, void* sks) {
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_cast_into_fhe_uint64(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_8_4(void* ct, void* sks) {
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint8_cast_into_fhe_uint4(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* cast_8_16(void* ct, void* sks) {
 	FheUint16* result = NULL;
 
@@ -2029,6 +2707,16 @@ void* cast_8_64(void* ct, void* sks) {
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint8_cast_into_fhe_uint64(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_16_4(void* ct, void* sks) {
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint16_cast_into_fhe_uint4(ct, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -2063,6 +2751,16 @@ void* cast_16_64(void* ct, void* sks) {
 	return result;
 }
 
+void* cast_32_4(void* ct, void* sks) {
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint32_cast_into_fhe_uint4(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* cast_32_8(void* ct, void* sks) {
 	FheUint8* result = NULL;
 
@@ -2089,6 +2787,16 @@ void* cast_32_64(void* ct, void* sks) {
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint32_cast_into_fhe_uint64(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_64_4(void* ct, void* sks) {
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_cast_into_fhe_uint4(ct, &result);
 	if(r != 0) return NULL;
 	return result;
 }

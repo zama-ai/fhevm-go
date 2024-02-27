@@ -17,10 +17,12 @@ import (
 type FheUintType uint8
 
 const (
-	FheUint8  FheUintType = 0
-	FheUint16 FheUintType = 1
-	FheUint32 FheUintType = 2
-	FheUint64 FheUintType = 3
+	FheBool  FheUintType = 0
+	FheUint4  FheUintType = 1
+	FheUint8  FheUintType = 2
+	FheUint16 FheUintType = 3
+	FheUint32 FheUintType = 4
+	FheUint64 FheUintType = 5
 )
 
 func (t FheUintType) String() string {
@@ -39,7 +41,7 @@ func (t FheUintType) String() string {
 }
 
 func isValidFheType(t byte) bool {
-	if uint8(t) < uint8(FheUint8) || uint8(t) > uint8(FheUint64) {
+	if uint8(t) < uint8(FheBool) || uint8(t) > uint8(FheUint64) {
 		return false
 	}
 	return true
@@ -55,10 +57,33 @@ type TfheCiphertext struct {
 func (ct *TfheCiphertext) Type() FheUintType {
 	return ct.fheUintType
 }
+func boolBinaryNotSupportedOp(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+	return nil, errors.New("Bool is not supported")
+}
+
+func boolBinaryScalarNotSupportedOp(lhs unsafe.Pointer, rhs C.bool) (unsafe.Pointer, error) {
+	return nil, errors.New("Bool is not supported")
+}
+
+func boolUnaryNotSupportedOp(lhs unsafe.Pointer) (unsafe.Pointer, error) {
+	return nil, errors.New("Bool is not supported")
+}
 
 // Deserializes a TFHE ciphertext.
 func (ct *TfheCiphertext) Deserialize(in []byte, t FheUintType) error {
 	switch t {
+	case FheBool:
+		ptr := C.deserialize_fhe_bool(toDynamicBufferView((in)))
+		if ptr == nil {
+			return errors.New("FheBool ciphertext deserialization failed")
+		}
+		C.destroy_fhe_bool(ptr)
+	case FheUint4:
+		ptr := C.deserialize_fhe_uint4(toDynamicBufferView((in)))
+		if ptr == nil {
+			return errors.New("FheUint4 ciphertext deserialization failed")
+		}
+		C.destroy_fhe_uint4(ptr)
 	case FheUint8:
 		ptr := C.deserialize_fhe_uint8(toDynamicBufferView((in)))
 		if ptr == nil {
@@ -97,6 +122,28 @@ func (ct *TfheCiphertext) Deserialize(in []byte, t FheUintType) error {
 // will produce non-compact ciphertext serialziations.
 func (ct *TfheCiphertext) DeserializeCompact(in []byte, t FheUintType) error {
 	switch t {
+	case FheBool:
+		ptr := C.deserialize_compact_fhe_bool(toDynamicBufferView((in)))
+		if ptr == nil {
+			return errors.New("compact FheBool ciphertext deserialization failed")
+		}
+		var err error
+		ct.serialization, err = serialize(ptr, t)
+		C.destroy_fhe_bool(ptr)
+		if err != nil {
+			return err
+		}
+	case FheUint4:
+		ptr := C.deserialize_compact_fhe_uint4(toDynamicBufferView((in)))
+		if ptr == nil {
+			return errors.New("compact FheUint4 ciphertext deserialization failed")
+		}
+		var err error
+		ct.serialization, err = serialize(ptr, t)
+		C.destroy_fhe_uint4(ptr)
+		if err != nil {
+			return err
+		}
 	case FheUint8:
 		ptr := C.deserialize_compact_fhe_uint8(toDynamicBufferView((in)))
 		if ptr == nil {
@@ -155,6 +202,24 @@ func (ct *TfheCiphertext) Encrypt(value big.Int, t FheUintType) *TfheCiphertext 
 	var ptr unsafe.Pointer
 	var err error
 	switch t {
+	case FheBool:
+		val := false
+		if value.Uint64() > 0 {
+			val = true
+		}
+		ptr = C.public_key_encrypt_fhe_bool(pks, C.bool(val))
+		ct.serialization, err = serialize(ptr, t)
+		C.destroy_fhe_bool(ptr)
+		if err != nil {
+			panic(err)
+		}
+	case FheUint4:
+		ptr = C.public_key_encrypt_fhe_uint4(pks, C.uint8_t(value.Uint64()))
+		ct.serialization, err = serialize(ptr, t)
+		C.destroy_fhe_uint4(ptr)
+		if err != nil {
+			panic(err)
+		}
 	case FheUint8:
 		ptr = C.public_key_encrypt_fhe_uint8(pks, C.uint8_t(value.Uint64()))
 		ct.serialization, err = serialize(ptr, t)
@@ -195,6 +260,24 @@ func (ct *TfheCiphertext) TrivialEncrypt(value big.Int, t FheUintType) *TfheCiph
 	var ptr unsafe.Pointer
 	var err error
 	switch t {
+	case FheBool:
+		val := false
+		if value.Uint64() > 0 {
+			val = true
+		}
+		ptr = C.trivial_encrypt_fhe_bool(sks, C.bool(val))
+		ct.serialization, err = serialize(ptr, t)
+		C.destroy_fhe_bool(ptr)
+		if err != nil {
+			panic(err)
+		}
+	case FheUint4:
+		ptr = C.trivial_encrypt_fhe_uint4(sks, C.uint8_t(value.Uint64()))
+		ct.serialization, err = serialize(ptr, t)
+		C.destroy_fhe_uint4(ptr)
+		if err != nil {
+			panic(err)
+		}
 	case FheUint8:
 		ptr = C.trivial_encrypt_fhe_uint8(sks, C.uint8_t(value.Uint64()))
 		ct.serialization, err = serialize(ptr, t)
@@ -236,21 +319,66 @@ func (ct *TfheCiphertext) Serialize() []byte {
 }
 
 func (ct *TfheCiphertext) executeUnaryCiphertextOperation(rhs *TfheCiphertext,
-	op8 func(ct unsafe.Pointer) unsafe.Pointer,
-	op16 func(ct unsafe.Pointer) unsafe.Pointer,
-	op32 func(ct unsafe.Pointer) unsafe.Pointer,
-	op64 func(ct unsafe.Pointer) unsafe.Pointer) (*TfheCiphertext, error) {
+	opBool func(ct unsafe.Pointer) (unsafe.Pointer, error),
+	op4 func(ct unsafe.Pointer) (unsafe.Pointer, error),
+	op8 func(ct unsafe.Pointer) (unsafe.Pointer, error),
+	op16 func(ct unsafe.Pointer) (unsafe.Pointer, error),
+	op32 func(ct unsafe.Pointer) (unsafe.Pointer, error),
+	op64 func(ct unsafe.Pointer) (unsafe.Pointer, error)) (*TfheCiphertext, error) {
 
 	res := new(TfheCiphertext)
 	res.fheUintType = ct.fheUintType
 	res_ser := &C.DynamicBuffer{}
 	switch ct.fheUintType {
+	case FheBool:
+		ct_ptr := C.deserialize_fhe_bool(toDynamicBufferView((ct.serialization)))
+		if ct_ptr == nil {
+			return nil, errors.New("Bool unary op deserialization failed")
+		}
+		res_ptr, err := opBool(ct_ptr)
+		if (err != nil) {
+			return nil, err;
+		}
+		C.destroy_fhe_bool(ct_ptr)
+		if res_ptr == nil {
+			return nil, errors.New("Bool unary op failed")
+		}
+		ret := C.serialize_fhe_bool(res_ptr, res_ser)
+		C.destroy_fhe_bool(res_ptr)
+		if ret != 0 {
+			return nil, errors.New("Bool unary op serialization failed")
+		}
+		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
+		C.destroy_dynamic_buffer(res_ser)
+	case FheUint4:
+		ct_ptr := C.deserialize_fhe_uint4(toDynamicBufferView((ct.serialization)))
+		if ct_ptr == nil {
+			return nil, errors.New("8 bit unary op deserialization failed")
+		}
+		res_ptr, err := op4(ct_ptr)
+		if (err != nil) {
+			return nil, err;
+		}
+		C.destroy_fhe_uint4(ct_ptr)
+		if res_ptr == nil {
+			return nil, errors.New("8 bit unary op failed")
+		}
+		ret := C.serialize_fhe_uint4(res_ptr, res_ser)
+		C.destroy_fhe_uint4(res_ptr)
+		if ret != 0 {
+			return nil, errors.New("8 bit unary op serialization failed")
+		}
+		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
+		C.destroy_dynamic_buffer(res_ser)
 	case FheUint8:
 		ct_ptr := C.deserialize_fhe_uint8(toDynamicBufferView((ct.serialization)))
 		if ct_ptr == nil {
 			return nil, errors.New("8 bit unary op deserialization failed")
 		}
-		res_ptr := op8(ct_ptr)
+		res_ptr, err := op8(ct_ptr)
+		if (err != nil) {
+			return nil, err;
+		}
 		C.destroy_fhe_uint8(ct_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("8 bit unary op failed")
@@ -267,7 +395,10 @@ func (ct *TfheCiphertext) executeUnaryCiphertextOperation(rhs *TfheCiphertext,
 		if ct_ptr == nil {
 			return nil, errors.New("16 bit unary op deserialization failed")
 		}
-		res_ptr := op16(ct_ptr)
+		res_ptr, err := op16(ct_ptr)
+		if (err != nil) {
+			return nil, err;
+		}
 		C.destroy_fhe_uint16(ct_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("16 bit op failed")
@@ -284,7 +415,10 @@ func (ct *TfheCiphertext) executeUnaryCiphertextOperation(rhs *TfheCiphertext,
 		if ct_ptr == nil {
 			return nil, errors.New("32 bit unary op deserialization failed")
 		}
-		res_ptr := op32(ct_ptr)
+		res_ptr, err := op16(ct_ptr)
+		if (err != nil) {
+			return nil, err;
+		}
 		C.destroy_fhe_uint32(ct_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("32 bit op failed")
@@ -301,7 +435,10 @@ func (ct *TfheCiphertext) executeUnaryCiphertextOperation(rhs *TfheCiphertext,
 		if ct_ptr == nil {
 			return nil, errors.New("64 bit unary op deserialization failed")
 		}
-		res_ptr := op64(ct_ptr)
+		res_ptr, err := op64(ct_ptr)
+		if (err != nil) {
+			return nil, err;
+		}
 		C.destroy_fhe_uint64(ct_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("64 bit op failed")
@@ -321,10 +458,12 @@ func (ct *TfheCiphertext) executeUnaryCiphertextOperation(rhs *TfheCiphertext,
 }
 
 func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
-	op8 func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
-	op16 func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
-	op32 func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
-	op64 func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer) (*TfheCiphertext, error) {
+	opBool func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error),
+	op4 func(lhs unsafe.Pointer, rhs unsafe.Pointer)  (unsafe.Pointer, error),
+	op8 func(lhs unsafe.Pointer, rhs unsafe.Pointer)  (unsafe.Pointer, error),
+	op16 func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error),
+	op32 func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error),
+	op64 func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error)) (*TfheCiphertext, error) {
 	if lhs.fheUintType != rhs.fheUintType {
 		return nil, errors.New("binary operations are only well-defined for identical types")
 	}
@@ -333,6 +472,58 @@ func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 	res.fheUintType = lhs.fheUintType
 	res_ser := &C.DynamicBuffer{}
 	switch lhs.fheUintType {
+	case FheBool:
+		lhs_ptr := C.deserialize_fhe_bool(toDynamicBufferView((lhs.serialization)))
+		if lhs_ptr == nil {
+			return nil, errors.New("bool binary op deserialization failed")
+		}
+		rhs_ptr := C.deserialize_fhe_bool(toDynamicBufferView((rhs.serialization)))
+		if rhs_ptr == nil {
+			C.destroy_fhe_bool(lhs_ptr)
+			return nil, errors.New("bool binary op deserialization failed")
+		}
+		res_ptr, err := opBool(lhs_ptr, rhs_ptr)
+		if (err != nil) {
+			return nil, err;
+		}
+		C.destroy_fhe_bool(lhs_ptr)
+		C.destroy_fhe_bool(rhs_ptr)
+		if res_ptr == nil {
+			return nil, errors.New("bool binary op failed")
+		}
+		ret := C.serialize_fhe_bool(res_ptr, res_ser)
+		C.destroy_fhe_bool(res_ptr)
+		if ret != 0 {
+			return nil, errors.New("bool binary op serialization failed")
+		}
+		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
+		C.destroy_dynamic_buffer(res_ser)
+	case FheUint4:
+		lhs_ptr := C.deserialize_fhe_uint4(toDynamicBufferView((lhs.serialization)))
+		if lhs_ptr == nil {
+			return nil, errors.New("4 bit binary op deserialization failed")
+		}
+		rhs_ptr := C.deserialize_fhe_uint4(toDynamicBufferView((rhs.serialization)))
+		if rhs_ptr == nil {
+			C.destroy_fhe_uint4(lhs_ptr)
+			return nil, errors.New("4 bit binary op deserialization failed")
+		}
+		res_ptr, err := op4(lhs_ptr, rhs_ptr)
+		if (err != nil) {
+			return nil, err;
+		}
+		C.destroy_fhe_uint4(lhs_ptr)
+		C.destroy_fhe_uint4(rhs_ptr)
+		if res_ptr == nil {
+			return nil, errors.New("4 bit binary op failed")
+		}
+		ret := C.serialize_fhe_uint4(res_ptr, res_ser)
+		C.destroy_fhe_uint4(res_ptr)
+		if ret != 0 {
+			return nil, errors.New("4 bit binary op serialization failed")
+		}
+		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
+		C.destroy_dynamic_buffer(res_ser)
 	case FheUint8:
 		lhs_ptr := C.deserialize_fhe_uint8(toDynamicBufferView((lhs.serialization)))
 		if lhs_ptr == nil {
@@ -343,7 +534,10 @@ func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 			C.destroy_fhe_uint8(lhs_ptr)
 			return nil, errors.New("8 bit binary op deserialization failed")
 		}
-		res_ptr := op8(lhs_ptr, rhs_ptr)
+		res_ptr, err := op8(lhs_ptr, rhs_ptr)
+		if (err != nil) {
+			return nil, err;
+		}
 		C.destroy_fhe_uint8(lhs_ptr)
 		C.destroy_fhe_uint8(rhs_ptr)
 		if res_ptr == nil {
@@ -366,7 +560,10 @@ func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 			C.destroy_fhe_uint16(lhs_ptr)
 			return nil, errors.New("16 bit binary op deserialization failed")
 		}
-		res_ptr := op16(lhs_ptr, rhs_ptr)
+		res_ptr, err := op16(lhs_ptr, rhs_ptr)
+		if (err != nil) {
+			return nil, err;
+		}
 		C.destroy_fhe_uint16(lhs_ptr)
 		C.destroy_fhe_uint16(rhs_ptr)
 		if res_ptr == nil {
@@ -389,7 +586,10 @@ func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 			C.destroy_fhe_uint32(lhs_ptr)
 			return nil, errors.New("32 bit binary op deserialization failed")
 		}
-		res_ptr := op32(lhs_ptr, rhs_ptr)
+		res_ptr, err := op32(lhs_ptr, rhs_ptr)
+		if (err != nil) {
+			return nil, err;
+		}
 		C.destroy_fhe_uint32(lhs_ptr)
 		C.destroy_fhe_uint32(rhs_ptr)
 		if res_ptr == nil {
@@ -412,7 +612,10 @@ func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 			C.destroy_fhe_uint64(lhs_ptr)
 			return nil, errors.New("64 bit binary op deserialization failed")
 		}
-		res_ptr := op64(lhs_ptr, rhs_ptr)
+		res_ptr, err := op64(lhs_ptr, rhs_ptr)
+		if (err != nil) {
+			return nil, err;
+		}
 		C.destroy_fhe_uint64(lhs_ptr)
 		C.destroy_fhe_uint64(rhs_ptr)
 		if res_ptr == nil {
@@ -433,6 +636,7 @@ func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 }
 
 func (first *TfheCiphertext) executeTernaryCiphertextOperation(lhs *TfheCiphertext, rhs *TfheCiphertext,
+	op4 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
 	op8 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
 	op16 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
 	op32 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
@@ -445,6 +649,35 @@ func (first *TfheCiphertext) executeTernaryCiphertextOperation(lhs *TfheCipherte
 	res.fheUintType = lhs.fheUintType
 	res_ser := &C.DynamicBuffer{}
 	switch lhs.fheUintType {
+	case FheUint4:
+		lhs_ptr := C.deserialize_fhe_uint4(toDynamicBufferView((lhs.serialization)))
+		if lhs_ptr == nil {
+			return nil, errors.New("4 bit binary op deserialization failed")
+		}
+		rhs_ptr := C.deserialize_fhe_uint4(toDynamicBufferView((rhs.serialization)))
+		if rhs_ptr == nil {
+			C.destroy_fhe_uint4(lhs_ptr)
+			return nil, errors.New("4 bit binary op deserialization failed")
+		}
+		first_ptr := C.deserialize_fhe_uint4(toDynamicBufferView((first.serialization)))
+		if first_ptr == nil {
+			C.destroy_fhe_uint4(lhs_ptr)
+			C.destroy_fhe_uint4(rhs_ptr)
+			return nil, errors.New("8 bit binary op deserialization failed")
+		}
+		res_ptr := op4(first_ptr, lhs_ptr, rhs_ptr)
+		C.destroy_fhe_uint4(lhs_ptr)
+		C.destroy_fhe_uint4(rhs_ptr)
+		if res_ptr == nil {
+			return nil, errors.New("4 bit binary op failed")
+		}
+		ret := C.serialize_fhe_uint4(res_ptr, res_ser)
+		C.destroy_fhe_uint4(res_ptr)
+		if ret != 0 {
+			return nil, errors.New("4 bit binary op serialization failed")
+		}
+		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
+		C.destroy_dynamic_buffer(res_ser)
 	case FheUint8:
 		lhs_ptr := C.deserialize_fhe_uint8(toDynamicBufferView((lhs.serialization)))
 		if lhs_ptr == nil {
@@ -562,28 +795,75 @@ func (first *TfheCiphertext) executeTernaryCiphertextOperation(lhs *TfheCipherte
 		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
 		C.destroy_dynamic_buffer(res_ser)
 	default:
-		panic("binary op unexpected ciphertext type")
+		panic("ternary op unexpected ciphertext type")
 	}
 	res.computeHash()
 	return res, nil
 }
 
 func (lhs *TfheCiphertext) executeBinaryScalarOperation(rhs uint64,
-	op8 func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer,
-	op16 func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer,
-	op32 func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer,
-	op64 func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer) (*TfheCiphertext, error) {
+	opBool func(lhs unsafe.Pointer, rhs C.bool) (unsafe.Pointer, error),
+	op4 func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error),
+	op8 func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error),
+	op16 func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error),
+	op32 func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error),
+	op64 func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error)) (*TfheCiphertext, error) {
 	res := new(TfheCiphertext)
 	res.fheUintType = lhs.fheUintType
 	res_ser := &C.DynamicBuffer{}
 	switch lhs.fheUintType {
+	case FheBool:
+		lhs_ptr := C.deserialize_fhe_bool(toDynamicBufferView((lhs.serialization)))
+		if lhs_ptr == nil {
+			return nil, errors.New("Bool scalar op deserialization failed")
+		}
+		scalar := C.bool(rhs == 1)
+		res_ptr, err := opBool(lhs_ptr, scalar)
+		if (err != nil) {
+			return nil, err;
+		}
+		C.destroy_fhe_bool(lhs_ptr)
+		if res_ptr == nil {
+			return nil, errors.New("Bool scalar op failed")
+		}
+		ret := C.serialize_fhe_bool(res_ptr, res_ser)
+		C.destroy_fhe_bool(res_ptr)
+		if ret != 0 {
+			return nil, errors.New("8 bit scalar op serialization failed")
+		}
+		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
+		C.destroy_dynamic_buffer(res_ser)
+	case FheUint4:
+		lhs_ptr := C.deserialize_fhe_uint4(toDynamicBufferView((lhs.serialization)))
+		if lhs_ptr == nil {
+			return nil, errors.New("4 bit scalar op deserialization failed")
+		}
+		scalar := C.uint8_t(rhs)
+		res_ptr, err := op4(lhs_ptr, scalar)
+		if (err != nil) {
+			return nil, err;
+		}
+		C.destroy_fhe_uint4(lhs_ptr)
+		if res_ptr == nil {
+			return nil, errors.New("4 bit scalar op failed")
+		}
+		ret := C.serialize_fhe_uint8(res_ptr, res_ser)
+		C.destroy_fhe_uint4(res_ptr)
+		if ret != 0 {
+			return nil, errors.New("4 bit scalar op serialization failed")
+		}
+		res.serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
+		C.destroy_dynamic_buffer(res_ser)
 	case FheUint8:
 		lhs_ptr := C.deserialize_fhe_uint8(toDynamicBufferView((lhs.serialization)))
 		if lhs_ptr == nil {
 			return nil, errors.New("8 bit scalar op deserialization failed")
 		}
 		scalar := C.uint8_t(rhs)
-		res_ptr := op8(lhs_ptr, scalar)
+		res_ptr, err := op8(lhs_ptr, scalar)
+		if (err != nil) {
+			return nil, err;
+		}
 		C.destroy_fhe_uint8(lhs_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("8 bit scalar op failed")
@@ -601,7 +881,10 @@ func (lhs *TfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 			return nil, errors.New("16 bit scalar op deserialization failed")
 		}
 		scalar := C.uint16_t(rhs)
-		res_ptr := op16(lhs_ptr, scalar)
+		res_ptr, err := op16(lhs_ptr, scalar)
+		if (err != nil) {
+			return nil, err;
+		}
 		C.destroy_fhe_uint16(lhs_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("16 bit scalar op failed")
@@ -619,7 +902,10 @@ func (lhs *TfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 			return nil, errors.New("32 bit scalar op deserialization failed")
 		}
 		scalar := C.uint32_t(rhs)
-		res_ptr := op32(lhs_ptr, scalar)
+		res_ptr, err := op32(lhs_ptr, scalar)
+		if (err != nil) {
+			return nil, err;
+		}
 		C.destroy_fhe_uint32(lhs_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("32 bit scalar op failed")
@@ -637,7 +923,10 @@ func (lhs *TfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 			return nil, errors.New("64 bit scalar op deserialization failed")
 		}
 		scalar := C.uint64_t(rhs)
-		res_ptr := op64(lhs_ptr, scalar)
+		res_ptr, err := op64(lhs_ptr, scalar)
+		if (err != nil) {
+			return nil, err;
+		}
 		C.destroy_fhe_uint64(lhs_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("64 bit scalar op failed")
@@ -658,535 +947,676 @@ func (lhs *TfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 
 func (lhs *TfheCiphertext) Add(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.add_fhe_uint8(lhs, rhs, sks)
+		boolBinaryNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.add_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.add_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.add_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.add_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.add_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.add_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.add_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.add_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) ScalarAdd(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
-		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
-			return C.scalar_add_fhe_uint8(lhs, rhs, sks)
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_add_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
-			return C.scalar_add_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_add_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
-			return C.scalar_add_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_add_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
-			return C.scalar_add_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_add_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_add_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Sub(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.sub_fhe_uint8(lhs, rhs, sks)
+		boolBinaryNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.sub_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.sub_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.sub_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.sub_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.sub_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.sub_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.sub_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.sub_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) ScalarSub(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
-		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
-			return C.scalar_sub_fhe_uint8(lhs, rhs, sks)
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_sub_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
-			return C.scalar_sub_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_sub_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
-			return C.scalar_sub_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_sub_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
-			return C.scalar_sub_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_sub_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_sub_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Mul(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.mul_fhe_uint8(lhs, rhs, sks)
+		boolBinaryNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.mul_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.mul_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.mul_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.mul_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.mul_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.mul_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.mul_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.mul_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) ScalarMul(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
-		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
-			return C.scalar_mul_fhe_uint8(lhs, rhs, sks)
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_mul_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
-			return C.scalar_mul_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_mul_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
-			return C.scalar_mul_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_mul_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
-			return C.scalar_mul_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_mul_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_mul_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) ScalarDiv(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
-		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
-			return C.scalar_div_fhe_uint8(lhs, rhs, sks)
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_div_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
-			return C.scalar_div_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_div_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
-			return C.scalar_div_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_div_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
-			return C.scalar_div_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_div_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_div_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) ScalarRem(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
-		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
-			return C.scalar_rem_fhe_uint8(lhs, rhs, sks)
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_rem_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
-			return C.scalar_rem_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_rem_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
-			return C.scalar_rem_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_rem_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
-			return C.scalar_rem_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_rem_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_rem_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Bitand(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.bitand_fhe_uint8(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitand_fhe_bool(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.bitand_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitand_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.bitand_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitand_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.bitand_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitand_fhe_uint16(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitand_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitand_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Bitor(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.bitor_fhe_uint8(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitor_fhe_bool(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.bitor_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitor_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.bitor_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitor_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.bitor_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitor_fhe_uint16(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitor_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitor_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Bitxor(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.bitxor_fhe_uint8(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitxor_fhe_bool(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.bitxor_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitxor_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.bitxor_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitxor_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.bitxor_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitxor_fhe_uint16(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitxor_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.bitxor_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Shl(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.shl_fhe_uint8(lhs, rhs, sks)
+		boolBinaryNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.shl_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.shl_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.shl_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.shl_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.shl_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.shl_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.shl_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.shl_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) ScalarShl(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
-		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
-			return C.scalar_shl_fhe_uint8(lhs, rhs, sks)
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_shl_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
-			return C.scalar_shl_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_shl_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
-			return C.scalar_shl_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_shl_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
-			return C.scalar_shl_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_shl_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_shl_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Shr(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.shr_fhe_uint8(lhs, rhs, sks)
+		boolBinaryNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.shr_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.shr_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.shr_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.shr_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.shr_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.shr_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.shr_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.shr_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) ScalarShr(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
-		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
-			return C.scalar_shr_fhe_uint8(lhs, rhs, sks)
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_shr_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
-			return C.scalar_shr_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_shr_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
-			return C.scalar_shr_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_shr_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
-			return C.scalar_shr_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_shr_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_shr_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Eq(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.eq_fhe_uint8(lhs, rhs, sks)
+		boolBinaryNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.eq_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.eq_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.eq_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.eq_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.eq_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.eq_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.eq_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.eq_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) ScalarEq(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
-		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
-			return C.scalar_eq_fhe_uint8(lhs, rhs, sks)
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_eq_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
-			return C.scalar_eq_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_eq_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
-			return C.scalar_eq_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_eq_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
-			return C.scalar_eq_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_eq_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_eq_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Ne(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.ne_fhe_uint8(lhs, rhs, sks)
+		boolBinaryNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.ne_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.ne_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.ne_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.ne_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.ne_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.ne_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.ne_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.ne_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) ScalarNe(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
-		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
-			return C.scalar_ne_fhe_uint8(lhs, rhs, sks)
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_ne_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
-			return C.scalar_ne_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_ne_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
-			return C.scalar_ne_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_ne_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
-			return C.scalar_ne_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_ne_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_ne_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Ge(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.ge_fhe_uint8(lhs, rhs, sks)
+		boolBinaryNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.ge_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.ge_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.ge_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.ge_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.ge_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.ge_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.ge_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.ge_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) ScalarGe(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
-		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
-			return C.scalar_ge_fhe_uint8(lhs, rhs, sks)
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_ge_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
-			return C.scalar_ge_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_ge_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
-			return C.scalar_ge_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_ge_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
-			return C.scalar_ge_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_ge_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_ge_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Gt(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.gt_fhe_uint8(lhs, rhs, sks)
+		boolBinaryNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.gt_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.gt_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.gt_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.gt_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.gt_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.gt_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.gt_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.gt_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) ScalarGt(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
-		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
-			return C.scalar_gt_fhe_uint8(lhs, rhs, sks)
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_gt_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
-			return C.scalar_gt_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_gt_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
-			return C.scalar_gt_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_gt_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
-			return C.scalar_gt_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_gt_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_gt_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Le(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.le_fhe_uint8(lhs, rhs, sks)
+		boolBinaryNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.le_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.le_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.le_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.le_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.le_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.le_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.le_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.le_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) ScalarLe(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
-		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
-			return C.scalar_le_fhe_uint8(lhs, rhs, sks)
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_le_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
-			return C.scalar_le_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_le_fhe_uint8(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_le_fhe_uint16(lhs, rhs, sks), nil
 
 		},
-		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
-			return C.scalar_le_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_le_fhe_uint32(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
-			return C.scalar_le_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_le_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Lt(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.lt_fhe_uint8(lhs, rhs, sks)
+		boolBinaryNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.lt_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.lt_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.lt_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.lt_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.lt_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.lt_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.lt_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.lt_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) ScalarLt(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
-		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
-			return C.scalar_lt_fhe_uint8(lhs, rhs, sks)
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_lt_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
-			return C.scalar_lt_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_lt_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
-			return C.scalar_lt_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_lt_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
-			return C.scalar_lt_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_lt_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_lt_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Min(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.min_fhe_uint8(lhs, rhs, sks)
+		boolBinaryNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.min_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.min_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.min_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.min_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.min_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.min_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.min_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.min_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) ScalarMin(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
-		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
-			return C.scalar_min_fhe_uint8(lhs, rhs, sks)
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_min_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
-			return C.scalar_min_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_min_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
-			return C.scalar_min_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_min_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
-			return C.scalar_min_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_min_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_min_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Max(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.max_fhe_uint8(lhs, rhs, sks)
+		boolBinaryNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.max_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.max_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.max_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.max_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.max_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
-			return C.max_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.max_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.max_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) ScalarMax(rhs uint64) (*TfheCiphertext, error) {
 	return lhs.executeBinaryScalarOperation(rhs,
-		func(lhs unsafe.Pointer, rhs C.uint8_t) unsafe.Pointer {
-			return C.scalar_max_fhe_uint8(lhs, rhs, sks)
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_max_fhe_uint4(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint16_t) unsafe.Pointer {
-			return C.scalar_max_fhe_uint16(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_max_fhe_uint8(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint32_t) unsafe.Pointer {
-			return C.scalar_max_fhe_uint32(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_max_fhe_uint16(lhs, rhs, sks), nil
 		},
-		func(lhs unsafe.Pointer, rhs C.uint64_t) unsafe.Pointer {
-			return C.scalar_max_fhe_uint64(lhs, rhs, sks)
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_max_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_max_fhe_uint64(lhs, rhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Neg() (*TfheCiphertext, error) {
 	return lhs.executeUnaryCiphertextOperation(lhs,
-		func(lhs unsafe.Pointer) unsafe.Pointer {
-			return C.neg_fhe_uint8(lhs, sks)
+		boolUnaryNotSupportedOp,
+		func(lhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.neg_fhe_uint4(lhs, sks), nil
 		},
-		func(lhs unsafe.Pointer) unsafe.Pointer {
-			return C.neg_fhe_uint16(lhs, sks)
+		func(lhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.neg_fhe_uint8(lhs, sks), nil
 		},
-		func(lhs unsafe.Pointer) unsafe.Pointer {
-			return C.neg_fhe_uint32(lhs, sks)
+		func(lhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.neg_fhe_uint16(lhs, sks), nil
 		},
-		func(lhs unsafe.Pointer) unsafe.Pointer {
-			return C.neg_fhe_uint64(lhs, sks)
+		func(lhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.neg_fhe_uint32(lhs, sks), nil
+		},
+		func(lhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.neg_fhe_uint64(lhs, sks), nil
 		})
 }
 
 func (lhs *TfheCiphertext) Not() (*TfheCiphertext, error) {
 	return lhs.executeUnaryCiphertextOperation(lhs,
-		func(lhs unsafe.Pointer) unsafe.Pointer {
-			return C.not_fhe_uint8(lhs, sks)
+		boolUnaryNotSupportedOp,
+		func(lhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.not_fhe_uint4(lhs, sks), nil
 		},
-		func(lhs unsafe.Pointer) unsafe.Pointer {
-			return C.not_fhe_uint16(lhs, sks)
+		func(lhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.not_fhe_uint8(lhs, sks), nil
 		},
-		func(lhs unsafe.Pointer) unsafe.Pointer {
-			return C.not_fhe_uint32(lhs, sks)
+		func(lhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.not_fhe_uint16(lhs, sks), nil
 		},
-		func(lhs unsafe.Pointer) unsafe.Pointer {
-			return C.not_fhe_uint64(lhs, sks)
+		func(lhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.not_fhe_uint32(lhs, sks), nil
+		},
+		func(lhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.not_fhe_uint64(lhs, sks), nil
 		})
 }
 
 func (condition *TfheCiphertext) IfThenElse(lhs *TfheCiphertext, rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return condition.executeTernaryCiphertextOperation(lhs, rhs,
+		func(condition unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.if_then_else_fhe_uint4(condition, lhs, rhs, sks)
+		},
 		func(condition unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.if_then_else_fhe_uint8(condition, lhs, rhs, sks)
 		},
@@ -1210,8 +1640,178 @@ func (ct *TfheCiphertext) CastTo(castToType FheUintType) (*TfheCiphertext, error
 	res.fheUintType = castToType
 
 	switch ct.fheUintType {
+	case FheBool:
+		switch castToType {
+		case FheUint4:
+			from_ptr := C.deserialize_fhe_bool(toDynamicBufferView(ct.serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheBool ciphertext")
+			}
+			to_ptr := C.cast_bool_4(from_ptr, sks)
+			C.destroy_fhe_bool(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheBool to FheUint8")
+			}
+			var err error
+			res.serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint4(to_ptr)
+			if err != nil {
+				return nil, err
+			}
+		case FheUint8:
+			from_ptr := C.deserialize_fhe_bool(toDynamicBufferView(ct.serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheBool ciphertext")
+			}
+			to_ptr := C.cast_bool_8(from_ptr, sks)
+			C.destroy_fhe_bool(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheBool to FheUint8")
+			}
+			var err error
+			res.serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint8(to_ptr)
+			if err != nil {
+				return nil, err
+			}
+		case FheUint16:
+			from_ptr := C.deserialize_fhe_bool(toDynamicBufferView(ct.serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheBool ciphertext")
+			}
+			to_ptr := C.cast_bool_16(from_ptr, sks)
+			C.destroy_fhe_bool(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheBool to FheUint16")
+			}
+			var err error
+			res.serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint16(to_ptr)
+			if err != nil {
+				return nil, err
+			}
+		case FheUint32:
+			from_ptr := C.deserialize_fhe_bool(toDynamicBufferView(ct.serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheBool ciphertext")
+			}
+			to_ptr := C.cast_bool_32(from_ptr, sks)
+			C.destroy_fhe_bool(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheBool to FheUint32")
+			}
+			var err error
+			res.serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint32(to_ptr)
+			if err != nil {
+				return nil, err
+			}
+		case FheUint64:
+			from_ptr := C.deserialize_fhe_bool(toDynamicBufferView(ct.serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheBool ciphertext")
+			}
+			to_ptr := C.cast_bool_64(from_ptr, sks)
+			C.destroy_fhe_bool(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheBool to FheUint64")
+			}
+			var err error
+			res.serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint64(to_ptr)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			panic("castTo: unexpected type to cast to")
+		}
+		case FheUint4:
+			switch castToType {
+			case FheUint8:
+				from_ptr := C.deserialize_fhe_uint4(toDynamicBufferView(ct.serialization))
+				if from_ptr == nil {
+					return nil, errors.New("castTo failed to deserialize FheUint4 ciphertext")
+				}
+				to_ptr := C.cast_4_8(from_ptr, sks)
+				C.destroy_fhe_uint4(from_ptr)
+				if to_ptr == nil {
+					return nil, errors.New("castTo failed to cast FheUint4 to FheUint16")
+				}
+				var err error
+				res.serialization, err = serialize(to_ptr, castToType)
+				C.destroy_fhe_uint8(to_ptr)
+				if err != nil {
+					return nil, err
+				}
+			case FheUint16:
+				from_ptr := C.deserialize_fhe_uint4(toDynamicBufferView(ct.serialization))
+				if from_ptr == nil {
+					return nil, errors.New("castTo failed to deserialize FheUint4 ciphertext")
+				}
+				to_ptr := C.cast_4_16(from_ptr, sks)
+				C.destroy_fhe_uint4(from_ptr)
+				if to_ptr == nil {
+					return nil, errors.New("castTo failed to cast FheUint4 to FheUint16")
+				}
+				var err error
+				res.serialization, err = serialize(to_ptr, castToType)
+				C.destroy_fhe_uint16(to_ptr)
+				if err != nil {
+					return nil, err
+				}
+			case FheUint32:
+				from_ptr := C.deserialize_fhe_uint4(toDynamicBufferView(ct.serialization))
+				if from_ptr == nil {
+					return nil, errors.New("castTo failed to deserialize FheUint4 ciphertext")
+				}
+				to_ptr := C.cast_4_32(from_ptr, sks)
+				C.destroy_fhe_uint4(from_ptr)
+				if to_ptr == nil {
+					return nil, errors.New("castTo failed to cast FheUint4 to FheUint32")
+				}
+				var err error
+				res.serialization, err = serialize(to_ptr, castToType)
+				C.destroy_fhe_uint32(to_ptr)
+				if err != nil {
+					return nil, err
+				}
+			case FheUint64:
+				from_ptr := C.deserialize_fhe_uint4(toDynamicBufferView(ct.serialization))
+				if from_ptr == nil {
+					return nil, errors.New("castTo failed to deserialize FheUint4 ciphertext")
+				}
+				to_ptr := C.cast_4_64(from_ptr, sks)
+				C.destroy_fhe_uint4(from_ptr)
+				if to_ptr == nil {
+					return nil, errors.New("castTo failed to cast FheUint4 to FheUint64")
+				}
+				var err error
+				res.serialization, err = serialize(to_ptr, castToType)
+				C.destroy_fhe_uint64(to_ptr)
+				if err != nil {
+					return nil, err
+				}
+			default:
+				panic("castTo: unexpected type to cast to")
+			}
 	case FheUint8:
 		switch castToType {
+		case FheUint4:
+			from_ptr := C.deserialize_fhe_uint8(toDynamicBufferView(ct.serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheUint8 ciphertext")
+			}
+			to_ptr := C.cast_8_4(from_ptr, sks)
+			C.destroy_fhe_uint8(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheUint8 to FheUint4")
+			}
+			var err error
+			res.serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint4(to_ptr)
+			if err != nil {
+				return nil, err
+			}
 		case FheUint16:
 			from_ptr := C.deserialize_fhe_uint8(toDynamicBufferView(ct.serialization))
 			if from_ptr == nil {
@@ -1265,6 +1865,22 @@ func (ct *TfheCiphertext) CastTo(castToType FheUintType) (*TfheCiphertext, error
 		}
 	case FheUint16:
 		switch castToType {
+		case FheUint4:
+			from_ptr := C.deserialize_fhe_uint16(toDynamicBufferView(ct.serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheUint16 ciphertext")
+			}
+			to_ptr := C.cast_16_4(from_ptr, sks)
+			C.destroy_fhe_uint16(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheUint16 to FheUint4")
+			}
+			var err error
+			res.serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint4(to_ptr)
+			if err != nil {
+				return nil, err
+			}
 		case FheUint8:
 			from_ptr := C.deserialize_fhe_uint16(toDynamicBufferView(ct.serialization))
 			if from_ptr == nil {
@@ -1318,6 +1934,22 @@ func (ct *TfheCiphertext) CastTo(castToType FheUintType) (*TfheCiphertext, error
 		}
 	case FheUint32:
 		switch castToType {
+		case FheUint4:
+			from_ptr := C.deserialize_fhe_uint32(toDynamicBufferView(ct.serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheUint32 ciphertext")
+			}
+			to_ptr := C.cast_32_4(from_ptr, sks)
+			C.destroy_fhe_uint32(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheUint32 to FheUint4")
+			}
+			var err error
+			res.serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint4(to_ptr)
+			if err != nil {
+				return nil, err
+			}
 		case FheUint8:
 			from_ptr := C.deserialize_fhe_uint32(toDynamicBufferView(ct.serialization))
 			if from_ptr == nil {
@@ -1371,6 +2003,22 @@ func (ct *TfheCiphertext) CastTo(castToType FheUintType) (*TfheCiphertext, error
 		}
 	case FheUint64:
 		switch castToType {
+		case FheUint4:
+			from_ptr := C.deserialize_fhe_uint64(toDynamicBufferView(ct.serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheUint64 ciphertext")
+			}
+			to_ptr := C.cast_64_4(from_ptr, sks)
+			C.destroy_fhe_uint64(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheUint64 to FheUint4")
+			}
+			var err error
+			res.serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint4(to_ptr)
+			if err != nil {
+				return nil, err
+			}
 		case FheUint8:
 			from_ptr := C.deserialize_fhe_uint64(toDynamicBufferView(ct.serialization))
 			if from_ptr == nil {
@@ -1434,6 +2082,28 @@ func (ct *TfheCiphertext) Decrypt() (big.Int, error) {
 	var value uint64
 	var ret C.int
 	switch ct.fheUintType {
+	case FheBool:
+		ptr := C.deserialize_fhe_bool(toDynamicBufferView(ct.serialization))
+		if ptr == nil {
+			return *new(big.Int).SetUint64(0), errors.New("failed to deserialize FheBool")
+		}
+		var result C.bool
+		ret = C.decrypt_fhe_bool(cks, ptr, &result)
+		C.destroy_fhe_bool(ptr)
+		if (result) {
+			value = 1
+		} else {
+			value = 0
+		}
+	case FheUint4:
+		ptr := C.deserialize_fhe_uint4(toDynamicBufferView(ct.serialization))
+		if ptr == nil {
+			return *new(big.Int).SetUint64(0), errors.New("failed to deserialize FheUint4")
+		}
+		var result C.uint8_t
+		ret = C.decrypt_fhe_uint4(cks, ptr, &result)
+		C.destroy_fhe_uint4(ptr)
+		value = uint64(result)
 	case FheUint8:
 		ptr := C.deserialize_fhe_uint8(toDynamicBufferView(ct.serialization))
 		if ptr == nil {

@@ -25,6 +25,10 @@ func TestMain(m *testing.M) {
 func TfheEncryptDecrypt(t *testing.T, fheUintType FheUintType) {
 	var val big.Int
 	switch fheUintType {
+	case FheBool:
+		val.SetUint64(1)
+	case FheUint4:
+		val.SetUint64(2)
 	case FheUint8:
 		val.SetUint64(2)
 	case FheUint16:
@@ -45,6 +49,10 @@ func TfheEncryptDecrypt(t *testing.T, fheUintType FheUintType) {
 func TfheTrivialEncryptDecrypt(t *testing.T, fheUintType FheUintType) {
 	var val big.Int
 	switch fheUintType {
+	case FheBool:
+		val.SetUint64(1)
+	case FheUint4:
+		val.SetUint64(2)
 	case FheUint8:
 		val.SetUint64(2)
 	case FheUint16:
@@ -65,6 +73,10 @@ func TfheTrivialEncryptDecrypt(t *testing.T, fheUintType FheUintType) {
 func TfheSerializeDeserialize(t *testing.T, fheUintType FheUintType) {
 	var val big.Int
 	switch fheUintType {
+	case FheBool:
+		val = *big.NewInt(1)
+	case FheUint4:
+		val = *big.NewInt(2)
 	case FheUint8:
 		val = *big.NewInt(2)
 	case FheUint16:
@@ -91,6 +103,10 @@ func TfheSerializeDeserialize(t *testing.T, fheUintType FheUintType) {
 func TfheSerializeDeserializeCompact(t *testing.T, fheUintType FheUintType) {
 	var val uint64
 	switch fheUintType {
+	case FheBool:
+		val = 1
+	case FheUint4:
+		val = 2
 	case FheUint8:
 		val = 2
 	case FheUint16:
@@ -129,6 +145,10 @@ func TfheSerializeDeserializeCompact(t *testing.T, fheUintType FheUintType) {
 func TfheTrivialSerializeDeserialize(t *testing.T, fheUintType FheUintType) {
 	var val big.Int
 	switch fheUintType {
+	case FheBool:
+		val = *big.NewInt(1)
+	case FheUint4:
+		val = *big.NewInt(2)
 	case FheUint8:
 		val = *big.NewInt(2)
 	case FheUint16:
@@ -165,6 +185,10 @@ func TfheDeserializeFailure(t *testing.T, fheUintType FheUintType) {
 func TfheDeserializeCompact(t *testing.T, fheUintType FheUintType) {
 	var val uint64
 	switch fheUintType {
+	case FheBool:
+		val = 1
+	case FheUint4:
+		val = 2
 	case FheUint8:
 		val = 2
 	case FheUint16:
@@ -197,6 +221,9 @@ func TfheDeserializeCompactFailure(t *testing.T, fheUintType FheUintType) {
 func TfheAdd(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -225,6 +252,9 @@ func TfheAdd(t *testing.T, fheUintType FheUintType) {
 func TfheScalarAdd(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -251,6 +281,9 @@ func TfheScalarAdd(t *testing.T, fheUintType FheUintType) {
 func TfheSub(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -279,6 +312,9 @@ func TfheSub(t *testing.T, fheUintType FheUintType) {
 func TfheScalarSub(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -305,6 +341,9 @@ func TfheScalarSub(t *testing.T, fheUintType FheUintType) {
 func TfheMul(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -333,6 +372,9 @@ func TfheMul(t *testing.T, fheUintType FheUintType) {
 func TfheScalarMul(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -359,6 +401,9 @@ func TfheScalarMul(t *testing.T, fheUintType FheUintType) {
 func TfheScalarDiv(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(4)
+		b.SetUint64(2)
 	case FheUint8:
 		a.SetUint64(4)
 		b.SetUint64(2)
@@ -385,6 +430,9 @@ func TfheScalarDiv(t *testing.T, fheUintType FheUintType) {
 func TfheScalarRem(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(4)
+		b.SetUint64(2)
 	case FheUint8:
 		a.SetUint64(4)
 		b.SetUint64(2)
@@ -411,6 +459,12 @@ func TfheScalarRem(t *testing.T, fheUintType FheUintType) {
 func TfheBitAnd(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheBool:
+		a.SetUint64(1)
+		b.SetUint64(1)
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -439,6 +493,9 @@ func TfheBitAnd(t *testing.T, fheUintType FheUintType) {
 func TfheBitOr(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -467,6 +524,9 @@ func TfheBitOr(t *testing.T, fheUintType FheUintType) {
 func TfheBitXor(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -495,6 +555,9 @@ func TfheBitXor(t *testing.T, fheUintType FheUintType) {
 func TfheShl(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -523,6 +586,9 @@ func TfheShl(t *testing.T, fheUintType FheUintType) {
 func TfheScalarShl(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -549,6 +615,9 @@ func TfheScalarShl(t *testing.T, fheUintType FheUintType) {
 func TfheShr(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -577,6 +646,9 @@ func TfheShr(t *testing.T, fheUintType FheUintType) {
 func TfheScalarShr(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -603,6 +675,9 @@ func TfheScalarShr(t *testing.T, fheUintType FheUintType) {
 func TfheEq(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(2)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(2)
@@ -637,6 +712,9 @@ func TfheEq(t *testing.T, fheUintType FheUintType) {
 func TfheScalarEq(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -669,6 +747,9 @@ func TfheScalarEq(t *testing.T, fheUintType FheUintType) {
 func TfheNe(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(2)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(2)
@@ -703,6 +784,9 @@ func TfheNe(t *testing.T, fheUintType FheUintType) {
 func TfheScalarNe(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -735,6 +819,9 @@ func TfheScalarNe(t *testing.T, fheUintType FheUintType) {
 func TfheGe(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -767,6 +854,9 @@ func TfheGe(t *testing.T, fheUintType FheUintType) {
 func TfheScalarGe(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -792,6 +882,9 @@ func TfheScalarGe(t *testing.T, fheUintType FheUintType) {
 func TfheGt(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -824,6 +917,9 @@ func TfheGt(t *testing.T, fheUintType FheUintType) {
 func TfheScalarGt(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -849,6 +945,9 @@ func TfheScalarGt(t *testing.T, fheUintType FheUintType) {
 func TfheLe(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -881,6 +980,9 @@ func TfheLe(t *testing.T, fheUintType FheUintType) {
 func TfheScalarLe(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -906,6 +1008,9 @@ func TfheScalarLe(t *testing.T, fheUintType FheUintType) {
 func TfheLt(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -938,6 +1043,9 @@ func TfheLt(t *testing.T, fheUintType FheUintType) {
 func TfheScalarLt(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -963,6 +1071,9 @@ func TfheScalarLt(t *testing.T, fheUintType FheUintType) {
 func TfheMin(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -995,6 +1106,9 @@ func TfheMin(t *testing.T, fheUintType FheUintType) {
 func TfheScalarMin(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -1020,6 +1134,9 @@ func TfheScalarMin(t *testing.T, fheUintType FheUintType) {
 func TfheMax(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(4)
+		b.SetUint64(2)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -1052,6 +1169,9 @@ func TfheMax(t *testing.T, fheUintType FheUintType) {
 func TfheScalarMax(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -1079,6 +1199,9 @@ func TfheNeg(t *testing.T, fheUintType FheUintType) {
 	var expected uint64
 
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		expected = uint64(uint8(16 - a.Uint64()))
 	case FheUint8:
 		a.SetUint64(2)
 		expected = uint64(-uint8(a.Uint64()))
@@ -1105,6 +1228,9 @@ func TfheNot(t *testing.T, fheUintType FheUintType) {
 	var a big.Int
 	var expected uint64
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		expected = uint64(^uint8(a.Uint64()))
 	case FheUint8:
 		a.SetUint64(2)
 		expected = uint64(^uint8(a.Uint64()))
@@ -1133,6 +1259,9 @@ func TfheIfThenElse(t *testing.T, fheUintType FheUintType) {
 	condition.SetUint64(1)
 	condition2.SetUint64(0)
 	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
 	case FheUint8:
 		a.SetUint64(2)
 		b.SetUint64(1)
@@ -1169,6 +1298,8 @@ func TfheIfThenElse(t *testing.T, fheUintType FheUintType) {
 func TfheCast(t *testing.T, fheUintTypeFrom FheUintType, fheUintTypeTo FheUintType) {
 	var a big.Int
 	switch fheUintTypeFrom {
+	case FheUint4:
+		a.SetUint64(2)
 	case FheUint8:
 		a.SetUint64(2)
 	case FheUint16:
@@ -1181,6 +1312,8 @@ func TfheCast(t *testing.T, fheUintTypeFrom FheUintType, fheUintTypeTo FheUintTy
 
 	var modulus uint64
 	switch fheUintTypeTo {
+	case FheUint4:
+		modulus = uint64(math.Pow(2, 4))
 	case FheUint8:
 		modulus = uint64(math.Pow(2, 8))
 	case FheUint16:
@@ -1208,6 +1341,14 @@ func TfheCast(t *testing.T, fheUintTypeFrom FheUintType, fheUintTypeTo FheUintTy
 	}
 }
 
+func TestTfheEncryptDecryptBool(t *testing.T) {
+	TfheEncryptDecrypt(t, FheBool)
+}
+
+func TestTfheEncryptDecrypt4(t *testing.T) {
+	TfheEncryptDecrypt(t, FheUint4)
+}
+
 func TestTfheEncryptDecrypt8(t *testing.T) {
 	TfheEncryptDecrypt(t, FheUint8)
 }
@@ -1222,6 +1363,14 @@ func TestTfheEncryptDecrypt32(t *testing.T) {
 
 func TestTfheEncryptDecrypt64(t *testing.T) {
 	TfheEncryptDecrypt(t, FheUint64)
+}
+
+func TestTfheTrivialEncryptDecryptBool(t *testing.T) {
+	TfheTrivialEncryptDecrypt(t, FheBool)
+}
+
+func TestTfheTrivialEncryptDecrypt4(t *testing.T) {
+	TfheTrivialEncryptDecrypt(t, FheUint4)
 }
 
 func TestTfheTrivialEncryptDecrypt8(t *testing.T) {
@@ -1240,6 +1389,14 @@ func TestTfheTrivialEncryptDecrypt64(t *testing.T) {
 	TfheTrivialEncryptDecrypt(t, FheUint64)
 }
 
+func TestTfheSerializeDeserializeBool(t *testing.T) {
+	TfheSerializeDeserialize(t, FheBool)
+}
+
+func TestTfheSerializeDeserialize4(t *testing.T) {
+	TfheSerializeDeserialize(t, FheUint4)
+}
+
 func TestTfheSerializeDeserialize8(t *testing.T) {
 	TfheSerializeDeserialize(t, FheUint8)
 }
@@ -1256,8 +1413,12 @@ func TestTfheSerializeDeserialize64(t *testing.T) {
 	TfheSerializeDeserialize(t, FheUint64)
 }
 
-func TestTfheSerializeDeserializeCompact8(t *testing.T) {
-	TfheSerializeDeserializeCompact(t, FheUint8)
+func TestTfheSerializeDeserializeCompactBool(t *testing.T) {
+	TfheSerializeDeserializeCompact(t, FheBool)
+}
+
+func TestTfheSerializeDeserializeCompact4(t *testing.T) {
+	TfheSerializeDeserializeCompact(t, FheUint4)
 }
 
 func TestTfheSerializeDeserializeCompact16(t *testing.T) {
@@ -1270,6 +1431,14 @@ func TestTfheSerializeDeserializeCompact32(t *testing.T) {
 
 func TestTfheSerializeDeserializeCompact64(t *testing.T) {
 	TfheSerializeDeserializeCompact(t, FheUint64)
+}
+
+func TestTfheTrivialSerializeDeserializeBool(t *testing.T) {
+	TfheTrivialSerializeDeserialize(t, FheBool)
+}
+
+func TestTfheTrivialSerializeDeserialize4(t *testing.T) {
+	TfheTrivialSerializeDeserialize(t, FheUint4)
 }
 
 func TestTfheTrivialSerializeDeserialize8(t *testing.T) {
@@ -1288,6 +1457,14 @@ func TestTfheTrivialSerializeDeserialize64(t *testing.T) {
 	TfheTrivialSerializeDeserialize(t, FheUint64)
 }
 
+func TestTfheDeserializeFailureBool(t *testing.T) {
+	TfheDeserializeFailure(t, FheBool)
+}
+
+func TestTfheDeserializeFailure4(t *testing.T) {
+	TfheDeserializeFailure(t, FheUint4)
+}
+
 func TestTfheDeserializeFailure8(t *testing.T) {
 	TfheDeserializeFailure(t, FheUint8)
 }
@@ -1302,6 +1479,14 @@ func TestTfheDeserializeFailure32(t *testing.T) {
 
 func TestTfheDeserializeFailure64(t *testing.T) {
 	TfheDeserializeFailure(t, FheUint64)
+}
+
+func TestTfheDeserializeCompactBool(t *testing.T) {
+	TfheDeserializeCompact(t, FheBool)
+}
+
+func TestTfheDeserializeCompact4(t *testing.T) {
+	TfheDeserializeCompact(t, FheUint4)
 }
 
 func TestTfheDeserializeCompact8(t *testing.T) {
@@ -1320,6 +1505,14 @@ func TestTfheDeserializeCompact64(t *testing.T) {
 	TfheDeserializeCompact(t, FheUint64)
 }
 
+func TestTfheDeserializeCompactFailureBool(t *testing.T) {
+	TfheDeserializeCompactFailure(t, FheBool)
+}
+
+func TestTfheDeserializeCompactFailure4(t *testing.T) {
+	TfheDeserializeCompactFailure(t, FheUint4)
+}
+
 func TestTfheDeserializeCompactFailure8(t *testing.T) {
 	TfheDeserializeCompactFailure(t, FheUint8)
 }
@@ -1334,6 +1527,10 @@ func TestTfheDeserializeCompatcFailure32(t *testing.T) {
 
 func TestTfheDeserializeCompatcFailure64(t *testing.T) {
 	TfheDeserializeCompactFailure(t, FheUint64)
+}
+
+func TestTfheAdd4(t *testing.T) {
+	TfheAdd(t, FheUint4)
 }
 
 func TestTfheAdd8(t *testing.T) {
@@ -1352,6 +1549,10 @@ func TestTfheAdd64(t *testing.T) {
 	TfheAdd(t, FheUint64)
 }
 
+func TestTfheScalarAdd4(t *testing.T) {
+	TfheScalarAdd(t, FheUint4)
+}
+
 func TestTfheScalarAdd8(t *testing.T) {
 	TfheScalarAdd(t, FheUint8)
 }
@@ -1366,6 +1567,10 @@ func TestTfheScalarAdd32(t *testing.T) {
 
 func TestTfheScalarAdd64(t *testing.T) {
 	TfheScalarAdd(t, FheUint32)
+}
+
+func TestTfheSub4(t *testing.T) {
+	TfheSub(t, FheUint4)
 }
 
 func TestTfheSub8(t *testing.T) {
@@ -1384,6 +1589,10 @@ func TestTfheSub64(t *testing.T) {
 	TfheSub(t, FheUint64)
 }
 
+func TestTfheScalarSub4(t *testing.T) {
+	TfheScalarSub(t, FheUint4)
+}
+
 func TestTfheScalarSub8(t *testing.T) {
 	TfheScalarSub(t, FheUint8)
 }
@@ -1398,6 +1607,10 @@ func TestTfheScalarSub32(t *testing.T) {
 
 func TestTfheScalarSub64(t *testing.T) {
 	TfheScalarSub(t, FheUint64)
+}
+
+func TestTfheMul4(t *testing.T) {
+	TfheMul(t, FheUint4)
 }
 
 func TestTfheMul8(t *testing.T) {
@@ -1416,6 +1629,10 @@ func TestTfheMul64(t *testing.T) {
 	TfheMul(t, FheUint64)
 }
 
+func TestTfheScalarMul4(t *testing.T) {
+	TfheScalarMul(t, FheUint4)
+}
+
 func TestTfheScalarMul8(t *testing.T) {
 	TfheScalarMul(t, FheUint8)
 }
@@ -1430,6 +1647,10 @@ func TestTfheScalarMul32(t *testing.T) {
 
 func TestTfheScalarMul64(t *testing.T) {
 	TfheScalarMul(t, FheUint64)
+}
+
+func TestTfheScalarDiv4(t *testing.T) {
+	TfheScalarDiv(t, FheUint4)
 }
 
 func TestTfheScalarDiv8(t *testing.T) {
@@ -1448,6 +1669,10 @@ func TestTfheScalarDiv64(t *testing.T) {
 	TfheScalarDiv(t, FheUint64)
 }
 
+func TestTfheScalarRem4(t *testing.T) {
+	TfheScalarRem(t, FheUint4)
+}
+
 func TestTfheScalarRem8(t *testing.T) {
 	TfheScalarRem(t, FheUint8)
 }
@@ -1462,6 +1687,10 @@ func TestTfheScalarRem32(t *testing.T) {
 
 func TestTfheScalarRem64(t *testing.T) {
 	TfheScalarRem(t, FheUint64)
+}
+
+func TestTfheBitAnd4(t *testing.T) {
+	TfheBitAnd(t, FheUint4)
 }
 
 func TestTfheBitAnd8(t *testing.T) {
@@ -1480,6 +1709,10 @@ func TestTfheBitAnd64(t *testing.T) {
 	TfheBitAnd(t, FheUint64)
 }
 
+func TestTfheBitOr4(t *testing.T) {
+	TfheBitOr(t, FheUint4)
+}
+
 func TestTfheBitOr8(t *testing.T) {
 	TfheBitOr(t, FheUint8)
 }
@@ -1494,6 +1727,10 @@ func TestTfheBitOr32(t *testing.T) {
 
 func TestTfheBitOr64(t *testing.T) {
 	TfheBitOr(t, FheUint64)
+}
+
+func TestTfheBitXor4(t *testing.T) {
+	TfheBitXor(t, FheUint4)
 }
 
 func TestTfheBitXor8(t *testing.T) {
@@ -1512,6 +1749,10 @@ func TestTfheBitXor64(t *testing.T) {
 	TfheBitXor(t, FheUint64)
 }
 
+func TestTfheShl4(t *testing.T) {
+	TfheShl(t, FheUint4)
+}
+
 func TestTfheShl8(t *testing.T) {
 	TfheShl(t, FheUint8)
 }
@@ -1528,6 +1769,10 @@ func TestTfheShl64(t *testing.T) {
 	TfheShl(t, FheUint64)
 }
 
+func TestTfheScalarShl4(t *testing.T) {
+	TfheScalarShl(t, FheUint4)
+}
+
 func TestTfheScalarShl8(t *testing.T) {
 	TfheScalarShl(t, FheUint8)
 }
@@ -1542,6 +1787,10 @@ func TestTfheScalarShl32(t *testing.T) {
 
 func TestTfheScalarShl64(t *testing.T) {
 	TfheScalarShl(t, FheUint64)
+}
+
+func TestTfheShr4(t *testing.T) {
+	TfheShr(t, FheUint4)
 }
 
 func TestTfheShr8(t *testing.T) {
@@ -1576,6 +1825,10 @@ func TestTfheScalarShr64(t *testing.T) {
 	TfheScalarShr(t, FheUint64)
 }
 
+func TestTfheEq4(t *testing.T) {
+	TfheEq(t, FheUint4)
+}
+
 func TestTfheEq8(t *testing.T) {
 	TfheEq(t, FheUint8)
 }
@@ -1590,6 +1843,10 @@ func TestTfheEq32(t *testing.T) {
 
 func TestTfheEq64(t *testing.T) {
 	TfheEq(t, FheUint64)
+}
+
+func TestTfheScalarEq4(t *testing.T) {
+	TfheScalarEq(t, FheUint4)
 }
 
 func TestTfheScalarEq8(t *testing.T) {
@@ -1608,6 +1865,10 @@ func TestTfheScalarEq64(t *testing.T) {
 	TfheScalarEq(t, FheUint64)
 }
 
+func TestTfheNe4(t *testing.T) {
+	TfheNe(t, FheUint8)
+}
+
 func TestTfheNe8(t *testing.T) {
 	TfheNe(t, FheUint8)
 }
@@ -1622,6 +1883,10 @@ func TestTfheNe32(t *testing.T) {
 
 func TestTfheNe64(t *testing.T) {
 	TfheNe(t, FheUint64)
+}
+
+func TestTfheScalarNe4(t *testing.T) {
+	TfheScalarNe(t, FheUint4)
 }
 
 func TestTfheScalarNe8(t *testing.T) {
@@ -1640,6 +1905,10 @@ func TestTfheScalarNe64(t *testing.T) {
 	TfheScalarNe(t, FheUint64)
 }
 
+func TestTfheGe4(t *testing.T) {
+	TfheGe(t, FheUint4)
+}
+
 func TestTfheGe8(t *testing.T) {
 	TfheGe(t, FheUint8)
 }
@@ -1654,6 +1923,10 @@ func TestTfheGe32(t *testing.T) {
 
 func TestTfheGe64(t *testing.T) {
 	TfheGe(t, FheUint64)
+}
+
+func TestTfheScalarGe4(t *testing.T) {
+	TfheScalarGe(t, FheUint4)
 }
 
 func TestTfheScalarGe8(t *testing.T) {
@@ -1672,6 +1945,10 @@ func TestTfheScalarGe64(t *testing.T) {
 	TfheScalarGe(t, FheUint64)
 }
 
+func TestTfheGt4(t *testing.T) {
+	TfheGt(t, FheUint4)
+}
+
 func TestTfheGt8(t *testing.T) {
 	TfheGt(t, FheUint8)
 }
@@ -1686,6 +1963,10 @@ func TestTfheGt32(t *testing.T) {
 
 func TestTfheGt64(t *testing.T) {
 	TfheGt(t, FheUint64)
+}
+
+func TestTfheScalarGt4(t *testing.T) {
+	TfheScalarGt(t, FheUint4)
 }
 
 func TestTfheScalarGt8(t *testing.T) {
@@ -1704,6 +1985,10 @@ func TestTfheScalarGt64(t *testing.T) {
 	TfheScalarGt(t, FheUint64)
 }
 
+func TestTfheLe4(t *testing.T) {
+	TfheLe(t, FheUint4)
+}
+
 func TestTfheLe8(t *testing.T) {
 	TfheLe(t, FheUint8)
 }
@@ -1718,6 +2003,10 @@ func TestTfheLe32(t *testing.T) {
 
 func TestTfheLe64(t *testing.T) {
 	TfheLe(t, FheUint64)
+}
+
+func TestTfheScalarLe4(t *testing.T) {
+	TfheScalarLe(t, FheUint4)
 }
 
 func TestTfheScalarLe8(t *testing.T) {
@@ -1736,6 +2025,10 @@ func TestTfheScalarLe64(t *testing.T) {
 	TfheScalarLe(t, FheUint64)
 }
 
+func TestTfheLt4(t *testing.T) {
+	TfheLt(t, FheUint4)
+}
+
 func TestTfheLt8(t *testing.T) {
 	TfheLt(t, FheUint8)
 }
@@ -1748,6 +2041,10 @@ func TestTfheLt32(t *testing.T) {
 }
 func TestTfheLt64(t *testing.T) {
 	TfheLt(t, FheUint64)
+}
+
+func TestTfheScalarLt4(t *testing.T) {
+	TfheScalarLt(t, FheUint4)
 }
 
 func TestTfheScalarLt8(t *testing.T) {
@@ -1766,6 +2063,10 @@ func TestTfheScalarLt64(t *testing.T) {
 	TfheScalarLt(t, FheUint64)
 }
 
+func TestTfheMin4(t *testing.T) {
+	TfheMin(t, FheUint4)
+}
+
 func TestTfheMin8(t *testing.T) {
 	TfheMin(t, FheUint8)
 }
@@ -1778,6 +2079,10 @@ func TestTfheMin32(t *testing.T) {
 }
 func TestTfheMin64(t *testing.T) {
 	TfheMin(t, FheUint64)
+}
+
+func TestTfheScalarMin4(t *testing.T) {
+	TfheScalarMin(t, FheUint4)
 }
 
 func TestTfheScalarMin8(t *testing.T) {
@@ -1796,6 +2101,10 @@ func TestTfheScalarMin64(t *testing.T) {
 	TfheScalarMin(t, FheUint64)
 }
 
+func TestTfheMax4(t *testing.T) {
+	TfheMax(t, FheUint4)
+}
+
 func TestTfheMax8(t *testing.T) {
 	TfheMax(t, FheUint8)
 }
@@ -1808,6 +2117,10 @@ func TestTfheMax32(t *testing.T) {
 }
 func TestTfheMax64(t *testing.T) {
 	TfheMax(t, FheUint64)
+}
+
+func TestTfheScalarMax4(t *testing.T) {
+	TfheScalarMax(t, FheUint4)
 }
 
 func TestTfheScalarMax8(t *testing.T) {
@@ -1826,6 +2139,10 @@ func TestTfheScalarMax64(t *testing.T) {
 	TfheScalarMax(t, FheUint64)
 }
 
+func TestTfheNeg4(t *testing.T) {
+	TfheNeg(t, FheUint4)
+}
+
 func TestTfheNeg8(t *testing.T) {
 	TfheNeg(t, FheUint8)
 }
@@ -1838,6 +2155,10 @@ func TestTfheNeg32(t *testing.T) {
 }
 func TestTfheNeg64(t *testing.T) {
 	TfheNeg(t, FheUint64)
+}
+
+func TestTfheNot4(t *testing.T) {
+	TfheNot(t, FheUint8)
 }
 
 func TestTfheNot8(t *testing.T) {
@@ -1854,6 +2175,10 @@ func TestTfheNot64(t *testing.T) {
 	TfheNot(t, FheUint64)
 }
 
+func TestTfheIfThenElse4(t *testing.T) {
+	TfheIfThenElse(t, FheUint4)
+}
+
 func TestTfheIfThenElse8(t *testing.T) {
 	TfheIfThenElse(t, FheUint8)
 }
@@ -1868,8 +2193,28 @@ func TestTfheIfThenElse64(t *testing.T) {
 	TfheIfThenElse(t, FheUint64)
 }
 
+func TestTfhe4Cast8(t *testing.T) {
+	TfheCast(t, FheUint4, FheUint8)
+}
+
+func TestTfhe4Cast16(t *testing.T) {
+	TfheCast(t, FheUint4, FheUint16)
+}
+
+func TestTfhe4Cast32(t *testing.T) {
+	TfheCast(t, FheUint4, FheUint32)
+}
+
+func TestTfhe4Cast64(t *testing.T) {
+	TfheCast(t, FheUint4, FheUint64)
+}
+
+func TestTfhe8Cast4(t *testing.T) {
+	TfheCast(t, FheUint8, FheUint4)
+}
+
 func TestTfhe8Cast16(t *testing.T) {
-	TfheCast(t, FheUint8, FheUint16)
+	TfheCast(t, FheUint4, FheUint16)
 }
 
 func TestTfhe8Cast32(t *testing.T) {
@@ -1878,6 +2223,10 @@ func TestTfhe8Cast32(t *testing.T) {
 
 func TestTfhe8Cast64(t *testing.T) {
 	TfheCast(t, FheUint8, FheUint64)
+}
+
+func TestTfhe16Cast4(t *testing.T) {
+	TfheCast(t, FheUint16, FheUint4)
 }
 
 func TestTfhe16Cast8(t *testing.T) {
@@ -1892,6 +2241,10 @@ func TestTfhe16Cast64(t *testing.T) {
 	TfheCast(t, FheUint16, FheUint64)
 }
 
+func TestTfhe32Cast4(t *testing.T) {
+	TfheCast(t, FheUint32, FheUint4)
+}
+
 func TestTfhe32Cast8(t *testing.T) {
 	TfheCast(t, FheUint32, FheUint8)
 }
@@ -1902,6 +2255,10 @@ func TestTfhe32Cast16(t *testing.T) {
 
 func TestTfhe32Cast64(t *testing.T) {
 	TfheCast(t, FheUint32, FheUint64)
+}
+
+func TestTfhe64Cast4(t *testing.T) {
+	TfheCast(t, FheUint64, FheUint4)
 }
 
 func TestTfhe64Cast8(t *testing.T) {

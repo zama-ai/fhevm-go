@@ -24,27 +24,30 @@ type FheType int32
 
 const (
 	FheType_Bool    FheType = 0
-	FheType_Euint8  FheType = 1
-	FheType_Euint16 FheType = 2
-	FheType_Euint32 FheType = 3
-	FheType_Euint64 FheType = 4
+	FheType_Euint4  FheType = 1
+	FheType_Euint8  FheType = 2
+	FheType_Euint16 FheType = 3
+	FheType_Euint32 FheType = 4
+	FheType_Euint64 FheType = 5
 )
 
 // Enum value maps for FheType.
 var (
 	FheType_name = map[int32]string{
 		0: "Bool",
-		1: "Euint8",
-		2: "Euint16",
-		3: "Euint32",
-		4: "Euint64",
+		1: "Euint4",
+		2: "Euint8",
+		3: "Euint16",
+		4: "Euint32",
+		5: "Euint64",
 	}
 	FheType_value = map[string]int32{
 		"Bool":    0,
-		"Euint8":  1,
-		"Euint16": 2,
-		"Euint32": 3,
-		"Euint64": 4,
+		"Euint4":  1,
+		"Euint8":  2,
+		"Euint16": 3,
+		"Euint32": 4,
+		"Euint64": 5,
 	}
 )
 

@@ -1257,6 +1257,11 @@ func generateRandom(environment EVMEnvironment, caller common.Address, resultTyp
 	// Apply upperBound, if set.
 	var randUint uint64
 	switch resultType {
+	case FheUint4:
+		randBytes := make([]byte, 1)
+		cipher.XORKeyStream(randBytes, randBytes)
+		randUint = uint64(randBytes[0])
+		randUint = uint64(applyUpperBound(randUint, 4, upperBound))
 	case FheUint8:
 		randBytes := make([]byte, 1)
 		cipher.XORKeyStream(randBytes, randBytes)
@@ -1462,6 +1467,10 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 
 		var fheType kms.FheType
 		switch ct.fheUintType() {
+		case FheBool:
+			fheType = kms.FheType_Bool
+		case FheUint4:
+			fheType = kms.FheType_Euint4
 		case FheUint8:
 			fheType = kms.FheType_Euint8
 		case FheUint16:
@@ -1632,6 +1641,10 @@ func decryptValue(environment EVMEnvironment, ct *TfheCiphertext) (uint64, error
 	logger := environment.GetLogger()
 	var fheType kms.FheType
 	switch ct.Type() {
+	case FheBool:
+		fheType = kms.FheType_Bool
+	case FheUint4:
+		fheType = kms.FheType_Euint4
 	case FheUint8:
 		fheType = kms.FheType_Euint8
 	case FheUint16:

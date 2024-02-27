@@ -66,11 +66,15 @@ func initCiphertextSizes() {
 	expandedFheCiphertextSize = make(map[FheUintType]uint)
 	compactFheCiphertextSize = make(map[FheUintType]uint)
 
+	expandedFheCiphertextSize[FheBool] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheBool).Serialize()))
+  expandedFheCiphertextSize[FheUint4] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint4).Serialize()))
 	expandedFheCiphertextSize[FheUint8] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint8).Serialize()))
 	expandedFheCiphertextSize[FheUint16] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint16).Serialize()))
 	expandedFheCiphertextSize[FheUint32] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint32).Serialize()))
 	expandedFheCiphertextSize[FheUint64] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint64).Serialize()))
 
+	compactFheCiphertextSize[FheBool] = uint(len(encryptAndSerializeCompact(0, FheBool)))
+	compactFheCiphertextSize[FheUint4] = uint(len(encryptAndSerializeCompact(0, FheUint4)))
 	compactFheCiphertextSize[FheUint8] = uint(len(encryptAndSerializeCompact(0, FheUint8)))
 	compactFheCiphertextSize[FheUint16] = uint(len(encryptAndSerializeCompact(0, FheUint16)))
 	compactFheCiphertextSize[FheUint32] = uint(len(encryptAndSerializeCompact(0, FheUint32)))
