@@ -1689,7 +1689,9 @@ func (lhs *TfheCiphertext) Neg() (*TfheCiphertext, error) {
 
 func (lhs *TfheCiphertext) Not() (*TfheCiphertext, error) {
 	return lhs.executeUnaryCiphertextOperation(lhs,
-		boolUnaryNotSupportedOp,
+		func(lhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.not_fhe_bool(lhs, sks), nil
+		},
 		func(lhs unsafe.Pointer) (unsafe.Pointer, error) {
 			return C.not_fhe_uint4(lhs, sks), nil
 		},

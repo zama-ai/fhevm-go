@@ -393,6 +393,8 @@ void* neg_fhe_uint32(void* ct, void* sks);
 
 void* neg_fhe_uint64(void* ct, void* sks);
 
+void* not_fhe_bool(void* ct, void* sks);
+
 void* not_fhe_uint4(void* ct, void* sks);
 
 void* not_fhe_uint8(void* ct, void* sks);

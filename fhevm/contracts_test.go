@@ -1063,6 +1063,9 @@ func FheLibNeg(t *testing.T, fheUintType FheUintType) {
 func FheLibNot(t *testing.T, fheUintType FheUintType) {
 	var pt, expected uint64
 	switch fheUintType {
+	case FheBool:
+		pt = 1
+		expected = 0
 	case FheUint4:
 		pt = 5
 		expected = uint64(15 - uint8(pt))
@@ -3076,6 +3079,10 @@ func TestFheLibMax4(t *testing.T) {
 
 func TestFheLibNeg4(t *testing.T) {
 	FheLibNeg(t, FheUint4)
+}
+
+func TestFheLibNotBool(t *testing.T) {
+	FheLibNot(t, FheBool)
 }
 
 func TestFheLibNot4(t *testing.T) {
