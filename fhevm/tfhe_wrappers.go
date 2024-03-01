@@ -28,6 +28,10 @@ func serialize(ptr unsafe.Pointer, t FheUintType) ([]byte, error) {
 	out := &C.DynamicBuffer{}
 	var ret C.int
 	switch t {
+	case FheBool:
+		ret = C.serialize_fhe_bool(ptr, out)
+	case FheUint4:
+		ret = C.serialize_fhe_uint4(ptr, out)
 	case FheUint8:
 		ret = C.serialize_fhe_uint8(ptr, out)
 	case FheUint16:
@@ -64,6 +68,14 @@ func serializePublicKey() ([]byte, error) {
 func encryptAndSerializeCompact(value uint64, fheUintType FheUintType) []byte {
 	out := &C.DynamicBuffer{}
 	switch fheUintType {
+	case FheBool:
+		val := false
+		if value == 1 {
+				val = true
+		}
+		C.public_key_encrypt_and_serialize_fhe_bool_list(pks, C.bool(val), out)
+	case FheUint4:
+		C.public_key_encrypt_and_serialize_fhe_uint4_list(pks, C.uint8_t(value), out)
 	case FheUint8:
 		C.public_key_encrypt_and_serialize_fhe_uint8_list(pks, C.uint8_t(value), out)
 	case FheUint16:

@@ -12,10 +12,11 @@ service KmsEndpoint {
 
 enum FheType {
   Bool = 0;
-  Euint8 = 1;
-  Euint16 = 2;
-  Euint32 = 3;
-  Euint64 = 4;
+  Euint4 = 1;
+  Euint8 = 2;
+  Euint16 = 3;
+  Euint32 = 4;
+  Euint64 = 5;
 }
 
 message Proof {

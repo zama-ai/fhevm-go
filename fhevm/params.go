@@ -67,84 +67,99 @@ type GasCosts struct {
 func DefaultGasCosts() GasCosts {
 	return GasCosts{
 		FheAddSub: map[FheUintType]uint64{
+			FheUint4:  60000 + AdjustFHEGas,
 			FheUint8:  84000 + AdjustFHEGas,
 			FheUint16: 123000 + AdjustFHEGas,
 			FheUint32: 152000 + AdjustFHEGas,
 			FheUint64: 178000 + AdjustFHEGas,
 		},
 		FheDecrypt: map[FheUintType]uint64{
+			FheUint4:  500000,
 			FheUint8:  500000,
 			FheUint16: 500000,
 			FheUint32: 500000,
 			FheUint64: 500000,
 		},
 		FheBitwiseOp: map[FheUintType]uint64{
+			FheBool:  16000 + AdjustFHEGas,
+			FheUint4:  23000 + AdjustFHEGas,
 			FheUint8:  24000 + AdjustFHEGas,
 			FheUint16: 24000 + AdjustFHEGas,
 			FheUint32: 25000 + AdjustFHEGas,
 			FheUint64: 28000 + AdjustFHEGas,
 		},
 		FheMul: map[FheUintType]uint64{
+			FheUint4:  140000 + AdjustFHEGas,
 			FheUint8:  187000 + AdjustFHEGas,
 			FheUint16: 252000 + AdjustFHEGas,
 			FheUint32: 349000 + AdjustFHEGas,
 			FheUint64: 631000 + AdjustFHEGas,
 		},
 		FheScalarMul: map[FheUintType]uint64{
+			FheUint4:  110000 + AdjustFHEGas,
 			FheUint8:  149000 + AdjustFHEGas,
 			FheUint16: 198000 + AdjustFHEGas,
 			FheUint32: 254000 + AdjustFHEGas,
 			FheUint64: 346000 + AdjustFHEGas,
 		},
 		FheScalarDiv: map[FheUintType]uint64{
+			FheUint4:  120000 + AdjustFHEGas,
 			FheUint8:  228000 + AdjustFHEGas,
 			FheUint16: 304000 + AdjustFHEGas,
 			FheUint32: 388000 + AdjustFHEGas,
 			FheUint64: 574000 + AdjustFHEGas,
 		},
 		FheScalarRem: map[FheUintType]uint64{
+			FheUint4:  250000 + AdjustFHEGas,
 			FheUint8:  450000 + AdjustFHEGas,
 			FheUint16: 612000 + AdjustFHEGas,
 			FheUint32: 795000 + AdjustFHEGas,
 			FheUint64: 1095000 + AdjustFHEGas,
 		},
 		FheShift: map[FheUintType]uint64{
+			FheUint4:  110000 + AdjustFHEGas,
 			FheUint8:  123000 + AdjustFHEGas,
 			FheUint16: 143000 + AdjustFHEGas,
 			FheUint32: 173000 + AdjustFHEGas,
 			FheUint64: 217000 + AdjustFHEGas,
 		},
 		FheScalarShift: map[FheUintType]uint64{
+			FheUint4:  25000 + AdjustFHEGas,
 			FheUint8:  25000 + AdjustFHEGas,
 			FheUint16: 25000 + AdjustFHEGas,
 			FheUint32: 25000 + AdjustFHEGas,
 			FheUint64: 28000 + AdjustFHEGas,
 		},
 		FheLe: map[FheUintType]uint64{
+			FheUint4:  46000 + AdjustFHEGas,
 			FheUint8:  46000 + AdjustFHEGas,
 			FheUint16: 46000 + AdjustFHEGas,
 			FheUint32: 72000 + AdjustFHEGas,
 			FheUint64: 76000 + AdjustFHEGas,
 		},
 		FheMinMax: map[FheUintType]uint64{
+			FheUint4:  50000 + AdjustFHEGas,
 			FheUint8:  94000 + AdjustFHEGas,
 			FheUint16: 120000 + AdjustFHEGas,
 			FheUint32: 148000 + AdjustFHEGas,
 			FheUint64: 189000 + AdjustFHEGas,
 		},
 		FheScalarMinMax: map[FheUintType]uint64{
+			FheUint4:  80000 + AdjustFHEGas,
 			FheUint8:  114000 + AdjustFHEGas,
 			FheUint16: 140000 + AdjustFHEGas,
 			FheUint32: 154000 + AdjustFHEGas,
 			FheUint64: 182000 + AdjustFHEGas,
 		},
 		FheNot: map[FheUintType]uint64{
+			FheUint4:  25000 + AdjustFHEGas,
 			FheUint8:  25000 + AdjustFHEGas,
 			FheUint16: 25000 + AdjustFHEGas,
 			FheUint32: 26000 + AdjustFHEGas,
 			FheUint64: 27000 + AdjustFHEGas,
 		},
 		FheNeg: map[FheUintType]uint64{
+			FheUint4:  50000 + AdjustFHEGas,
 			FheUint8:  79000 + AdjustFHEGas,
 			FheUint16: 114000 + AdjustFHEGas,
 			FheUint32: 150000 + AdjustFHEGas,
@@ -152,18 +167,24 @@ func DefaultGasCosts() GasCosts {
 		},
 		// TODO: Costs will depend on the complexity of doing reencryption/decryption by the oracle.
 		FheReencrypt: map[FheUintType]uint64{
+			FheBool:  1000,
+			FheUint4:  1000,
 			FheUint8:  1000,
 			FheUint16: 1100,
 			FheUint32: 1200,
 		},
 		// As of now, verification costs only cover ciphertext deserialization and assume there is no ZKPoK to verify.
 		FheVerify: map[FheUintType]uint64{
+			FheBool:  200,
+			FheUint4:  200,
 			FheUint8:  200,
 			FheUint16: 300,
 			FheUint32: 400,
 			FheUint64: 800,
 		},
 		FheTrivialEncrypt: map[FheUintType]uint64{
+			FheBool:  100,
+			FheUint4:  100,
 			FheUint8:  100,
 			FheUint16: 200,
 			FheUint32: 300,
@@ -171,12 +192,14 @@ func DefaultGasCosts() GasCosts {
 		},
 		// TODO: These will change once we have an FHE-based random generaration.
 		FheRand: map[FheUintType]uint64{
+			FheUint4:  EvmNetSstoreInitGas + 100000,
 			FheUint8:  EvmNetSstoreInitGas + 100000,
 			FheUint16: EvmNetSstoreInitGas + 100000,
 			FheUint32: EvmNetSstoreInitGas + 100000,
 			FheUint64: EvmNetSstoreInitGas + 100000,
 		},
 		FheIfThenElse: map[FheUintType]uint64{
+			FheUint4:  37000 + AdjustFHEGas,
 			FheUint8:  37000 + AdjustFHEGas,
 			FheUint16: 37000 + AdjustFHEGas,
 			FheUint32: 40000 + AdjustFHEGas,
@@ -188,11 +211,13 @@ func DefaultGasCosts() GasCosts {
 		// For every subsequent optimistic require, we need to bitand it with the current require value - that
 		// works, because we assume requires have a value of 0 or 1.
 		FheOptRequire: map[FheUintType]uint64{
+			FheUint4:  170000,
 			FheUint8:  170000,
 			FheUint16: 180000,
 			FheUint32: 190000,
 		},
 		FheOptRequireBitAnd: map[FheUintType]uint64{
+			FheUint4:  20000,
 			FheUint8:  20000,
 			FheUint16: 20000,
 			FheUint32: 20000,
