@@ -49,6 +49,7 @@ type GasCosts struct {
 	FheScalarRem        map[FheUintType]uint64
 	FheShift            map[FheUintType]uint64
 	FheScalarShift      map[FheUintType]uint64
+	FheEq               map[FheUintType]uint64
 	FheLe               map[FheUintType]uint64
 	FheMinMax           map[FheUintType]uint64
 	FheScalarMinMax     map[FheUintType]uint64
@@ -67,7 +68,7 @@ type GasCosts struct {
 func DefaultGasCosts() GasCosts {
 	return GasCosts{
 		FheAddSub: map[FheUintType]uint64{
-			FheUint4:  60000 + AdjustFHEGas,
+			FheUint4:  55000 + AdjustFHEGas,
 			FheUint8:  84000 + AdjustFHEGas,
 			FheUint16: 123000 + AdjustFHEGas,
 			FheUint32: 152000 + AdjustFHEGas,
@@ -82,7 +83,7 @@ func DefaultGasCosts() GasCosts {
 		},
 		FheBitwiseOp: map[FheUintType]uint64{
 			FheBool:  16000 + AdjustFHEGas,
-			FheUint4:  23000 + AdjustFHEGas,
+			FheUint4:  22000 + AdjustFHEGas,
 			FheUint8:  24000 + AdjustFHEGas,
 			FheUint16: 24000 + AdjustFHEGas,
 			FheUint32: 25000 + AdjustFHEGas,
@@ -96,28 +97,28 @@ func DefaultGasCosts() GasCosts {
 			FheUint64: 631000 + AdjustFHEGas,
 		},
 		FheScalarMul: map[FheUintType]uint64{
-			FheUint4:  110000 + AdjustFHEGas,
+			FheUint4:  78000 + AdjustFHEGas,
 			FheUint8:  149000 + AdjustFHEGas,
 			FheUint16: 198000 + AdjustFHEGas,
 			FheUint32: 254000 + AdjustFHEGas,
 			FheUint64: 346000 + AdjustFHEGas,
 		},
 		FheScalarDiv: map[FheUintType]uint64{
-			FheUint4:  120000 + AdjustFHEGas,
+			FheUint4:  129000 + AdjustFHEGas,
 			FheUint8:  228000 + AdjustFHEGas,
 			FheUint16: 304000 + AdjustFHEGas,
 			FheUint32: 388000 + AdjustFHEGas,
 			FheUint64: 574000 + AdjustFHEGas,
 		},
 		FheScalarRem: map[FheUintType]uint64{
-			FheUint4:  250000 + AdjustFHEGas,
+			FheUint4:  276000 + AdjustFHEGas,
 			FheUint8:  450000 + AdjustFHEGas,
 			FheUint16: 612000 + AdjustFHEGas,
 			FheUint32: 795000 + AdjustFHEGas,
 			FheUint64: 1095000 + AdjustFHEGas,
 		},
 		FheShift: map[FheUintType]uint64{
-			FheUint4:  110000 + AdjustFHEGas,
+			FheUint4:  106000 + AdjustFHEGas,
 			FheUint8:  123000 + AdjustFHEGas,
 			FheUint16: 143000 + AdjustFHEGas,
 			FheUint32: 173000 + AdjustFHEGas,
@@ -130,38 +131,45 @@ func DefaultGasCosts() GasCosts {
 			FheUint32: 25000 + AdjustFHEGas,
 			FheUint64: 28000 + AdjustFHEGas,
 		},
-		FheLe: map[FheUintType]uint64{
-			FheUint4:  46000 + AdjustFHEGas,
-			FheUint8:  46000 + AdjustFHEGas,
-			FheUint16: 46000 + AdjustFHEGas,
+		FheEq: map[FheUintType]uint64{
+			FheUint4:  41000 + AdjustFHEGas,
+			FheUint8:  43000 + AdjustFHEGas,
+			FheUint16: 44000 + AdjustFHEGas,
 			FheUint32: 72000 + AdjustFHEGas,
 			FheUint64: 76000 + AdjustFHEGas,
 		},
+		FheLe: map[FheUintType]uint64{
+			FheUint4:  60000 + AdjustFHEGas,
+			FheUint8:  72000 + AdjustFHEGas,
+			FheUint16: 95000 + AdjustFHEGas,
+			FheUint32: 118000 + AdjustFHEGas,
+			FheUint64: 146000 + AdjustFHEGas,
+		},
 		FheMinMax: map[FheUintType]uint64{
-			FheUint4:  50000 + AdjustFHEGas,
-			FheUint8:  94000 + AdjustFHEGas,
-			FheUint16: 120000 + AdjustFHEGas,
-			FheUint32: 148000 + AdjustFHEGas,
-			FheUint64: 189000 + AdjustFHEGas,
+			FheUint4:  106000 + AdjustFHEGas,
+			FheUint8:  118000 + AdjustFHEGas,
+			FheUint16: 143000 + AdjustFHEGas,
+			FheUint32: 173000 + AdjustFHEGas,
+			FheUint64: 200000 + AdjustFHEGas,
 		},
 		FheScalarMinMax: map[FheUintType]uint64{
-			FheUint4:  80000 + AdjustFHEGas,
+			FheUint4:  111000 + AdjustFHEGas,
 			FheUint8:  114000 + AdjustFHEGas,
 			FheUint16: 140000 + AdjustFHEGas,
 			FheUint32: 154000 + AdjustFHEGas,
 			FheUint64: 182000 + AdjustFHEGas,
 		},
 		FheNot: map[FheUintType]uint64{
-			FheUint4:  25000 + AdjustFHEGas,
-			FheUint8:  25000 + AdjustFHEGas,
+			FheUint4:  23000 + AdjustFHEGas,
+			FheUint8:  24000 + AdjustFHEGas,
 			FheUint16: 25000 + AdjustFHEGas,
 			FheUint32: 26000 + AdjustFHEGas,
 			FheUint64: 27000 + AdjustFHEGas,
 		},
 		FheNeg: map[FheUintType]uint64{
 			FheUint4:  50000 + AdjustFHEGas,
-			FheUint8:  79000 + AdjustFHEGas,
-			FheUint16: 114000 + AdjustFHEGas,
+			FheUint8:  85000 + AdjustFHEGas,
+			FheUint16: 121000 + AdjustFHEGas,
 			FheUint32: 150000 + AdjustFHEGas,
 			FheUint64: 189000 + AdjustFHEGas,
 		},
@@ -199,7 +207,7 @@ func DefaultGasCosts() GasCosts {
 			FheUint64: EvmNetSstoreInitGas + 100000,
 		},
 		FheIfThenElse: map[FheUintType]uint64{
-			FheUint4:  37000 + AdjustFHEGas,
+			FheUint4:  35000 + AdjustFHEGas,
 			FheUint8:  37000 + AdjustFHEGas,
 			FheUint16: 37000 + AdjustFHEGas,
 			FheUint32: 40000 + AdjustFHEGas,
