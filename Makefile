@@ -1,6 +1,6 @@
 .PHONY: build
 build: build-tfhe-rs-capi
-	cd pkg/fhevm && go build .
+	cd fhevm && go build .
 
 .PHONY: test
 test: build-tfhe-rs-capi
