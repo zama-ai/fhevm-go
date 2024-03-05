@@ -1,10 +1,10 @@
 .PHONY: build
 build: build-tfhe-rs-capi
-	cd fhevm && go build .
+	cd packages/fhevm && go build .
 
 .PHONY: test
 test: build-tfhe-rs-capi
-	cd fhevm && go test -v . \
+	cd packages/fhevm && go test -v . \
 	&& cd ../tfhe && go test -v .
 
 .PHONY: build-tfhe-rs-capi

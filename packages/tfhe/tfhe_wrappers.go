@@ -1,10 +1,10 @@
 package tfhe
 
 /*
-#cgo linux CFLAGS: -O3 -I../tfhe-rs/target/release -I../tfhe-rs/target/release/deps
-#cgo linux LDFLAGS: -L../tfhe-rs/target/release -l:liba -L../tfhe-rs/target/release/deps -l:libtfhe_c_api_dynamic_buffer.a -lm
-#cgo darwin CFLAGS: -O3 -I../tfhe-rs/target/release -I../tfhe-rs/target/release/deps
-#cgo darwin LDFLAGS: -framework Security -L../tfhe-rs/target/release -ltfhe -L../tfhe-rs/target/release/deps -ltfhe_c_api_dynamic_buffer -lm
+#cgo linux CFLAGS: -O3 -I../../tfhe-rs/target/release -I../../tfhe-rs/target/release/deps
+#cgo linux LDFLAGS: -L../../tfhe-rs/target/release -l:liba -L../../tfhe-rs/target/release/deps -l:libtfhe_c_api_dynamic_buffer.a -lm
+#cgo darwin CFLAGS: -O3 -I../../tfhe-rs/target/release -I../../tfhe-rs/target/release/deps
+#cgo darwin LDFLAGS: -framework Security -L../../tfhe-rs/target/release -ltfhe -L../../tfhe-rs/target/release/deps -ltfhe_c_api_dynamic_buffer -lm
 
 #include "tfhe_wrappers.h"
 
