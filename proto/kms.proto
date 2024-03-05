@@ -1,6 +1,6 @@
 syntax = "proto3";
 package kms;
-option go_package = "github.com/zama-ai/fhevm-go/pkg/kms";
+option go_package = "github.com/zama-ai/fhevm-go/fhevm/kms";
 
 service KmsEndpoint {
   rpc Validate_and_decrypt(DecryptionRequest) returns (DecryptionResponse);

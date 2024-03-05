@@ -7,8 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
-	fhevm_crypto "github.com/zama-ai/fhevm-go/pkg/crypto"
-	"github.com/zama-ai/fhevm-go/pkg/tfhe"
+	fhevm_crypto "github.com/zama-ai/fhevm-go/fhevm/crypto"
+	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 )
 
 var protectedStorageAddrCallerAddr common.Address

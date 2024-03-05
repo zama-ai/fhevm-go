@@ -15,7 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
-	"github.com/zama-ai/fhevm-go/pkg/tfhe"
+	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 )
 
 // generate keys if not present

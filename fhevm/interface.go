@@ -6,7 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
-	"github.com/zama-ai/fhevm-go/pkg/tfhe"
+	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 )
 
 type EVMEnvironment interface {

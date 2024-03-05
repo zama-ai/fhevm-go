@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/zama-ai/fhevm-go/pkg/kms"
-	"github.com/zama-ai/fhevm-go/pkg/tfhe"
+	"github.com/zama-ai/fhevm-go/fhevm/kms"
+	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

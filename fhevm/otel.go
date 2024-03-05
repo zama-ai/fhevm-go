@@ -3,7 +3,7 @@ package fhevm
 import (
 	"math/big"
 
-	"github.com/zama-ai/fhevm-go/pkg/tfhe"
+	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
