@@ -7,8 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	crypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
-	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
-	"github.com/zama-ai/fhevm-go/tfhe"
+	fhevm_crypto "github.com/zama-ai/fhevm-go/pkg/crypto"
+	"github.com/zama-ai/fhevm-go/pkg/tfhe"
 )
 
 // An arbitrary constant value to flag locations in protected storage.

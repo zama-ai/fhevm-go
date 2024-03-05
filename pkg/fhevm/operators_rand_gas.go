@@ -6,7 +6,7 @@ import (
 	"math/bits"
 
 	"github.com/holiman/uint256"
-	"github.com/zama-ai/fhevm-go/tfhe"
+	"github.com/zama-ai/fhevm-go/pkg/tfhe"
 )
 
 func fheRandRequiredGas(environment EVMEnvironment, input []byte) uint64 {
