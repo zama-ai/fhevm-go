@@ -140,7 +140,6 @@ func fheShrRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
-
 func fheNegRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(32, len(input))]
 
@@ -214,7 +213,6 @@ func fheNotRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	logger.Info("fheNot success", "ct", ct.hash().Hex(), "result", resultHash.Hex())
 	return resultHash[:], nil
 }
-
 
 func fheBitAndRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]

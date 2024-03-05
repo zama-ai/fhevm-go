@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-
 func fheLeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
@@ -406,7 +405,6 @@ func fheNeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 	}
 }
 
-
 func fheMinRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 
@@ -538,7 +536,6 @@ func fheMaxRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		return resultHash[:], nil
 	}
 }
-
 
 func fheIfThenElseRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(96, len(input))]

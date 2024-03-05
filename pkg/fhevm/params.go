@@ -84,7 +84,7 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint64: 500000,
 		},
 		FheBitwiseOp: map[tfhe.FheUintType]uint64{
-			tfhe.FheBool:  16000 + AdjustFHEGas,
+			tfhe.FheBool:   16000 + AdjustFHEGas,
 			tfhe.FheUint4:  22000 + AdjustFHEGas,
 			tfhe.FheUint8:  24000 + AdjustFHEGas,
 			tfhe.FheUint16: 24000 + AdjustFHEGas,
@@ -177,7 +177,7 @@ func DefaultGasCosts() GasCosts {
 		},
 		// TODO: Costs will depend on the complexity of doing reencryption/decryption by the oracle.
 		FheReencrypt: map[tfhe.FheUintType]uint64{
-			tfhe.FheBool:  1000,
+			tfhe.FheBool:   1000,
 			tfhe.FheUint4:  1000,
 			tfhe.FheUint8:  1000,
 			tfhe.FheUint16: 1100,
@@ -185,7 +185,7 @@ func DefaultGasCosts() GasCosts {
 		},
 		// As of now, verification costs only cover ciphertext deserialization and assume there is no ZKPoK to verify.
 		FheVerify: map[tfhe.FheUintType]uint64{
-			tfhe.FheBool:  200,
+			tfhe.FheBool:   200,
 			tfhe.FheUint4:  200,
 			tfhe.FheUint8:  200,
 			tfhe.FheUint16: 300,
@@ -193,7 +193,7 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint64: 800,
 		},
 		FheTrivialEncrypt: map[tfhe.FheUintType]uint64{
-			tfhe.FheBool:  100,
+			tfhe.FheBool:   100,
 			tfhe.FheUint4:  100,
 			tfhe.FheUint8:  100,
 			tfhe.FheUint16: 200,

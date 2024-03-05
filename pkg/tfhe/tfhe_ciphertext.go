@@ -17,7 +17,7 @@ import (
 type FheUintType uint8
 
 const (
-	FheBool  FheUintType = 0
+	FheBool   FheUintType = 0
 	FheUint4  FheUintType = 1
 	FheUint8  FheUintType = 2
 	FheUint16 FheUintType = 3
@@ -340,8 +340,8 @@ func (ct *TfheCiphertext) executeUnaryCiphertextOperation(rhs *TfheCiphertext,
 			return nil, errors.New("Bool unary op deserialization failed")
 		}
 		res_ptr, err := opBool(ct_ptr)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_bool(ct_ptr)
 		if res_ptr == nil {
@@ -360,8 +360,8 @@ func (ct *TfheCiphertext) executeUnaryCiphertextOperation(rhs *TfheCiphertext,
 			return nil, errors.New("8 bit unary op deserialization failed")
 		}
 		res_ptr, err := op4(ct_ptr)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_uint4(ct_ptr)
 		if res_ptr == nil {
@@ -380,8 +380,8 @@ func (ct *TfheCiphertext) executeUnaryCiphertextOperation(rhs *TfheCiphertext,
 			return nil, errors.New("8 bit unary op deserialization failed")
 		}
 		res_ptr, err := op8(ct_ptr)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_uint8(ct_ptr)
 		if res_ptr == nil {
@@ -400,8 +400,8 @@ func (ct *TfheCiphertext) executeUnaryCiphertextOperation(rhs *TfheCiphertext,
 			return nil, errors.New("16 bit unary op deserialization failed")
 		}
 		res_ptr, err := op16(ct_ptr)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_uint16(ct_ptr)
 		if res_ptr == nil {
@@ -420,8 +420,8 @@ func (ct *TfheCiphertext) executeUnaryCiphertextOperation(rhs *TfheCiphertext,
 			return nil, errors.New("32 bit unary op deserialization failed")
 		}
 		res_ptr, err := op16(ct_ptr)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_uint32(ct_ptr)
 		if res_ptr == nil {
@@ -440,8 +440,8 @@ func (ct *TfheCiphertext) executeUnaryCiphertextOperation(rhs *TfheCiphertext,
 			return nil, errors.New("64 bit unary op deserialization failed")
 		}
 		res_ptr, err := op64(ct_ptr)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_uint64(ct_ptr)
 		if res_ptr == nil {
@@ -474,7 +474,7 @@ func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 	}
 
 	res := new(TfheCiphertext)
-	if(returnBool) {
+	if returnBool {
 		res.FheUintType = FheBool
 	} else {
 		res.FheUintType = lhs.FheUintType
@@ -492,8 +492,8 @@ func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 			return nil, errors.New("bool binary op deserialization failed")
 		}
 		res_ptr, err := opBool(lhs_ptr, rhs_ptr)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_bool(lhs_ptr)
 		C.destroy_fhe_bool(rhs_ptr)
@@ -518,15 +518,15 @@ func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 			return nil, errors.New("4 bit binary op deserialization failed")
 		}
 		res_ptr, err := op4(lhs_ptr, rhs_ptr)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_uint4(lhs_ptr)
 		C.destroy_fhe_uint4(rhs_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("4 bit binary op failed")
 		}
-		if (returnBool) {
+		if returnBool {
 			ret := C.serialize_fhe_bool(res_ptr, res_ser)
 			C.destroy_fhe_bool(res_ptr)
 			if ret != 0 {
@@ -552,15 +552,15 @@ func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 			return nil, errors.New("8 bit binary op deserialization failed")
 		}
 		res_ptr, err := op8(lhs_ptr, rhs_ptr)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_uint8(lhs_ptr)
 		C.destroy_fhe_uint8(rhs_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("8 bit binary op failed")
 		}
-		if (returnBool) {
+		if returnBool {
 			ret := C.serialize_fhe_bool(res_ptr, res_ser)
 			C.destroy_fhe_bool(res_ptr)
 			if ret != 0 {
@@ -586,15 +586,15 @@ func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 			return nil, errors.New("16 bit binary op deserialization failed")
 		}
 		res_ptr, err := op16(lhs_ptr, rhs_ptr)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_uint16(lhs_ptr)
 		C.destroy_fhe_uint16(rhs_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("16 bit binary op failed")
 		}
-		if (returnBool) {
+		if returnBool {
 			ret := C.serialize_fhe_bool(res_ptr, res_ser)
 			C.destroy_fhe_bool(res_ptr)
 			if ret != 0 {
@@ -620,8 +620,8 @@ func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 			return nil, errors.New("32 bit binary op deserialization failed")
 		}
 		res_ptr, err := op32(lhs_ptr, rhs_ptr)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_uint32(lhs_ptr)
 		C.destroy_fhe_uint32(rhs_ptr)
@@ -629,7 +629,7 @@ func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 			return nil, errors.New("32 bit binary op failed")
 		}
 
-		if (returnBool) {
+		if returnBool {
 			ret := C.serialize_fhe_bool(res_ptr, res_ser)
 			C.destroy_fhe_bool(res_ptr)
 			if ret != 0 {
@@ -655,15 +655,15 @@ func (lhs *TfheCiphertext) executeBinaryCiphertextOperation(rhs *TfheCiphertext,
 			return nil, errors.New("64 bit binary op deserialization failed")
 		}
 		res_ptr, err := op64(lhs_ptr, rhs_ptr)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_uint64(lhs_ptr)
 		C.destroy_fhe_uint64(rhs_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("64 bit binary op failed")
 		}
-		if (returnBool) {
+		if returnBool {
 			ret := C.serialize_fhe_bool(res_ptr, res_ser)
 			C.destroy_fhe_bool(res_ptr)
 			if ret != 0 {
@@ -860,7 +860,7 @@ func (lhs *TfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 	op64 func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error),
 	returnBool bool) (*TfheCiphertext, error) {
 	res := new(TfheCiphertext)
-	if(returnBool) {
+	if returnBool {
 		res.FheUintType = FheBool
 	} else {
 		res.FheUintType = lhs.FheUintType
@@ -874,8 +874,8 @@ func (lhs *TfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 		}
 		scalar := C.bool(rhs == 1)
 		res_ptr, err := opBool(lhs_ptr, scalar)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_bool(lhs_ptr)
 		if res_ptr == nil {
@@ -895,14 +895,14 @@ func (lhs *TfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 		}
 		scalar := C.uint8_t(rhs)
 		res_ptr, err := op4(lhs_ptr, scalar)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_uint4(lhs_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("4 bit scalar op failed")
 		}
-		if (returnBool) {
+		if returnBool {
 			ret := C.serialize_fhe_bool(res_ptr, res_ser)
 			C.destroy_fhe_bool(res_ptr)
 			if ret != 0 {
@@ -924,14 +924,14 @@ func (lhs *TfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 		}
 		scalar := C.uint8_t(rhs)
 		res_ptr, err := op8(lhs_ptr, scalar)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_uint8(lhs_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("8 bit scalar op failed")
 		}
-		if (returnBool) {
+		if returnBool {
 			ret := C.serialize_fhe_bool(res_ptr, res_ser)
 			C.destroy_fhe_bool(res_ptr)
 			if ret != 0 {
@@ -953,14 +953,14 @@ func (lhs *TfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 		}
 		scalar := C.uint16_t(rhs)
 		res_ptr, err := op16(lhs_ptr, scalar)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_uint16(lhs_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("16 bit scalar op failed")
 		}
-		if (returnBool) {
+		if returnBool {
 			ret := C.serialize_fhe_bool(res_ptr, res_ser)
 			C.destroy_fhe_bool(res_ptr)
 			if ret != 0 {
@@ -982,14 +982,14 @@ func (lhs *TfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 		}
 		scalar := C.uint32_t(rhs)
 		res_ptr, err := op32(lhs_ptr, scalar)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_uint32(lhs_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("32 bit scalar op failed")
 		}
-		if (returnBool) {
+		if returnBool {
 			ret := C.serialize_fhe_bool(res_ptr, res_ser)
 			C.destroy_fhe_bool(res_ptr)
 			if ret != 0 {
@@ -1011,14 +1011,14 @@ func (lhs *TfheCiphertext) executeBinaryScalarOperation(rhs uint64,
 		}
 		scalar := C.uint64_t(rhs)
 		res_ptr, err := op64(lhs_ptr, scalar)
-		if (err != nil) {
-			return nil, err;
+		if err != nil {
+			return nil, err
 		}
 		C.destroy_fhe_uint64(lhs_ptr)
 		if res_ptr == nil {
 			return nil, errors.New("64 bit scalar op failed")
 		}
-		if (returnBool) {
+		if returnBool {
 			ret := C.serialize_fhe_bool(res_ptr, res_ser)
 			C.destroy_fhe_bool(res_ptr)
 			if ret != 0 {
@@ -1822,75 +1822,75 @@ func (ct *TfheCiphertext) CastTo(castToType FheUintType) (*TfheCiphertext, error
 		default:
 			panic("castTo: unexpected type to cast to")
 		}
-		case FheUint4:
-			switch castToType {
-			case FheUint8:
-				from_ptr := C.deserialize_fhe_uint4(toDynamicBufferView(ct.Serialization))
-				if from_ptr == nil {
-					return nil, errors.New("castTo failed to deserialize FheUint4 ciphertext")
-				}
-				to_ptr := C.cast_4_8(from_ptr, sks)
-				C.destroy_fhe_uint4(from_ptr)
-				if to_ptr == nil {
-					return nil, errors.New("castTo failed to cast FheUint4 to FheUint16")
-				}
-				var err error
-				res.Serialization, err = serialize(to_ptr, castToType)
-				C.destroy_fhe_uint8(to_ptr)
-				if err != nil {
-					return nil, err
-				}
-			case FheUint16:
-				from_ptr := C.deserialize_fhe_uint4(toDynamicBufferView(ct.Serialization))
-				if from_ptr == nil {
-					return nil, errors.New("castTo failed to deserialize FheUint4 ciphertext")
-				}
-				to_ptr := C.cast_4_16(from_ptr, sks)
-				C.destroy_fhe_uint4(from_ptr)
-				if to_ptr == nil {
-					return nil, errors.New("castTo failed to cast FheUint4 to FheUint16")
-				}
-				var err error
-				res.Serialization, err = serialize(to_ptr, castToType)
-				C.destroy_fhe_uint16(to_ptr)
-				if err != nil {
-					return nil, err
-				}
-			case FheUint32:
-				from_ptr := C.deserialize_fhe_uint4(toDynamicBufferView(ct.Serialization))
-				if from_ptr == nil {
-					return nil, errors.New("castTo failed to deserialize FheUint4 ciphertext")
-				}
-				to_ptr := C.cast_4_32(from_ptr, sks)
-				C.destroy_fhe_uint4(from_ptr)
-				if to_ptr == nil {
-					return nil, errors.New("castTo failed to cast FheUint4 to FheUint32")
-				}
-				var err error
-				res.Serialization, err = serialize(to_ptr, castToType)
-				C.destroy_fhe_uint32(to_ptr)
-				if err != nil {
-					return nil, err
-				}
-			case FheUint64:
-				from_ptr := C.deserialize_fhe_uint4(toDynamicBufferView(ct.Serialization))
-				if from_ptr == nil {
-					return nil, errors.New("castTo failed to deserialize FheUint4 ciphertext")
-				}
-				to_ptr := C.cast_4_64(from_ptr, sks)
-				C.destroy_fhe_uint4(from_ptr)
-				if to_ptr == nil {
-					return nil, errors.New("castTo failed to cast FheUint4 to FheUint64")
-				}
-				var err error
-				res.Serialization, err = serialize(to_ptr, castToType)
-				C.destroy_fhe_uint64(to_ptr)
-				if err != nil {
-					return nil, err
-				}
-			default:
-				panic("castTo: unexpected type to cast to")
+	case FheUint4:
+		switch castToType {
+		case FheUint8:
+			from_ptr := C.deserialize_fhe_uint4(toDynamicBufferView(ct.Serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheUint4 ciphertext")
 			}
+			to_ptr := C.cast_4_8(from_ptr, sks)
+			C.destroy_fhe_uint4(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheUint4 to FheUint16")
+			}
+			var err error
+			res.Serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint8(to_ptr)
+			if err != nil {
+				return nil, err
+			}
+		case FheUint16:
+			from_ptr := C.deserialize_fhe_uint4(toDynamicBufferView(ct.Serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheUint4 ciphertext")
+			}
+			to_ptr := C.cast_4_16(from_ptr, sks)
+			C.destroy_fhe_uint4(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheUint4 to FheUint16")
+			}
+			var err error
+			res.Serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint16(to_ptr)
+			if err != nil {
+				return nil, err
+			}
+		case FheUint32:
+			from_ptr := C.deserialize_fhe_uint4(toDynamicBufferView(ct.Serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheUint4 ciphertext")
+			}
+			to_ptr := C.cast_4_32(from_ptr, sks)
+			C.destroy_fhe_uint4(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheUint4 to FheUint32")
+			}
+			var err error
+			res.Serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint32(to_ptr)
+			if err != nil {
+				return nil, err
+			}
+		case FheUint64:
+			from_ptr := C.deserialize_fhe_uint4(toDynamicBufferView(ct.Serialization))
+			if from_ptr == nil {
+				return nil, errors.New("castTo failed to deserialize FheUint4 ciphertext")
+			}
+			to_ptr := C.cast_4_64(from_ptr, sks)
+			C.destroy_fhe_uint4(from_ptr)
+			if to_ptr == nil {
+				return nil, errors.New("castTo failed to cast FheUint4 to FheUint64")
+			}
+			var err error
+			res.Serialization, err = serialize(to_ptr, castToType)
+			C.destroy_fhe_uint64(to_ptr)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			panic("castTo: unexpected type to cast to")
+		}
 	case FheUint8:
 		switch castToType {
 		case FheUint4:
@@ -2187,7 +2187,7 @@ func (ct *TfheCiphertext) Decrypt() (big.Int, error) {
 		var result C.bool
 		ret = C.decrypt_fhe_bool(cks, ptr, &result)
 		C.destroy_fhe_bool(ptr)
-		if (result) {
+		if result {
 			value = 1
 		} else {
 			value = 0

@@ -42,7 +42,6 @@ func fheShrRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	return fheShlRequiredGas(environment, input)
 }
 
-
 func fheNegRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	input = input[:minInt(32, len(input))]
 

@@ -17,7 +17,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-
 func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	logger := environment.GetLogger()
 	// first 32 bytes of the payload is offset, then 32 bytes are size of byte array

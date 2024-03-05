@@ -8,7 +8,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-
 func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
 

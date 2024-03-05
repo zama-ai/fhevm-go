@@ -86,7 +86,6 @@ func fheNeRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	return fheEqRequiredGas(environment, input)
 }
 
-
 func fheMinRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	input = input[:minInt(65, len(input))]
 
@@ -122,7 +121,6 @@ func fheMaxRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	// Implement in terms of min, because costs are currently the same.
 	return fheMinRequiredGas(environment, input)
 }
-
 
 func fheIfThenElseRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	input = input[:minInt(96, len(input))]

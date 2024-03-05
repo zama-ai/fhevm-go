@@ -71,7 +71,7 @@ func EncryptAndSerializeCompact(value uint64, fheUintType FheUintType) []byte {
 	case FheBool:
 		val := false
 		if value == 1 {
-				val = true
+			val = true
 		}
 		C.public_key_encrypt_and_serialize_fhe_bool_list(pks, C.bool(val), out)
 	case FheUint4:
