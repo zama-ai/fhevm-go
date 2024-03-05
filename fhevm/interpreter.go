@@ -2,6 +2,7 @@ package fhevm
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 )
 
 type ScopeContext interface {
@@ -47,17 +48,17 @@ func (from *depthSet) clone() (to *depthSet) {
 
 type verifiedCiphertext struct {
 	verifiedDepths *depthSet
-	ciphertext     *TfheCiphertext
+	ciphertext     *tfhe.TfheCiphertext
 }
 
 // Returns the type of the verified ciphertext
-func (vc *verifiedCiphertext) fheUintType() FheUintType {
-	return vc.ciphertext.fheUintType
+func (vc *verifiedCiphertext) fheUintType() tfhe.FheUintType {
+	return vc.ciphertext.FheUintType
 }
 
 // Returns the serialization of the verified ciphertext
 func (vc *verifiedCiphertext) serialization() []byte {
-	return vc.ciphertext.serialization
+	return vc.ciphertext.Serialization
 }
 
 // Returns the hash of the verified ciphertext
@@ -70,12 +71,12 @@ type PrivilegedMemory struct {
 	VerifiedCiphertexts map[common.Hash]*verifiedCiphertext
 
 	// All optimistic requires encountered up to that point in the txn execution
-	optimisticRequires []*TfheCiphertext
+	optimisticRequires []*tfhe.TfheCiphertext
 }
 
 var PrivilegedMempory *PrivilegedMemory = &PrivilegedMemory{
 	make(map[common.Hash]*verifiedCiphertext),
-	make([]*TfheCiphertext, 0),
+	make([]*tfhe.TfheCiphertext, 0),
 }
 
 // Evaluate remaining optimistic requires when Interpreter.Run get an errStopToken

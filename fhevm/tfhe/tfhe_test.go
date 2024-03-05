@@ -1,4 +1,4 @@
-package fhevm
+package tfhe
 
 import (
 	"bytes"
@@ -11,9 +11,9 @@ import (
 
 // generate keys if not present
 func setup() {
-	if !allGlobalKeysPresent() {
+	if !AllGlobalKeysPresent() {
 		fmt.Println("INFO: initializing global keys in tests")
-		initGlobalKeysWithNewKeys()
+		InitGlobalKeysWithNewKeys()
 	}
 }
 
@@ -117,7 +117,7 @@ func TfheSerializeDeserializeCompact(t *testing.T, fheUintType FheUintType) {
 		val = 13333377777777777
 	}
 
-	ser := encryptAndSerializeCompact(val, fheUintType)
+	ser := EncryptAndSerializeCompact(val, fheUintType)
 	ct1 := new(TfheCiphertext)
 	err := ct1.DeserializeCompact(ser, fheUintType)
 	if err != nil {
@@ -198,7 +198,7 @@ func TfheDeserializeCompact(t *testing.T, fheUintType FheUintType) {
 	case FheUint64:
 		val = 13333377777777777
 	}
-	ser := encryptAndSerializeCompact(val, fheUintType)
+	ser := EncryptAndSerializeCompact(val, fheUintType)
 	ct := new(TfheCiphertext)
 	err := ct.DeserializeCompact(ser, fheUintType)
 	if err != nil {
@@ -1331,8 +1331,8 @@ func TfheCast(t *testing.T, fheUintTypeFrom FheUintType, fheUintTypeTo FheUintTy
 		t.Fatal(err)
 	}
 
-	if ctRes.fheUintType != fheUintTypeTo {
-		t.Fatalf("type %d != type %d", ctA.fheUintType, fheUintTypeTo)
+	if ctRes.FheUintType != fheUintTypeTo {
+		t.Fatalf("type %d != type %d", ctA.FheUintType, fheUintTypeTo)
 	}
 	res, err := ctRes.Decrypt()
 	expected := a.Uint64() % modulus

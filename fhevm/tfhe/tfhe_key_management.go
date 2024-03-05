@@ -1,4 +1,4 @@
-package fhevm
+package tfhe
 
 /*
 #include "tfhe_wrappers.h"
@@ -17,10 +17,10 @@ import (
 )
 
 // Expanded TFHE ciphertext sizes by type, in bytes.
-var expandedFheCiphertextSize map[FheUintType]uint
+var ExpandedFheCiphertextSize map[FheUintType]uint
 
 func GetExpandedFheCiphertextSize(t FheUintType) (size uint, found bool) {
-	size, found = expandedFheCiphertextSize[t]
+	size, found = ExpandedFheCiphertextSize[t]
 	return
 }
 
@@ -53,32 +53,32 @@ func generateFhevmKeys() (unsafe.Pointer, unsafe.Pointer, unsafe.Pointer) {
 	return keys.sks, keys.cks, keys.pks
 }
 
-func allGlobalKeysPresent() bool {
+func AllGlobalKeysPresent() bool {
 	return sks != nil && cks != nil && pks != nil
 }
 
-func initGlobalKeysWithNewKeys() {
+func InitGlobalKeysWithNewKeys() {
 	sks, cks, pks = generateFhevmKeys()
 	initCiphertextSizes()
 }
 
 func initCiphertextSizes() {
-	expandedFheCiphertextSize = make(map[FheUintType]uint)
+	ExpandedFheCiphertextSize = make(map[FheUintType]uint)
 	compactFheCiphertextSize = make(map[FheUintType]uint)
 
-	expandedFheCiphertextSize[FheBool] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheBool).Serialize()))
-  expandedFheCiphertextSize[FheUint4] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint4).Serialize()))
-	expandedFheCiphertextSize[FheUint8] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint8).Serialize()))
-	expandedFheCiphertextSize[FheUint16] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint16).Serialize()))
-	expandedFheCiphertextSize[FheUint32] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint32).Serialize()))
-	expandedFheCiphertextSize[FheUint64] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint64).Serialize()))
+	ExpandedFheCiphertextSize[FheBool] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheBool).Serialize()))
+	ExpandedFheCiphertextSize[FheUint4] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint4).Serialize()))
+	ExpandedFheCiphertextSize[FheUint8] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint8).Serialize()))
+	ExpandedFheCiphertextSize[FheUint16] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint16).Serialize()))
+	ExpandedFheCiphertextSize[FheUint32] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint32).Serialize()))
+	ExpandedFheCiphertextSize[FheUint64] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint64).Serialize()))
 
-	compactFheCiphertextSize[FheBool] = uint(len(encryptAndSerializeCompact(0, FheBool)))
-	compactFheCiphertextSize[FheUint4] = uint(len(encryptAndSerializeCompact(0, FheUint4)))
-	compactFheCiphertextSize[FheUint8] = uint(len(encryptAndSerializeCompact(0, FheUint8)))
-	compactFheCiphertextSize[FheUint16] = uint(len(encryptAndSerializeCompact(0, FheUint16)))
-	compactFheCiphertextSize[FheUint32] = uint(len(encryptAndSerializeCompact(0, FheUint32)))
-	compactFheCiphertextSize[FheUint64] = uint(len(encryptAndSerializeCompact(0, FheUint64)))
+	compactFheCiphertextSize[FheBool] = uint(len(EncryptAndSerializeCompact(0, FheBool)))
+	compactFheCiphertextSize[FheUint4] = uint(len(EncryptAndSerializeCompact(0, FheUint4)))
+	compactFheCiphertextSize[FheUint8] = uint(len(EncryptAndSerializeCompact(0, FheUint8)))
+	compactFheCiphertextSize[FheUint16] = uint(len(EncryptAndSerializeCompact(0, FheUint16)))
+	compactFheCiphertextSize[FheUint32] = uint(len(EncryptAndSerializeCompact(0, FheUint32)))
+	compactFheCiphertextSize[FheUint64] = uint(len(EncryptAndSerializeCompact(0, FheUint64)))
 }
 
 func InitGlobalKeysFromFiles(keysDir string) error {

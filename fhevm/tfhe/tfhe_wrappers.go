@@ -1,10 +1,10 @@
-package fhevm
+package tfhe
 
 /*
-#cgo linux CFLAGS: -O3 -I../tfhe-rs/target/release -I../tfhe-rs/target/release/deps
-#cgo linux LDFLAGS: -L../tfhe-rs/target/release -l:libtfhe.a -L../tfhe-rs/target/release/deps -l:libtfhe_c_api_dynamic_buffer.a -lm
-#cgo darwin CFLAGS: -O3 -I../tfhe-rs/target/release -I../tfhe-rs/target/release/deps
-#cgo darwin LDFLAGS: -framework Security -L../tfhe-rs/target/release -ltfhe -L../tfhe-rs/target/release/deps -ltfhe_c_api_dynamic_buffer -lm
+#cgo linux CFLAGS: -O3 -I../../tfhe-rs/target/release -I../../tfhe-rs/target/release/deps
+#cgo linux LDFLAGS: -L../../tfhe-rs/target/release -l:libtfhe.a -L../../tfhe-rs/target/release/deps -l:libtfhe_c_api_dynamic_buffer.a -lm
+#cgo darwin CFLAGS: -O3 -I../../tfhe-rs/target/release -I../../tfhe-rs/target/release/deps
+#cgo darwin LDFLAGS: -framework Security -L../../tfhe-rs/target/release -ltfhe -L../../tfhe-rs/target/release/deps -ltfhe_c_api_dynamic_buffer -lm
 
 #include "tfhe_wrappers.h"
 
@@ -51,7 +51,7 @@ func serialize(ptr unsafe.Pointer, t FheUintType) ([]byte, error) {
 	return ser, nil
 }
 
-func serializePublicKey() ([]byte, error) {
+func SerializePublicKey() ([]byte, error) {
 	if pks == nil {
 		return nil, errors.New("serialize: no public key available")
 	}
@@ -65,13 +65,13 @@ func serializePublicKey() ([]byte, error) {
 	return ser, nil
 }
 
-func encryptAndSerializeCompact(value uint64, fheUintType FheUintType) []byte {
+func EncryptAndSerializeCompact(value uint64, fheUintType FheUintType) []byte {
 	out := &C.DynamicBuffer{}
 	switch fheUintType {
 	case FheBool:
 		val := false
 		if value == 1 {
-				val = true
+			val = true
 		}
 		C.public_key_encrypt_and_serialize_fhe_bool_list(pks, C.bool(val), out)
 	case FheUint4:

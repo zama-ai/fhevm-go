@@ -7,7 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	crypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
-	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
+	fhevm_crypto "github.com/zama-ai/fhevm-go/fhevm/crypto"
+	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 )
 
 // An arbitrary constant value to flag locations in protected storage.
@@ -25,7 +26,7 @@ func minUint64(a, b uint64) uint64 {
 type ciphertextMetadata struct {
 	refCount    uint64
 	length      uint64
-	fheUintType FheUintType
+	fheUintType tfhe.FheUintType
 }
 
 func (m ciphertextMetadata) serialize() [32]byte {
@@ -41,7 +42,7 @@ func (m *ciphertextMetadata) deserialize(buf [32]byte) *ciphertextMetadata {
 	u.SetBytes(buf[:])
 	m.refCount = u[0]
 	m.length = u[1]
-	m.fheUintType = FheUintType(u[2])
+	m.fheUintType = tfhe.FheUintType(u[2])
 	return m
 }
 
@@ -117,8 +118,8 @@ func persistIfVerifiedCiphertext(flagHandleLocation common.Hash, handle common.H
 	if metadataInt.IsZero() {
 		// If no metadata, it means this ciphertext itself hasn't been persisted to protected storage yet. We do that as part of SSTORE.
 		metadata.refCount = 1
-		metadata.length = uint64(expandedFheCiphertextSize[verifiedCiphertext.ciphertext.fheUintType])
-		metadata.fheUintType = verifiedCiphertext.ciphertext.fheUintType
+		metadata.length = uint64(tfhe.ExpandedFheCiphertextSize[verifiedCiphertext.ciphertext.FheUintType])
+		metadata.fheUintType = verifiedCiphertext.ciphertext.FheUintType
 		ciphertextSlot := newInt(metadataKey.Bytes())
 		ciphertextSlot.AddUint64(ciphertextSlot, 1)
 		if env.IsCommitting() {

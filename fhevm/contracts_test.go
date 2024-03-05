@@ -5,7 +5,9 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"math/big"
+	"os"
 	"strings"
 	"testing"
 
@@ -13,7 +15,21 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
+	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 )
+
+// generate keys if not present
+func setup() {
+	if !tfhe.AllGlobalKeysPresent() {
+		fmt.Println("INFO: initializing global keys in tests")
+		tfhe.InitGlobalKeysWithNewKeys()
+	}
+}
+
+func TestMain(m *testing.M) {
+	setup()
+	os.Exit(m.Run())
+}
 
 func init() {
 	// register errors from geth so that tests recognize them
@@ -66,7 +82,7 @@ func evaluateRemainingOptimisticRequiresWithoutKms(environment EVMEnvironment) (
 	len := len(requires)
 	defer func() { environment.FhevmData().resetOptimisticRequires() }()
 	if len != 0 {
-		var cumulative *TfheCiphertext = requires[0]
+		var cumulative *tfhe.TfheCiphertext = requires[0]
 		var err error
 		for i := 1; i < len; i++ {
 			cumulative, err = cumulative.Bitand(requires[i])
@@ -168,20 +184,20 @@ func prepareInputForVerifyCiphertext(input []byte) []byte {
 	return append(append(padding, size...), input...)
 }
 
-func VerifyCiphertext(t *testing.T, fheUintType FheUintType) {
+func VerifyCiphertext(t *testing.T, fheUintType tfhe.FheUintType) {
 	var value uint64
 	switch fheUintType {
-	case FheBool:
+	case tfhe.FheBool:
 		value = 1
-	case FheUint4:
+	case tfhe.FheUint4:
 		value = 4
-	case FheUint8:
+	case tfhe.FheUint8:
 		value = 234
-	case FheUint16:
+	case tfhe.FheUint16:
 		value = 4283
-	case FheUint32:
+	case tfhe.FheUint32:
 		value = 1333337
-	case FheUint64:
+	case tfhe.FheUint64:
 		value = 13333377777777777
 	}
 	depth := 1
@@ -189,13 +205,13 @@ func VerifyCiphertext(t *testing.T, fheUintType FheUintType) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	compact := encryptAndSerializeCompact(value, fheUintType)
+	compact := tfhe.EncryptAndSerializeCompact(value, fheUintType)
 	input := prepareInputForVerifyCiphertext(append(compact, byte(fheUintType)))
 	out, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	ct := new(TfheCiphertext)
+	ct := new(tfhe.TfheCiphertext)
 	if err = ct.DeserializeCompact(compact, fheUintType); err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -208,18 +224,18 @@ func VerifyCiphertext(t *testing.T, fheUintType FheUintType) {
 	}
 }
 
-func VerifyCiphertextBadType(t *testing.T, actualType FheUintType, metadataType FheUintType) {
+func VerifyCiphertextBadType(t *testing.T, actualType tfhe.FheUintType, metadataType tfhe.FheUintType) {
 	var value uint64
 	switch actualType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		value = 2
-	case FheUint8:
+	case tfhe.FheUint8:
 		value = 2
-	case FheUint16:
+	case tfhe.FheUint16:
 		value = 4283
-	case FheUint32:
+	case tfhe.FheUint32:
 		value = 1333337
-	case FheUint64:
+	case tfhe.FheUint64:
 		value = 13333377777777777
 	}
 	depth := 1
@@ -227,7 +243,7 @@ func VerifyCiphertextBadType(t *testing.T, actualType FheUintType, metadataType 
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	compact := encryptAndSerializeCompact(value, actualType)
+	compact := tfhe.EncryptAndSerializeCompact(value, actualType)
 	input := prepareInputForVerifyCiphertext(append(compact, byte(metadataType)))
 	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
 	if err == nil {
@@ -238,20 +254,20 @@ func VerifyCiphertextBadType(t *testing.T, actualType FheUintType, metadataType 
 	}
 }
 
-func TrivialEncrypt(t *testing.T, fheUintType FheUintType) {
+func TrivialEncrypt(t *testing.T, fheUintType tfhe.FheUintType) {
 	var value big.Int
 	switch fheUintType {
-	case FheBool:
+	case tfhe.FheBool:
 		value = *big.NewInt(1)
-	case FheUint4:
+	case tfhe.FheUint4:
 		value = *big.NewInt(2)
-	case FheUint8:
+	case tfhe.FheUint8:
 		value = *big.NewInt(2)
-	case FheUint16:
+	case tfhe.FheUint16:
 		value = *big.NewInt(4283)
-	case FheUint32:
+	case tfhe.FheUint32:
 		value = *big.NewInt(1333337)
-	case FheUint64:
+	case tfhe.FheUint64:
 		value = *big.NewInt(13333377777777777)
 	}
 	depth := 1
@@ -265,7 +281,7 @@ func TrivialEncrypt(t *testing.T, fheUintType FheUintType) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	ct := new(TfheCiphertext).TrivialEncrypt(value, fheUintType)
+	ct := new(tfhe.TfheCiphertext).TrivialEncrypt(value, fheUintType)
 	if common.BytesToHash(out) != ct.GetHash() {
 		t.Fatalf("output hash in verifyCipertext is incorrect")
 	}
@@ -275,22 +291,22 @@ func TrivialEncrypt(t *testing.T, fheUintType FheUintType) {
 	}
 }
 
-func FheLibAdd(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibAdd(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777777
 		lhs = 133377777777
 
@@ -324,22 +340,22 @@ func FheLibAdd(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibSub(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibSub(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777777
 		lhs = 133377777777
 	}
@@ -372,22 +388,22 @@ func FheLibSub(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibMul(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibMul(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 3
 		rhs = 2
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 3
 		rhs = 2
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777
 		lhs = 1337
 	}
@@ -420,22 +436,22 @@ func FheLibMul(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibLe(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibLe(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 1333777777777
 		lhs = 133377777777
 	}
@@ -488,22 +504,22 @@ func FheLibLe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibLt(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibLt(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777777
 		lhs = 133377777777
 	}
@@ -557,22 +573,22 @@ func FheLibLt(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibEq(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibEq(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777777
 		lhs = 133377777777
 	}
@@ -605,22 +621,22 @@ func FheLibEq(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibGe(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibGe(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777777
 		lhs = 133377777777
 	}
@@ -671,22 +687,22 @@ func FheLibGe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibGt(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibGt(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777777
 		lhs = 133377777777
 	}
@@ -739,22 +755,22 @@ func FheLibGt(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibShl(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibShl(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 2
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 3
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777777
 		lhs = 34
 	}
@@ -787,22 +803,22 @@ func FheLibShl(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibShr(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibShr(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 3
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 3
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777777
 		lhs = 34
 	}
@@ -835,22 +851,22 @@ func FheLibShr(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibNe(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibNe(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777777
 		lhs = 133377777777
 	}
@@ -883,22 +899,22 @@ func FheLibNe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibMin(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibMin(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777777
 		lhs = 133377777777
 	}
@@ -950,22 +966,22 @@ func FheLibMin(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibMax(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibMax(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777777
 		lhs = 133377777777
 	}
@@ -1017,22 +1033,22 @@ func FheLibMax(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibNeg(t *testing.T, fheUintType FheUintType) {
+func FheLibNeg(t *testing.T, fheUintType tfhe.FheUintType) {
 	var pt, expected uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		pt = 7
 		expected = uint64(16 - uint8(pt))
-	case FheUint8:
+	case tfhe.FheUint8:
 		pt = 2
 		expected = uint64(-uint8(pt))
-	case FheUint16:
+	case tfhe.FheUint16:
 		pt = 4283
 		expected = uint64(-uint16(pt))
-	case FheUint32:
+	case tfhe.FheUint32:
 		pt = 1333337
 		expected = uint64(-uint32(pt))
-	case FheUint64:
+	case tfhe.FheUint64:
 		pt = 13333377777777777
 		expected = uint64(-uint64(pt))
 	}
@@ -1060,25 +1076,25 @@ func FheLibNeg(t *testing.T, fheUintType FheUintType) {
 	}
 }
 
-func FheLibNot(t *testing.T, fheUintType FheUintType) {
+func FheLibNot(t *testing.T, fheUintType tfhe.FheUintType) {
 	var pt, expected uint64
 	switch fheUintType {
-	case FheBool:
+	case tfhe.FheBool:
 		pt = 1
 		expected = 0
-	case FheUint4:
+	case tfhe.FheUint4:
 		pt = 5
 		expected = uint64(15 - uint8(pt))
-	case FheUint8:
+	case tfhe.FheUint8:
 		pt = 2
 		expected = uint64(^uint8(pt))
-	case FheUint16:
+	case tfhe.FheUint16:
 		pt = 4283
 		expected = uint64(^uint16(pt))
-	case FheUint32:
+	case tfhe.FheUint32:
 		pt = 1333337
 		expected = uint64(^uint32(pt))
-	case FheUint64:
+	case tfhe.FheUint64:
 		pt = 13333377777777777
 		expected = uint64(^uint64(pt))
 	}
@@ -1106,22 +1122,22 @@ func FheLibNot(t *testing.T, fheUintType FheUintType) {
 	}
 }
 
-func FheLibDiv(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibDiv(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 4
 		rhs = 2
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 4
 		rhs = 2
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 721
 		rhs = 1000
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 137
 		rhs = 17
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777777
 		lhs = 1337
 	}
@@ -1161,22 +1177,22 @@ func FheLibDiv(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibRem(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibRem(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 7
 		rhs = 3
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 7
 		rhs = 3
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 721
 		rhs = 1000
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1337
 		rhs = 73
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777777
 		lhs = 1337
 	}
@@ -1215,25 +1231,25 @@ func FheLibRem(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibBitAnd(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibBitAnd(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheBool:
+	case tfhe.FheBool:
 		lhs = 1
 		rhs = 0
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777777
 		lhs = 1337
 	}
@@ -1272,25 +1288,25 @@ func FheLibBitAnd(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibBitOr(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibBitOr(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheBool:
+	case tfhe.FheBool:
 		lhs = 1
 		rhs = 0
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777777
 		lhs = 1337
 	}
@@ -1329,25 +1345,25 @@ func FheLibBitOr(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibBitXor(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLibBitXor(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheBool:
+	case tfhe.FheBool:
 		lhs = 1
 		rhs = 0
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777777777
 		lhs = 1337
 	}
@@ -1386,7 +1402,7 @@ func FheLibBitXor(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLibRand(t *testing.T, fheUintType FheUintType) {
+func FheLibRand(t *testing.T, fheUintType tfhe.FheUintType) {
 	signature := "fheRand(bytes1)"
 	depth := 1
 	environment := newTestEVMEnvironment()
@@ -1417,30 +1433,30 @@ func FheLibRand(t *testing.T, fheUintType FheUintType) {
 		t.Fatalf("decrypted value is not 64 bit")
 	}
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		if decrypted.Uint64() > 0xF {
 			t.Fatalf("random value is bigger than 0xFF (4 bits)")
 		}
-	case FheUint8:
+	case tfhe.FheUint8:
 		if decrypted.Uint64() > 0xFF {
 			t.Fatalf("random value is bigger than 0xFF (8 bits)")
 		}
-	case FheUint16:
+	case tfhe.FheUint16:
 		if decrypted.Uint64() > 0xFFFF {
 			t.Fatalf("random value is bigger than 0xFFFF (16 bits)")
 		}
-	case FheUint32:
+	case tfhe.FheUint32:
 		if decrypted.Uint64() > 0xFFFFFFFF {
 			t.Fatalf("random value is bigger than 0xFFFFFFFF (32 bits)")
 		}
-	case FheUint64:
+	case tfhe.FheUint64:
 		if decrypted.Uint64() > 0xFFFFFFFFFFFFFFFF {
 			t.Fatalf("random value is bigger than 0xFFFFFFFFFFFFFFFF (64 bits)")
 		}
 	}
 }
 
-func FheLibRandBounded(t *testing.T, fheUintType FheUintType, upperBound64 uint64) {
+func FheLibRandBounded(t *testing.T, fheUintType tfhe.FheUintType, upperBound64 uint64) {
 	signature := "fheRandBounded(uint256,bytes1)"
 	depth := 1
 	environment := newTestEVMEnvironment()
@@ -1477,22 +1493,22 @@ func FheLibRandBounded(t *testing.T, fheUintType FheUintType, upperBound64 uint6
 	}
 }
 
-func FheLibIfThenElse(t *testing.T, fheUintType FheUintType, condition uint64) {
+func FheLibIfThenElse(t *testing.T, fheUintType tfhe.FheUintType, condition uint64) {
 	var second, third uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		second = 2
 		third = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		second = 2
 		third = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		second = 4283
 		third = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		second = 1333337
 		third = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		second = 1333337777777
 		third = 133337
 	}
@@ -1502,7 +1518,7 @@ func FheLibIfThenElse(t *testing.T, fheUintType FheUintType, condition uint64) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	firstHash := verifyCiphertextInTestMemory(environment, condition, depth, FheBool).GetHash()
+	firstHash := verifyCiphertextInTestMemory(environment, condition, depth, tfhe.FheBool).GetHash()
 	secondHash := verifyCiphertextInTestMemory(environment, second, depth, fheUintType).GetHash()
 	thirdHash := verifyCiphertextInTestMemory(environment, third, depth, fheUintType).GetHash()
 	input := toLibPrecompileInputNoScalar(signature, firstHash, secondHash, thirdHash)
@@ -1521,18 +1537,18 @@ func FheLibIfThenElse(t *testing.T, fheUintType FheUintType, condition uint64) {
 	}
 }
 
-func LibTrivialEncrypt(t *testing.T, fheUintType FheUintType) {
+func LibTrivialEncrypt(t *testing.T, fheUintType tfhe.FheUintType) {
 	var value big.Int
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		value = *big.NewInt(2)
-	case FheUint8:
+	case tfhe.FheUint8:
 		value = *big.NewInt(2)
-	case FheUint16:
+	case tfhe.FheUint16:
 		value = *big.NewInt(4283)
-	case FheUint32:
+	case tfhe.FheUint32:
 		value = *big.NewInt(1333337)
-	case FheUint64:
+	case tfhe.FheUint64:
 		value = *big.NewInt(133333777777)
 	}
 	signature := "trivialEncrypt(uint256,bytes1)"
@@ -1552,7 +1568,7 @@ func LibTrivialEncrypt(t *testing.T, fheUintType FheUintType) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	ct := new(TfheCiphertext).TrivialEncrypt(value, fheUintType)
+	ct := new(tfhe.TfheCiphertext).TrivialEncrypt(value, fheUintType)
 	if common.BytesToHash(out) != ct.GetHash() {
 		t.Fatalf("output hash in verifyCipertext is incorrect")
 	}
@@ -1562,18 +1578,18 @@ func LibTrivialEncrypt(t *testing.T, fheUintType FheUintType) {
 	}
 }
 
-func LibDecrypt(t *testing.T, fheUintType FheUintType) {
+func LibDecrypt(t *testing.T, fheUintType tfhe.FheUintType) {
 	var value uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		value = 2
-	case FheUint8:
+	case tfhe.FheUint8:
 		value = 2
-	case FheUint16:
+	case tfhe.FheUint16:
 		value = 4283
-	case FheUint32:
+	case tfhe.FheUint32:
 		value = 1333337
-	case FheUint64:
+	case tfhe.FheUint64:
 		value = 133333777777
 	}
 	signature := "decrypt(uint256)"
@@ -1610,10 +1626,10 @@ func TestLibVerifyCiphertextInvalidType(t *testing.T) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	invalidType := FheUintType(255)
+	invalidType := tfhe.FheUintType(255)
 	input := make([]byte, 0)
 	input = append(input, signatureBytes...)
-	compact := encryptAndSerializeCompact(0, FheUint32)
+	compact := tfhe.EncryptAndSerializeCompact(0, tfhe.FheUint32)
 	input = append(input, compact...)
 	input = append(input, byte(invalidType))
 	_, err := FheLibRun(environment, addr, addr, input, readOnly)
@@ -1636,7 +1652,7 @@ func TestLibVerifyCiphertextInvalidType(t *testing.T) {
 // 	environment.depth = depth
 // 	environment.ethCall = true
 // 	toEncrypt := 7
-// 	fheUintType := FheUint8
+// 	fheUintType := tfhe.FheUint8
 // 	encCiphertext := verifyCiphertextInTestMemory(environment, uint64(toEncrypt), depth, fheUintType).getHash()
 // 	addr := common.Address{}
 // 	readOnly := false
@@ -1660,36 +1676,36 @@ func TestLibCast(t *testing.T) {
 	environment.depth = depth
 	environment.ethCall = true
 	toEncrypt := 7
-	fheUintType := FheUint8
+	fheUintType := tfhe.FheUint8
 	encCiphertext := verifyCiphertextInTestMemory(environment, uint64(toEncrypt), depth, fheUintType).GetHash()
 	addr := common.Address{}
 	readOnly := false
 	input := make([]byte, 0)
 	input = append(input, signatureBytes...)
 	input = append(input, encCiphertext.Bytes()...)
-	input = append(input, byte(FheUint32))
+	input = append(input, byte(tfhe.FheUint32))
 	_, err := FheLibRun(environment, addr, addr, input, readOnly)
 	if err != nil {
 		t.Fatalf("Cast error: %s", err.Error())
 	}
 }
 
-func FheAdd(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheAdd(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 133333777777
 		rhs = 133337
 	}
@@ -1721,22 +1737,22 @@ func FheAdd(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheSub(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheSub(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 133333777777
 		rhs = 133337
 	}
@@ -1768,22 +1784,22 @@ func FheSub(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheMul(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheMul(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 3
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 3
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 169
 		rhs = 5
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 137
 		rhs = 17
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 137777
 		rhs = 17
 	}
@@ -1815,22 +1831,22 @@ func FheMul(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheDiv(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheDiv(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 6
 		rhs = 7
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 6
 		rhs = 7
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 721
 		rhs = 251
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 137
 		rhs = 65521
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 137777777
 		rhs = 65521
 	}
@@ -1868,22 +1884,22 @@ func FheDiv(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheRem(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheRem(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 9
 		rhs = 5
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 9
 		rhs = 5
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 1773
 		rhs = 523
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 123765
 		rhs = 2179
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 1237651337
 		rhs = 2179
 	}
@@ -1921,25 +1937,25 @@ func FheRem(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheBitAnd(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheBitAnd(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheBool:
+	case tfhe.FheBool:
 		lhs = 1
 		rhs = 0
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777
 		rhs = 133337
 	}
@@ -1977,22 +1993,22 @@ func FheBitAnd(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheBitOr(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheBitOr(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777
 		rhs = 133337
 	}
@@ -2030,22 +2046,22 @@ func FheBitOr(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheBitXor(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheBitXor(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777
 		rhs = 133337
 	}
@@ -2083,22 +2099,22 @@ func FheBitXor(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheShl(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheShl(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 2
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 3
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 1333337777
 		rhs = 10
 	}
@@ -2130,22 +2146,22 @@ func FheShl(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheShr(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheShr(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 3
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 3
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 133333777777
 		rhs = 10
 	}
@@ -2177,22 +2193,22 @@ func FheShr(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheEq(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheEq(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777
 		rhs = 133337
 	}
@@ -2224,22 +2240,22 @@ func FheEq(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheNe(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheNe(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777
 		rhs = 133337
 	}
@@ -2271,22 +2287,22 @@ func FheNe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheGe(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheGe(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777
 		rhs = 133337
 	}
@@ -2336,22 +2352,22 @@ func FheGe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheGt(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheGt(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777
 		rhs = 133337
 	}
@@ -2403,22 +2419,22 @@ func FheGt(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLe(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLe(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 1333337777
 		rhs = 133337
 	}
@@ -2470,22 +2486,22 @@ func FheLe(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheLt(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheLt(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777
 		rhs = 133337
 	}
@@ -2538,22 +2554,22 @@ func FheLt(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheMin(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheMin(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 133333777777
 		rhs = 133337
 	}
@@ -2604,22 +2620,22 @@ func FheMin(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheMax(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheMax(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777
 		rhs = 133337
 	}
@@ -2670,22 +2686,22 @@ func FheMax(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheNeg(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheNeg(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var pt, expected uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		pt = 2
 		expected = uint64(-uint8(pt))
-	case FheUint8:
+	case tfhe.FheUint8:
 		pt = 2
 		expected = uint64(-uint8(pt))
-	case FheUint16:
+	case tfhe.FheUint16:
 		pt = 4283
 		expected = uint64(-uint16(pt))
-	case FheUint32:
+	case tfhe.FheUint32:
 		pt = 1333337
 		expected = uint64(-uint32(pt))
-	case FheUint64:
+	case tfhe.FheUint64:
 		pt = 133333777777
 		expected = uint64(-uint64(pt))
 	}
@@ -2713,22 +2729,22 @@ func FheNeg(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheNot(t *testing.T, fheUintType FheUintType, scalar bool) {
+func FheNot(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	var pt, expected uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		pt = 2
 		expected = uint64(^uint8(pt))
-	case FheUint8:
+	case tfhe.FheUint8:
 		pt = 2
 		expected = uint64(^uint8(pt))
-	case FheUint16:
+	case tfhe.FheUint16:
 		pt = 4283
 		expected = uint64(^uint16(pt))
-	case FheUint32:
+	case tfhe.FheUint32:
 		pt = 1333337
 		expected = uint64(^uint32(pt))
-	case FheUint64:
+	case tfhe.FheUint64:
 		pt = 1333337777777
 		expected = uint64(^uint64(pt))
 	}
@@ -2756,22 +2772,22 @@ func FheNot(t *testing.T, fheUintType FheUintType, scalar bool) {
 	}
 }
 
-func FheIfThenElse(t *testing.T, fheUintType FheUintType, condition uint64) {
+func FheIfThenElse(t *testing.T, fheUintType tfhe.FheUintType, condition uint64) {
 	var lhs, rhs uint64
 	switch fheUintType {
-	case FheUint4:
+	case tfhe.FheUint4:
 		lhs = 2
 		rhs = 1
-	case FheUint8:
+	case tfhe.FheUint8:
 		lhs = 2
 		rhs = 1
-	case FheUint16:
+	case tfhe.FheUint16:
 		lhs = 4283
 		rhs = 1337
-	case FheUint32:
+	case tfhe.FheUint32:
 		lhs = 1333337
 		rhs = 133337
-	case FheUint64:
+	case tfhe.FheUint64:
 		lhs = 13333377777
 		rhs = 133337
 	}
@@ -2780,7 +2796,7 @@ func FheIfThenElse(t *testing.T, fheUintType FheUintType, condition uint64) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	conditionHash := verifyCiphertextInTestMemory(environment, condition, depth, FheBool).GetHash()
+	conditionHash := verifyCiphertextInTestMemory(environment, condition, depth, tfhe.FheBool).GetHash()
 	lhsHash := verifyCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	rhsHash := verifyCiphertextInTestMemory(environment, rhs, depth, fheUintType).GetHash()
 
@@ -2799,20 +2815,20 @@ func FheIfThenElse(t *testing.T, fheUintType FheUintType, condition uint64) {
 	}
 }
 
-func Decrypt(t *testing.T, fheUintType FheUintType) {
+func Decrypt(t *testing.T, fheUintType tfhe.FheUintType) {
 	var value uint64
 	switch fheUintType {
-	case FheBool:
+	case tfhe.FheBool:
 		value = 1
-	case FheUint4:
+	case tfhe.FheUint4:
 		value = 2
-	case FheUint8:
+	case tfhe.FheUint8:
 		value = 2
-	case FheUint16:
+	case tfhe.FheUint16:
 		value = 4283
-	case FheUint32:
+	case tfhe.FheUint32:
 		value = 1333337
-	case FheUint64:
+	case tfhe.FheUint64:
 		value = 133333777777777
 	}
 	depth := 1
@@ -2834,7 +2850,7 @@ func Decrypt(t *testing.T, fheUintType FheUintType) {
 	}
 }
 
-func FheRand(t *testing.T, fheUintType FheUintType) {
+func FheRand(t *testing.T, fheUintType tfhe.FheUintType) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
@@ -2863,8 +2879,8 @@ func TestVerifyCiphertextInvalidType(t *testing.T) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	invalidType := FheUintType(255)
-	compact := encryptAndSerializeCompact(0, FheUint64)
+	invalidType := tfhe.FheUintType(255)
+	compact := tfhe.EncryptAndSerializeCompact(0, tfhe.FheUint64)
 	input := prepareInputForVerifyCiphertext(append(compact, byte(invalidType)))
 	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
 	if err == nil {
@@ -2884,7 +2900,7 @@ func TestTrivialEncryptInvalidType(t *testing.T) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	invalidType := FheUintType(255)
+	invalidType := tfhe.FheUintType(255)
 	input := make([]byte, 32)
 	input = append(input, byte(invalidType))
 	trivialEncryptRun(environment, addr, addr, input, readOnly, nil)
@@ -2896,8 +2912,8 @@ func TestCastInvalidType(t *testing.T) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	invalidType := FheUintType(255)
-	hash := verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).GetHash()
+	invalidType := tfhe.FheUintType(255)
+	hash := verifyCiphertextInTestMemory(environment, 1, depth, tfhe.FheUint8).GetHash()
 	input := make([]byte, 0)
 	input = append(input, hash.Bytes()...)
 	input = append(input, byte(invalidType))
@@ -2913,8 +2929,8 @@ func TestVerifyCiphertextInvalidSize(t *testing.T) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	ctType := FheUint32
-	compact := encryptAndSerializeCompact(0, ctType)
+	ctType := tfhe.FheUint32
+	compact := tfhe.EncryptAndSerializeCompact(0, ctType)
 	input := prepareInputForVerifyCiphertext(append(compact[:len(compact)-1], byte(ctType)))
 	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
 	if err == nil {
@@ -2923,78 +2939,78 @@ func TestVerifyCiphertextInvalidSize(t *testing.T) {
 }
 
 func TestVerifyCiphertext4(t *testing.T) {
-	VerifyCiphertext(t, FheUint4)
+	VerifyCiphertext(t, tfhe.FheUint4)
 }
 
 func TestVerifyCiphertext8(t *testing.T) {
-	VerifyCiphertext(t, FheUint8)
+	VerifyCiphertext(t, tfhe.FheUint8)
 }
 
 func TestVerifyCiphertext16(t *testing.T) {
-	VerifyCiphertext(t, FheUint16)
+	VerifyCiphertext(t, tfhe.FheUint16)
 }
 
 func TestVerifyCiphertext32(t *testing.T) {
-	VerifyCiphertext(t, FheUint32)
+	VerifyCiphertext(t, tfhe.FheUint32)
 }
 
 func TestVerifyCiphertext64(t *testing.T) {
-	VerifyCiphertext(t, FheUint64)
+	VerifyCiphertext(t, tfhe.FheUint64)
 }
 
 func TestTrivialEncrypt4(t *testing.T) {
-	TrivialEncrypt(t, FheUint4)
+	TrivialEncrypt(t, tfhe.FheUint4)
 }
 
 func TestTrivialEncrypt8(t *testing.T) {
-	TrivialEncrypt(t, FheUint8)
+	TrivialEncrypt(t, tfhe.FheUint8)
 }
 
 func TestTrivialEncrypt16(t *testing.T) {
-	TrivialEncrypt(t, FheUint16)
+	TrivialEncrypt(t, tfhe.FheUint16)
 }
 
 func TestTrivialEncrypt32(t *testing.T) {
-	TrivialEncrypt(t, FheUint32)
+	TrivialEncrypt(t, tfhe.FheUint32)
 }
 
 func TestTrivialEncrypt64(t *testing.T) {
-	TrivialEncrypt(t, FheUint64)
+	TrivialEncrypt(t, tfhe.FheUint64)
 }
 
 func TestVerifyCiphertext4BadType(t *testing.T) {
-	VerifyCiphertextBadType(t, FheUint4, FheUint8)
-	VerifyCiphertextBadType(t, FheUint4, FheUint16)
-	VerifyCiphertextBadType(t, FheUint4, FheUint32)
-	VerifyCiphertextBadType(t, FheUint4, FheUint64)
+	VerifyCiphertextBadType(t, tfhe.FheUint4, tfhe.FheUint8)
+	VerifyCiphertextBadType(t, tfhe.FheUint4, tfhe.FheUint16)
+	VerifyCiphertextBadType(t, tfhe.FheUint4, tfhe.FheUint32)
+	VerifyCiphertextBadType(t, tfhe.FheUint4, tfhe.FheUint64)
 }
 
 func TestVerifyCiphertext8BadType(t *testing.T) {
-	VerifyCiphertextBadType(t, FheUint8, FheUint4)
-	VerifyCiphertextBadType(t, FheUint8, FheUint16)
-	VerifyCiphertextBadType(t, FheUint8, FheUint32)
-	VerifyCiphertextBadType(t, FheUint8, FheUint64)
+	VerifyCiphertextBadType(t, tfhe.FheUint8, tfhe.FheUint4)
+	VerifyCiphertextBadType(t, tfhe.FheUint8, tfhe.FheUint16)
+	VerifyCiphertextBadType(t, tfhe.FheUint8, tfhe.FheUint32)
+	VerifyCiphertextBadType(t, tfhe.FheUint8, tfhe.FheUint64)
 }
 
 func TestVerifyCiphertext16BadType(t *testing.T) {
-	VerifyCiphertextBadType(t, FheUint16, FheUint4)
-	VerifyCiphertextBadType(t, FheUint16, FheUint8)
-	VerifyCiphertextBadType(t, FheUint16, FheUint32)
-	VerifyCiphertextBadType(t, FheUint16, FheUint64)
+	VerifyCiphertextBadType(t, tfhe.FheUint16, tfhe.FheUint4)
+	VerifyCiphertextBadType(t, tfhe.FheUint16, tfhe.FheUint8)
+	VerifyCiphertextBadType(t, tfhe.FheUint16, tfhe.FheUint32)
+	VerifyCiphertextBadType(t, tfhe.FheUint16, tfhe.FheUint64)
 }
 
 func TestVerifyCiphertext32BadType(t *testing.T) {
-	VerifyCiphertextBadType(t, FheUint32, FheUint4)
-	VerifyCiphertextBadType(t, FheUint32, FheUint8)
-	VerifyCiphertextBadType(t, FheUint32, FheUint16)
-	VerifyCiphertextBadType(t, FheUint32, FheUint64)
+	VerifyCiphertextBadType(t, tfhe.FheUint32, tfhe.FheUint4)
+	VerifyCiphertextBadType(t, tfhe.FheUint32, tfhe.FheUint8)
+	VerifyCiphertextBadType(t, tfhe.FheUint32, tfhe.FheUint16)
+	VerifyCiphertextBadType(t, tfhe.FheUint32, tfhe.FheUint64)
 }
 
 func TestVerifyCiphertext64BadType(t *testing.T) {
-	VerifyCiphertextBadType(t, FheUint64, FheUint4)
-	VerifyCiphertextBadType(t, FheUint64, FheUint8)
-	VerifyCiphertextBadType(t, FheUint64, FheUint16)
-	VerifyCiphertextBadType(t, FheUint64, FheUint32)
+	VerifyCiphertextBadType(t, tfhe.FheUint64, tfhe.FheUint4)
+	VerifyCiphertextBadType(t, tfhe.FheUint64, tfhe.FheUint8)
+	VerifyCiphertextBadType(t, tfhe.FheUint64, tfhe.FheUint16)
+	VerifyCiphertextBadType(t, tfhe.FheUint64, tfhe.FheUint32)
 }
 
 func TestVerifyCiphertextBadCiphertext(t *testing.T) {
@@ -3014,940 +3030,940 @@ func TestVerifyCiphertextBadCiphertext(t *testing.T) {
 }
 
 func TestFheLibBitAndBool(t *testing.T) {
-	FheLibBitAnd(t, FheBool, false)
+	FheLibBitAnd(t, tfhe.FheBool, false)
 }
 
 func TestFheLibBitOrBool(t *testing.T) {
-	FheLibBitOr(t, FheBool, false)
+	FheLibBitOr(t, tfhe.FheBool, false)
 }
 
 func TestFheLibBitXorBool(t *testing.T) {
-	FheLibBitXor(t, FheBool, false)
+	FheLibBitXor(t, tfhe.FheBool, false)
 }
 
 func TestFheLibAdd4(t *testing.T) {
-	FheLibAdd(t, FheUint4, false)
+	FheLibAdd(t, tfhe.FheUint4, false)
 }
 
 func TestFheLibSub4(t *testing.T) {
-	FheLibSub(t, FheUint4, false)
+	FheLibSub(t, tfhe.FheUint4, false)
 }
 
 func TestFheLibMul4(t *testing.T) {
-	FheLibMul(t, FheUint4, false)
+	FheLibMul(t, tfhe.FheUint4, false)
 }
 
 func TestFheLibLe4(t *testing.T) {
-	FheLibLe(t, FheUint4, false)
+	FheLibLe(t, tfhe.FheUint4, false)
 }
 
 func TestFheLibLt4(t *testing.T) {
-	FheLibLt(t, FheUint4, false)
+	FheLibLt(t, tfhe.FheUint4, false)
 }
 
 func TestFheLibEq4(t *testing.T) {
-	FheLibEq(t, FheUint4, false)
+	FheLibEq(t, tfhe.FheUint4, false)
 }
 
 func TestFheLibGe4(t *testing.T) {
-	FheLibGe(t, FheUint4, false)
+	FheLibGe(t, tfhe.FheUint4, false)
 }
 
 func TestFheLibGt4(t *testing.T) {
-	FheLibGt(t, FheUint4, false)
+	FheLibGt(t, tfhe.FheUint4, false)
 }
 
 func TestFheLibShl4(t *testing.T) {
-	FheLibShl(t, FheUint4, false)
+	FheLibShl(t, tfhe.FheUint4, false)
 }
 
 func TestFheLibShr4(t *testing.T) {
-	FheLibShr(t, FheUint4, false)
+	FheLibShr(t, tfhe.FheUint4, false)
 }
 
 func TestFheLibNe4(t *testing.T) {
-	FheLibNe(t, FheUint4, false)
+	FheLibNe(t, tfhe.FheUint4, false)
 }
 
 func TestFheLibMin4(t *testing.T) {
-	FheLibMin(t, FheUint4, false)
+	FheLibMin(t, tfhe.FheUint4, false)
 }
 
 func TestFheLibMax4(t *testing.T) {
-	FheLibMax(t, FheUint4, false)
+	FheLibMax(t, tfhe.FheUint4, false)
 }
 
 func TestFheLibNeg4(t *testing.T) {
-	FheLibNeg(t, FheUint4)
+	FheLibNeg(t, tfhe.FheUint4)
 }
 
 func TestFheLibNotBool(t *testing.T) {
-	FheLibNot(t, FheBool)
+	FheLibNot(t, tfhe.FheBool)
 }
 
 func TestFheLibNot4(t *testing.T) {
-	FheLibNot(t, FheUint4)
+	FheLibNot(t, tfhe.FheUint4)
 }
 
 func TestFheLibDiv4(t *testing.T) {
-	FheLibDiv(t, FheUint4, true)
+	FheLibDiv(t, tfhe.FheUint4, true)
 }
 
 func TestFheLibRem4(t *testing.T) {
-	FheLibRem(t, FheUint4, true)
+	FheLibRem(t, tfhe.FheUint4, true)
 }
 
 func TestFheLibBitAnd4(t *testing.T) {
-	FheLibBitAnd(t, FheUint4, false)
+	FheLibBitAnd(t, tfhe.FheUint4, false)
 }
 
 func TestFheLibBitOr4(t *testing.T) {
-	FheLibBitOr(t, FheUint4, false)
+	FheLibBitOr(t, tfhe.FheUint4, false)
 }
 
 func TestFheLibBitXor4(t *testing.T) {
-	FheLibBitXor(t, FheUint4, false)
+	FheLibBitXor(t, tfhe.FheUint4, false)
 }
 
 func TestFheLibRand4(t *testing.T) {
-	FheLibRand(t, FheUint4)
+	FheLibRand(t, tfhe.FheUint4)
 }
 
 func TestFheLibAdd8(t *testing.T) {
-	FheLibAdd(t, FheUint8, false)
+	FheLibAdd(t, tfhe.FheUint8, false)
 }
 
 func TestFheLibSub8(t *testing.T) {
-	FheLibSub(t, FheUint8, false)
+	FheLibSub(t, tfhe.FheUint8, false)
 }
 
 func TestFheLibMul8(t *testing.T) {
-	FheLibMul(t, FheUint8, false)
+	FheLibMul(t, tfhe.FheUint8, false)
 }
 
 func TestFheLibLe8(t *testing.T) {
-	FheLibLe(t, FheUint8, false)
+	FheLibLe(t, tfhe.FheUint8, false)
 }
 
 func TestFheLibLt8(t *testing.T) {
-	FheLibLt(t, FheUint8, false)
+	FheLibLt(t, tfhe.FheUint8, false)
 }
 
 func TestFheLibEq8(t *testing.T) {
-	FheLibEq(t, FheUint8, false)
+	FheLibEq(t, tfhe.FheUint8, false)
 }
 
 func TestFheLibGe8(t *testing.T) {
-	FheLibGe(t, FheUint8, false)
+	FheLibGe(t, tfhe.FheUint8, false)
 }
 
 func TestFheLibGt8(t *testing.T) {
-	FheLibGt(t, FheUint8, false)
+	FheLibGt(t, tfhe.FheUint8, false)
 }
 
 func TestFheLibShl8(t *testing.T) {
-	FheLibShl(t, FheUint8, false)
+	FheLibShl(t, tfhe.FheUint8, false)
 }
 
 func TestFheLibShr8(t *testing.T) {
-	FheLibShr(t, FheUint8, false)
+	FheLibShr(t, tfhe.FheUint8, false)
 }
 
 func TestFheLibNe8(t *testing.T) {
-	FheLibNe(t, FheUint8, false)
+	FheLibNe(t, tfhe.FheUint8, false)
 }
 
 func TestFheLibMin8(t *testing.T) {
-	FheLibMin(t, FheUint8, false)
+	FheLibMin(t, tfhe.FheUint8, false)
 }
 
 func TestFheLibMax8(t *testing.T) {
-	FheLibMax(t, FheUint8, false)
+	FheLibMax(t, tfhe.FheUint8, false)
 }
 
 func TestFheLibNeg8(t *testing.T) {
-	FheLibNeg(t, FheUint8)
+	FheLibNeg(t, tfhe.FheUint8)
 }
 
 func TestFheLibNot8(t *testing.T) {
-	FheLibNot(t, FheUint8)
+	FheLibNot(t, tfhe.FheUint8)
 }
 
 func TestFheLibDiv8(t *testing.T) {
-	FheLibDiv(t, FheUint8, true)
+	FheLibDiv(t, tfhe.FheUint8, true)
 }
 
 func TestFheLibRem8(t *testing.T) {
-	FheLibRem(t, FheUint8, true)
+	FheLibRem(t, tfhe.FheUint8, true)
 }
 
 func TestFheLibBitAnd8(t *testing.T) {
-	FheLibBitAnd(t, FheUint8, false)
+	FheLibBitAnd(t, tfhe.FheUint8, false)
 }
 
 func TestFheLibBitOr8(t *testing.T) {
-	FheLibBitOr(t, FheUint8, false)
+	FheLibBitOr(t, tfhe.FheUint8, false)
 }
 
 func TestFheLibBitXor8(t *testing.T) {
-	FheLibBitXor(t, FheUint8, false)
+	FheLibBitXor(t, tfhe.FheUint8, false)
 }
 
 func TestFheLibRand8(t *testing.T) {
-	FheLibRand(t, FheUint8)
+	FheLibRand(t, tfhe.FheUint8)
 }
 
 func TestFheLibRand16(t *testing.T) {
-	FheLibRand(t, FheUint16)
+	FheLibRand(t, tfhe.FheUint16)
 }
 
 func TestFheLibRand32(t *testing.T) {
-	FheLibRand(t, FheUint32)
+	FheLibRand(t, tfhe.FheUint32)
 }
 
 func TestFheLibRand64(t *testing.T) {
-	FheLibRand(t, FheUint64)
+	FheLibRand(t, tfhe.FheUint64)
 }
 
 func TestFheLibRandBounded8(t *testing.T) {
-	FheLibRandBounded(t, FheUint8, 8)
+	FheLibRandBounded(t, tfhe.FheUint8, 8)
 }
 
 func TestFheLibRandBounded16(t *testing.T) {
-	FheLibRandBounded(t, FheUint16, 16)
+	FheLibRandBounded(t, tfhe.FheUint16, 16)
 }
 
 func TestFheLibRandBounded32(t *testing.T) {
-	FheLibRandBounded(t, FheUint32, 32)
+	FheLibRandBounded(t, tfhe.FheUint32, 32)
 }
 
 func TestFheLibRandBounded64(t *testing.T) {
-	FheLibRandBounded(t, FheUint64, 64)
+	FheLibRandBounded(t, tfhe.FheUint64, 64)
 }
 
 func TestFheLibIfThenElse8(t *testing.T) {
-	FheLibIfThenElse(t, FheUint8, 1)
-	FheLibIfThenElse(t, FheUint8, 0)
+	FheLibIfThenElse(t, tfhe.FheUint8, 1)
+	FheLibIfThenElse(t, tfhe.FheUint8, 0)
 }
 
 func TestFheLibIfThenElse16(t *testing.T) {
-	FheLibIfThenElse(t, FheUint16, 1)
-	FheLibIfThenElse(t, FheUint16, 0)
+	FheLibIfThenElse(t, tfhe.FheUint16, 1)
+	FheLibIfThenElse(t, tfhe.FheUint16, 0)
 }
 
 func TestFheLibIfThenElse32(t *testing.T) {
-	FheLibIfThenElse(t, FheUint32, 1)
-	FheLibIfThenElse(t, FheUint32, 0)
+	FheLibIfThenElse(t, tfhe.FheUint32, 1)
+	FheLibIfThenElse(t, tfhe.FheUint32, 0)
 }
 
 func TestFheLibIfThenElse64(t *testing.T) {
-	FheLibIfThenElse(t, FheUint64, 1)
-	FheLibIfThenElse(t, FheUint64, 0)
+	FheLibIfThenElse(t, tfhe.FheUint64, 1)
+	FheLibIfThenElse(t, tfhe.FheUint64, 0)
 }
 
 func TestFheLibTrivialEncrypt8(t *testing.T) {
-	LibTrivialEncrypt(t, FheUint8)
+	LibTrivialEncrypt(t, tfhe.FheUint8)
 }
 
 // TODO: can be enabled if mocking kms or running a kms during tests
 // func TestLibDecrypt8(t *testing.T) {
-// 	LibDecrypt(t, FheUint8)
+// 	LibDecrypt(t, tfhe.FheUint8)
 // }
 
 func TestFheAdd8(t *testing.T) {
-	FheAdd(t, FheUint8, false)
+	FheAdd(t, tfhe.FheUint8, false)
 }
 
 func TestFheAdd16(t *testing.T) {
-	FheAdd(t, FheUint16, false)
+	FheAdd(t, tfhe.FheUint16, false)
 }
 
 func TestFheAdd32(t *testing.T) {
-	FheAdd(t, FheUint32, false)
+	FheAdd(t, tfhe.FheUint32, false)
 }
 
 func TestFheAdd64(t *testing.T) {
-	FheAdd(t, FheUint64, false)
+	FheAdd(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarAdd8(t *testing.T) {
-	FheAdd(t, FheUint8, true)
+	FheAdd(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarAdd16(t *testing.T) {
-	FheAdd(t, FheUint16, true)
+	FheAdd(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarAdd32(t *testing.T) {
-	FheAdd(t, FheUint32, true)
+	FheAdd(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarAdd64(t *testing.T) {
-	FheAdd(t, FheUint64, true)
+	FheAdd(t, tfhe.FheUint64, true)
 }
 
 func TestFheSub8(t *testing.T) {
-	FheSub(t, FheUint8, false)
+	FheSub(t, tfhe.FheUint8, false)
 }
 
 func TestFheSub16(t *testing.T) {
-	FheSub(t, FheUint16, false)
+	FheSub(t, tfhe.FheUint16, false)
 }
 
 func TestFheSub32(t *testing.T) {
-	FheSub(t, FheUint32, false)
+	FheSub(t, tfhe.FheUint32, false)
 }
 
 func TestFheSub64(t *testing.T) {
-	FheSub(t, FheUint64, false)
+	FheSub(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarSub8(t *testing.T) {
-	FheSub(t, FheUint8, true)
+	FheSub(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarSub16(t *testing.T) {
-	FheSub(t, FheUint16, true)
+	FheSub(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarSub32(t *testing.T) {
-	FheSub(t, FheUint32, true)
+	FheSub(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarSub64(t *testing.T) {
-	FheSub(t, FheUint64, true)
+	FheSub(t, tfhe.FheUint64, true)
 }
 
 func TestFheMul8(t *testing.T) {
-	FheMul(t, FheUint8, false)
+	FheMul(t, tfhe.FheUint8, false)
 }
 
 func TestFheMul16(t *testing.T) {
-	FheMul(t, FheUint16, false)
+	FheMul(t, tfhe.FheUint16, false)
 }
 
 func TestFheMul32(t *testing.T) {
-	FheMul(t, FheUint32, false)
+	FheMul(t, tfhe.FheUint32, false)
 }
 
 func TestFheMul64(t *testing.T) {
-	FheMul(t, FheUint64, false)
+	FheMul(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarMul8(t *testing.T) {
-	FheMul(t, FheUint8, true)
+	FheMul(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarMul16(t *testing.T) {
-	FheMul(t, FheUint16, true)
+	FheMul(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarMul32(t *testing.T) {
-	FheMul(t, FheUint32, true)
+	FheMul(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarMul64(t *testing.T) {
-	FheMul(t, FheUint64, true)
+	FheMul(t, tfhe.FheUint64, true)
 }
 
 func TestFheDiv8(t *testing.T) {
-	FheDiv(t, FheUint8, false)
+	FheDiv(t, tfhe.FheUint8, false)
 }
 
 func TestFheDiv16(t *testing.T) {
-	FheDiv(t, FheUint16, false)
+	FheDiv(t, tfhe.FheUint16, false)
 }
 
 func TestFheDiv32(t *testing.T) {
-	FheDiv(t, FheUint32, false)
+	FheDiv(t, tfhe.FheUint32, false)
 }
 
 func TestFheDiv64(t *testing.T) {
-	FheDiv(t, FheUint64, false)
+	FheDiv(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarDiv8(t *testing.T) {
-	FheDiv(t, FheUint8, true)
+	FheDiv(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarDiv16(t *testing.T) {
-	FheDiv(t, FheUint16, true)
+	FheDiv(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarDiv32(t *testing.T) {
-	FheDiv(t, FheUint32, true)
+	FheDiv(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarDiv64(t *testing.T) {
-	FheDiv(t, FheUint64, true)
+	FheDiv(t, tfhe.FheUint64, true)
 }
 
 func TestFheRem8(t *testing.T) {
-	FheRem(t, FheUint8, false)
+	FheRem(t, tfhe.FheUint8, false)
 }
 
 func TestFheRem16(t *testing.T) {
-	FheRem(t, FheUint16, false)
+	FheRem(t, tfhe.FheUint16, false)
 }
 
 func TestFheRem32(t *testing.T) {
-	FheRem(t, FheUint32, false)
+	FheRem(t, tfhe.FheUint32, false)
 }
 
 func TestFheRem64(t *testing.T) {
-	FheRem(t, FheUint64, false)
+	FheRem(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarRem8(t *testing.T) {
-	FheRem(t, FheUint8, true)
+	FheRem(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarRem16(t *testing.T) {
-	FheRem(t, FheUint16, true)
+	FheRem(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarRem32(t *testing.T) {
-	FheRem(t, FheUint32, true)
+	FheRem(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarRem64(t *testing.T) {
-	FheRem(t, FheUint64, true)
+	FheRem(t, tfhe.FheUint64, true)
 }
 
 func TestFheBitAndBool(t *testing.T) {
-	FheBitAnd(t, FheBool, false)
+	FheBitAnd(t, tfhe.FheBool, false)
 }
 
 func TestFheBitAnd8(t *testing.T) {
-	FheBitAnd(t, FheUint8, false)
+	FheBitAnd(t, tfhe.FheUint8, false)
 }
 
 func TestFheBitAnd16(t *testing.T) {
-	FheBitAnd(t, FheUint16, false)
+	FheBitAnd(t, tfhe.FheUint16, false)
 }
 
 func TestFheBitAnd32(t *testing.T) {
-	FheBitAnd(t, FheUint32, false)
+	FheBitAnd(t, tfhe.FheUint32, false)
 }
 
 func TestFheBitAnd64(t *testing.T) {
-	FheBitAnd(t, FheUint64, false)
+	FheBitAnd(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarBitAnd8(t *testing.T) {
-	FheBitAnd(t, FheUint8, true)
+	FheBitAnd(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarBitAnd16(t *testing.T) {
-	FheBitAnd(t, FheUint16, true)
+	FheBitAnd(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarBitAnd32(t *testing.T) {
-	FheBitAnd(t, FheUint32, true)
+	FheBitAnd(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarBitAnd64(t *testing.T) {
-	FheBitAnd(t, FheUint64, true)
+	FheBitAnd(t, tfhe.FheUint64, true)
 }
 
 func TestFheBitOr8(t *testing.T) {
-	FheBitOr(t, FheUint8, false)
+	FheBitOr(t, tfhe.FheUint8, false)
 }
 
 func TestFheBitOr16(t *testing.T) {
-	FheBitOr(t, FheUint16, false)
+	FheBitOr(t, tfhe.FheUint16, false)
 }
 
 func TestFheBitOr32(t *testing.T) {
-	FheBitOr(t, FheUint32, false)
+	FheBitOr(t, tfhe.FheUint32, false)
 }
 
 func TestFheBitOr64(t *testing.T) {
-	FheBitOr(t, FheUint64, false)
+	FheBitOr(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarBitOr8(t *testing.T) {
-	FheBitOr(t, FheUint8, true)
+	FheBitOr(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarBitOr16(t *testing.T) {
-	FheBitOr(t, FheUint16, true)
+	FheBitOr(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarBitOr32(t *testing.T) {
-	FheBitOr(t, FheUint32, true)
+	FheBitOr(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarBitOr64(t *testing.T) {
-	FheBitOr(t, FheUint64, true)
+	FheBitOr(t, tfhe.FheUint64, true)
 }
 
 func TestFheBitXor8(t *testing.T) {
-	FheBitXor(t, FheUint8, false)
+	FheBitXor(t, tfhe.FheUint8, false)
 }
 
 func TestFheBitXor16(t *testing.T) {
-	FheBitXor(t, FheUint16, false)
+	FheBitXor(t, tfhe.FheUint16, false)
 }
 
 func TestFheBitXor32(t *testing.T) {
-	FheBitXor(t, FheUint32, false)
+	FheBitXor(t, tfhe.FheUint32, false)
 }
 
 func TestFheBitXor64(t *testing.T) {
-	FheBitXor(t, FheUint64, false)
+	FheBitXor(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarBitXor8(t *testing.T) {
-	FheBitXor(t, FheUint8, true)
+	FheBitXor(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarBitXor16(t *testing.T) {
-	FheBitXor(t, FheUint16, true)
+	FheBitXor(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarBitXor32(t *testing.T) {
-	FheBitXor(t, FheUint32, true)
+	FheBitXor(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarBitXor64(t *testing.T) {
-	FheBitXor(t, FheUint64, true)
+	FheBitXor(t, tfhe.FheUint64, true)
 }
 
 func TestFheShl4(t *testing.T) {
-	FheShl(t, FheUint4, false)
+	FheShl(t, tfhe.FheUint4, false)
 }
 
 func TestFheShl8(t *testing.T) {
-	FheShl(t, FheUint8, false)
+	FheShl(t, tfhe.FheUint8, false)
 }
 
 func TestFheShl16(t *testing.T) {
-	FheShl(t, FheUint16, false)
+	FheShl(t, tfhe.FheUint16, false)
 }
 
 func TestFheShl32(t *testing.T) {
-	FheShl(t, FheUint32, false)
+	FheShl(t, tfhe.FheUint32, false)
 }
 
 func TestFheShl64(t *testing.T) {
-	FheShl(t, FheUint64, false)
+	FheShl(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarShl8(t *testing.T) {
-	FheShl(t, FheUint8, true)
+	FheShl(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarShl16(t *testing.T) {
-	FheShl(t, FheUint16, true)
+	FheShl(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarShl32(t *testing.T) {
-	FheShl(t, FheUint32, true)
+	FheShl(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarShl64(t *testing.T) {
-	FheShl(t, FheUint64, true)
+	FheShl(t, tfhe.FheUint64, true)
 }
 
 func TestFheShr8(t *testing.T) {
-	FheShr(t, FheUint8, false)
+	FheShr(t, tfhe.FheUint8, false)
 }
 
 func TestFheShr16(t *testing.T) {
-	FheShr(t, FheUint16, false)
+	FheShr(t, tfhe.FheUint16, false)
 }
 
 func TestFheShr32(t *testing.T) {
-	FheShr(t, FheUint32, false)
+	FheShr(t, tfhe.FheUint32, false)
 }
 
 func TestFheShr64(t *testing.T) {
-	FheShr(t, FheUint64, false)
+	FheShr(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarShr8(t *testing.T) {
-	FheShr(t, FheUint8, true)
+	FheShr(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarShr16(t *testing.T) {
-	FheShr(t, FheUint16, true)
+	FheShr(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarShr32(t *testing.T) {
-	FheShr(t, FheUint32, true)
+	FheShr(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarShr64(t *testing.T) {
-	FheShr(t, FheUint64, true)
+	FheShr(t, tfhe.FheUint64, true)
 }
 
 func TestFheEq8(t *testing.T) {
-	FheEq(t, FheUint8, false)
+	FheEq(t, tfhe.FheUint8, false)
 }
 
 func TestFheEq16(t *testing.T) {
-	FheEq(t, FheUint16, false)
+	FheEq(t, tfhe.FheUint16, false)
 }
 
 func TestFheEq32(t *testing.T) {
-	FheEq(t, FheUint32, false)
+	FheEq(t, tfhe.FheUint32, false)
 }
 
 func TestFheEq64(t *testing.T) {
-	FheEq(t, FheUint64, false)
+	FheEq(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarEq8(t *testing.T) {
-	FheEq(t, FheUint8, true)
+	FheEq(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarEq16(t *testing.T) {
-	FheEq(t, FheUint16, true)
+	FheEq(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarEq32(t *testing.T) {
-	FheEq(t, FheUint32, true)
+	FheEq(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarEq64(t *testing.T) {
-	FheEq(t, FheUint64, true)
+	FheEq(t, tfhe.FheUint64, true)
 }
 
 func TestFheNe8(t *testing.T) {
-	FheNe(t, FheUint8, false)
+	FheNe(t, tfhe.FheUint8, false)
 }
 
 func TestFheNe16(t *testing.T) {
-	FheNe(t, FheUint16, false)
+	FheNe(t, tfhe.FheUint16, false)
 }
 
 func TestFheNe32(t *testing.T) {
-	FheNe(t, FheUint32, false)
+	FheNe(t, tfhe.FheUint32, false)
 }
 
 func TestFheNe64(t *testing.T) {
-	FheNe(t, FheUint64, false)
+	FheNe(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarNe8(t *testing.T) {
-	FheNe(t, FheUint8, true)
+	FheNe(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarNe16(t *testing.T) {
-	FheNe(t, FheUint16, true)
+	FheNe(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarNe32(t *testing.T) {
-	FheNe(t, FheUint32, true)
+	FheNe(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarNe64(t *testing.T) {
-	FheNe(t, FheUint64, true)
+	FheNe(t, tfhe.FheUint64, true)
 }
 
 func TestFheGe8(t *testing.T) {
-	FheGe(t, FheUint8, false)
+	FheGe(t, tfhe.FheUint8, false)
 }
 
 func TestFheGe16(t *testing.T) {
-	FheGe(t, FheUint16, false)
+	FheGe(t, tfhe.FheUint16, false)
 }
 
 func TestFheGe32(t *testing.T) {
-	FheGe(t, FheUint32, false)
+	FheGe(t, tfhe.FheUint32, false)
 }
 
 func TestFheGe64(t *testing.T) {
-	FheGe(t, FheUint64, false)
+	FheGe(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarGe8(t *testing.T) {
-	FheGe(t, FheUint8, true)
+	FheGe(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarGe16(t *testing.T) {
-	FheGe(t, FheUint16, true)
+	FheGe(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarGe32(t *testing.T) {
-	FheGe(t, FheUint32, true)
+	FheGe(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarGe64(t *testing.T) {
-	FheGe(t, FheUint64, true)
+	FheGe(t, tfhe.FheUint64, true)
 }
 
 func TestFheGt8(t *testing.T) {
-	FheGt(t, FheUint8, false)
+	FheGt(t, tfhe.FheUint8, false)
 }
 
 func TestFheGt16(t *testing.T) {
-	FheGt(t, FheUint16, false)
+	FheGt(t, tfhe.FheUint16, false)
 }
 
 func TestFheGt32(t *testing.T) {
-	FheGt(t, FheUint32, false)
+	FheGt(t, tfhe.FheUint32, false)
 }
 
 func TestFheGt64(t *testing.T) {
-	FheGt(t, FheUint64, false)
+	FheGt(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarGt8(t *testing.T) {
-	FheGt(t, FheUint8, true)
+	FheGt(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarGt16(t *testing.T) {
-	FheGt(t, FheUint16, true)
+	FheGt(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarGt32(t *testing.T) {
-	FheGt(t, FheUint32, true)
+	FheGt(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarGt64(t *testing.T) {
-	FheGt(t, FheUint64, true)
+	FheGt(t, tfhe.FheUint64, true)
 }
 
 func TestFheLe4(t *testing.T) {
-	FheLe(t, FheUint4, false)
+	FheLe(t, tfhe.FheUint4, false)
 }
 
 func TestFheLe8(t *testing.T) {
-	FheLe(t, FheUint8, false)
+	FheLe(t, tfhe.FheUint8, false)
 }
 
 func TestFheLe16(t *testing.T) {
-	FheLe(t, FheUint16, false)
+	FheLe(t, tfhe.FheUint16, false)
 }
 
 func TestFheLe32(t *testing.T) {
-	FheLe(t, FheUint32, false)
+	FheLe(t, tfhe.FheUint32, false)
 }
 
 func TestFheLe64(t *testing.T) {
-	FheLe(t, FheUint64, false)
+	FheLe(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarLe4(t *testing.T) {
-	FheLe(t, FheUint4, true)
+	FheLe(t, tfhe.FheUint4, true)
 }
 
 func TestFheScalarLe8(t *testing.T) {
-	FheLe(t, FheUint8, true)
+	FheLe(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarLe16(t *testing.T) {
-	FheLe(t, FheUint16, true)
+	FheLe(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarLe32(t *testing.T) {
-	FheLe(t, FheUint32, true)
+	FheLe(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarLe64(t *testing.T) {
-	FheLe(t, FheUint64, true)
+	FheLe(t, tfhe.FheUint64, true)
 }
 
 func TestFheLt8(t *testing.T) {
-	FheLt(t, FheUint8, false)
+	FheLt(t, tfhe.FheUint8, false)
 }
 
 func TestFheLt16(t *testing.T) {
-	FheLt(t, FheUint16, false)
+	FheLt(t, tfhe.FheUint16, false)
 }
 
 func TestFheLt32(t *testing.T) {
-	FheLt(t, FheUint32, false)
+	FheLt(t, tfhe.FheUint32, false)
 }
 
 func TestFheLt64(t *testing.T) {
-	FheLt(t, FheUint64, false)
+	FheLt(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarLt8(t *testing.T) {
-	FheLt(t, FheUint8, true)
+	FheLt(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarLt16(t *testing.T) {
-	FheLt(t, FheUint16, true)
+	FheLt(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarLt32(t *testing.T) {
-	FheLt(t, FheUint32, true)
+	FheLt(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarLt64(t *testing.T) {
-	FheLt(t, FheUint64, true)
+	FheLt(t, tfhe.FheUint64, true)
 }
 
 func TestFheMin8(t *testing.T) {
-	FheMin(t, FheUint8, false)
+	FheMin(t, tfhe.FheUint8, false)
 }
 
 func TestFheMin16(t *testing.T) {
-	FheMin(t, FheUint16, false)
+	FheMin(t, tfhe.FheUint16, false)
 }
 
 func TestFheMin32(t *testing.T) {
-	FheMin(t, FheUint32, false)
+	FheMin(t, tfhe.FheUint32, false)
 }
 
 func TestFheMin64(t *testing.T) {
-	FheMin(t, FheUint64, false)
+	FheMin(t, tfhe.FheUint64, false)
 }
 
 func TestFheScalarMin8(t *testing.T) {
-	FheMin(t, FheUint8, true)
+	FheMin(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarMin16(t *testing.T) {
-	FheMin(t, FheUint16, true)
+	FheMin(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarMin32(t *testing.T) {
-	FheMin(t, FheUint32, true)
+	FheMin(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarMin64(t *testing.T) {
-	FheMin(t, FheUint64, true)
+	FheMin(t, tfhe.FheUint64, true)
 }
 
 func TestFheMax4(t *testing.T) {
-	FheMax(t, FheUint4, false)
+	FheMax(t, tfhe.FheUint4, false)
 }
 
 func TestFheMax8(t *testing.T) {
-	FheMax(t, FheUint8, false)
+	FheMax(t, tfhe.FheUint8, false)
 }
 
 func TestFheMax16(t *testing.T) {
-	FheMax(t, FheUint16, false)
+	FheMax(t, tfhe.FheUint16, false)
 }
 
 func TestFheMax32(t *testing.T) {
-	FheMax(t, FheUint32, false)
+	FheMax(t, tfhe.FheUint32, false)
 }
 
 func TestFheMax64(t *testing.T) {
-	FheMax(t, FheUint64, false)
+	FheMax(t, tfhe.FheUint64, false)
 }
 
 func TestFheNeg8(t *testing.T) {
-	FheNeg(t, FheUint8, false)
+	FheNeg(t, tfhe.FheUint8, false)
 }
 
 func TestFheNeg16(t *testing.T) {
-	FheNeg(t, FheUint16, false)
+	FheNeg(t, tfhe.FheUint16, false)
 }
 
 func TestFheNeg32(t *testing.T) {
-	FheNeg(t, FheUint32, false)
+	FheNeg(t, tfhe.FheUint32, false)
 }
 
 func TestFheNeg64(t *testing.T) {
-	FheNeg(t, FheUint64, false)
+	FheNeg(t, tfhe.FheUint64, false)
 }
 
 func TestFheNot8(t *testing.T) {
-	FheNot(t, FheUint8, false)
+	FheNot(t, tfhe.FheUint8, false)
 }
 
 func TestFheNot16(t *testing.T) {
-	FheNot(t, FheUint16, false)
+	FheNot(t, tfhe.FheUint16, false)
 }
 
 func TestFheNot32(t *testing.T) {
-	FheNot(t, FheUint32, false)
+	FheNot(t, tfhe.FheUint32, false)
 }
 
 func TestFheNot64(t *testing.T) {
-	FheNot(t, FheUint64, false)
+	FheNot(t, tfhe.FheUint64, false)
 }
 
 func TestFheIfThenElse4(t *testing.T) {
-	FheIfThenElse(t, FheUint4, 1)
-	FheIfThenElse(t, FheUint4, 0)
+	FheIfThenElse(t, tfhe.FheUint4, 1)
+	FheIfThenElse(t, tfhe.FheUint4, 0)
 }
 
 func TestFheIfThenElse8(t *testing.T) {
-	FheIfThenElse(t, FheUint8, 1)
-	FheIfThenElse(t, FheUint8, 0)
+	FheIfThenElse(t, tfhe.FheUint8, 1)
+	FheIfThenElse(t, tfhe.FheUint8, 0)
 }
 
 func TestFheIfThenElse16(t *testing.T) {
-	FheIfThenElse(t, FheUint16, 1)
-	FheIfThenElse(t, FheUint16, 0)
+	FheIfThenElse(t, tfhe.FheUint16, 1)
+	FheIfThenElse(t, tfhe.FheUint16, 0)
 }
 
 func TestFheIfThenElse32(t *testing.T) {
-	FheIfThenElse(t, FheUint32, 1)
-	FheIfThenElse(t, FheUint32, 0)
+	FheIfThenElse(t, tfhe.FheUint32, 1)
+	FheIfThenElse(t, tfhe.FheUint32, 0)
 }
 
 func TestFheIfThenElse64(t *testing.T) {
-	FheIfThenElse(t, FheUint64, 1)
-	FheIfThenElse(t, FheUint64, 0)
+	FheIfThenElse(t, tfhe.FheUint64, 1)
+	FheIfThenElse(t, tfhe.FheUint64, 0)
 }
 
 func TestFheScalarMax4(t *testing.T) {
-	FheMax(t, FheUint4, true)
+	FheMax(t, tfhe.FheUint4, true)
 }
 
 func TestFheScalarMax8(t *testing.T) {
-	FheMax(t, FheUint8, true)
+	FheMax(t, tfhe.FheUint8, true)
 }
 
 func TestFheScalarMax16(t *testing.T) {
-	FheMax(t, FheUint16, true)
+	FheMax(t, tfhe.FheUint16, true)
 }
 
 func TestFheScalarMax32(t *testing.T) {
-	FheMax(t, FheUint32, true)
+	FheMax(t, tfhe.FheUint32, true)
 }
 
 func TestFheScalarMax64(t *testing.T) {
-	FheMax(t, FheUint64, true)
+	FheMax(t, tfhe.FheUint64, true)
 }
 
 func TestDecrypt8(t *testing.T) {
-	Decrypt(t, FheUint8)
+	Decrypt(t, tfhe.FheUint8)
 }
 
 func TestDecrypt16(t *testing.T) {
-	Decrypt(t, FheUint16)
+	Decrypt(t, tfhe.FheUint16)
 }
 
 func TestDecrypt32(t *testing.T) {
-	Decrypt(t, FheUint32)
+	Decrypt(t, tfhe.FheUint32)
 }
 
 func TestDecrypt64(t *testing.T) {
-	Decrypt(t, FheUint64)
+	Decrypt(t, tfhe.FheUint64)
 }
 
 func TestFheRand8(t *testing.T) {
-	FheRand(t, FheUint8)
+	FheRand(t, tfhe.FheUint8)
 }
 
 func TestFheRand16(t *testing.T) {
-	FheRand(t, FheUint16)
+	FheRand(t, tfhe.FheUint16)
 }
 
 func TestFheRand32(t *testing.T) {
-	FheRand(t, FheUint32)
+	FheRand(t, tfhe.FheUint32)
 }
 
 func TestFheRand64(t *testing.T) {
-	FheRand(t, FheUint64)
+	FheRand(t, tfhe.FheUint64)
 }
 
 func TestUnknownCiphertextHandle(t *testing.T) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	hash := verifyCiphertextInTestMemory(environment, 2, depth, FheUint8).GetHash()
+	hash := verifyCiphertextInTestMemory(environment, 2, depth, tfhe.FheUint8).GetHash()
 
 	ct := getVerifiedCiphertext(environment, hash)
 	if ct == nil {
@@ -3966,7 +3982,7 @@ func TestCiphertextNotVerifiedWithoutReturn(t *testing.T) {
 	environment := newTestEVMEnvironment()
 	environment.depth = 1
 	verifiedDepth := 2
-	hash := verifyCiphertextInTestMemory(environment, 1, verifiedDepth, FheUint8).GetHash()
+	hash := verifyCiphertextInTestMemory(environment, 1, verifiedDepth, tfhe.FheUint8).GetHash()
 
 	ct := getVerifiedCiphertext(environment, hash)
 	if ct != nil {
@@ -3978,7 +3994,7 @@ func TestCiphertextNotAutomaticallyDelegated(t *testing.T) {
 	environment := newTestEVMEnvironment()
 	environment.depth = 3
 	verifiedDepth := 2
-	hash := verifyCiphertextInTestMemory(environment, 1, verifiedDepth, FheUint8).GetHash()
+	hash := verifyCiphertextInTestMemory(environment, 1, verifiedDepth, tfhe.FheUint8).GetHash()
 
 	ct := getVerifiedCiphertext(environment, hash)
 	if ct != nil {
@@ -3989,7 +4005,7 @@ func TestCiphertextNotAutomaticallyDelegated(t *testing.T) {
 func TestCiphertextVerificationConditions(t *testing.T) {
 	environment := newTestEVMEnvironment()
 	verifiedDepth := 2
-	hash := verifyCiphertextInTestMemory(environment, 1, verifiedDepth, FheUint8).GetHash()
+	hash := verifyCiphertextInTestMemory(environment, 1, verifiedDepth, tfhe.FheUint8).GetHash()
 
 	environment.depth = verifiedDepth
 	ctPtr := getVerifiedCiphertext(environment, hash)
@@ -4059,7 +4075,7 @@ func TestFheRandBoundedInvalidType(t *testing.T) {
 	}
 }
 
-func FheRandBoundedInvalidBound(t *testing.T, fheUintType FheUintType, bound *uint256.Int) {
+func FheRandBoundedInvalidBound(t *testing.T, fheUintType tfhe.FheUintType, bound *uint256.Int) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
@@ -4079,43 +4095,43 @@ func FheRandBoundedInvalidBound(t *testing.T, fheUintType FheUintType, bound *ui
 }
 
 func TestFheRandBoundedInvalidBound8(t *testing.T) {
-	FheRandBoundedInvalidBound(t, FheUint8, uint256.NewInt(0))
-	FheRandBoundedInvalidBound(t, FheUint8, uint256.NewInt(3))
-	FheRandBoundedInvalidBound(t, FheUint8, uint256.NewInt(98))
-	FheRandBoundedInvalidBound(t, FheUint8, uint256.NewInt(0xFF))
+	FheRandBoundedInvalidBound(t, tfhe.FheUint8, uint256.NewInt(0))
+	FheRandBoundedInvalidBound(t, tfhe.FheUint8, uint256.NewInt(3))
+	FheRandBoundedInvalidBound(t, tfhe.FheUint8, uint256.NewInt(98))
+	FheRandBoundedInvalidBound(t, tfhe.FheUint8, uint256.NewInt(0xFF))
 	moreThan64Bits := uint256.NewInt(0xFFFFFFFFFFFFFFFF)
 	moreThan64Bits.Add(moreThan64Bits, uint256.NewInt(1))
-	FheRandBoundedInvalidBound(t, FheUint8, moreThan64Bits)
+	FheRandBoundedInvalidBound(t, tfhe.FheUint8, moreThan64Bits)
 }
 
 func TestFheRandBoundedInvalidBound16(t *testing.T) {
-	FheRandBoundedInvalidBound(t, FheUint16, uint256.NewInt(0))
-	FheRandBoundedInvalidBound(t, FheUint16, uint256.NewInt(999))
-	FheRandBoundedInvalidBound(t, FheUint16, uint256.NewInt(448))
-	FheRandBoundedInvalidBound(t, FheUint16, uint256.NewInt(0xFFFF))
+	FheRandBoundedInvalidBound(t, tfhe.FheUint16, uint256.NewInt(0))
+	FheRandBoundedInvalidBound(t, tfhe.FheUint16, uint256.NewInt(999))
+	FheRandBoundedInvalidBound(t, tfhe.FheUint16, uint256.NewInt(448))
+	FheRandBoundedInvalidBound(t, tfhe.FheUint16, uint256.NewInt(0xFFFF))
 	moreThan64Bits := uint256.NewInt(0xFFFFFFFFFFFFFFFF)
 	moreThan64Bits.Add(moreThan64Bits, uint256.NewInt(1))
-	FheRandBoundedInvalidBound(t, FheUint16, moreThan64Bits)
+	FheRandBoundedInvalidBound(t, tfhe.FheUint16, moreThan64Bits)
 }
 
 func TestFheRandBoundedInvalidBound32(t *testing.T) {
-	FheRandBoundedInvalidBound(t, FheUint32, uint256.NewInt(0))
-	FheRandBoundedInvalidBound(t, FheUint32, uint256.NewInt(111999))
-	FheRandBoundedInvalidBound(t, FheUint32, uint256.NewInt(448884))
-	FheRandBoundedInvalidBound(t, FheUint32, uint256.NewInt(0xFFFFFFFF))
+	FheRandBoundedInvalidBound(t, tfhe.FheUint32, uint256.NewInt(0))
+	FheRandBoundedInvalidBound(t, tfhe.FheUint32, uint256.NewInt(111999))
+	FheRandBoundedInvalidBound(t, tfhe.FheUint32, uint256.NewInt(448884))
+	FheRandBoundedInvalidBound(t, tfhe.FheUint32, uint256.NewInt(0xFFFFFFFF))
 	moreThan64Bits := uint256.NewInt(0xFFFFFFFFFFFFFFFF)
 	moreThan64Bits.Add(moreThan64Bits, uint256.NewInt(1))
-	FheRandBoundedInvalidBound(t, FheUint32, moreThan64Bits)
+	FheRandBoundedInvalidBound(t, tfhe.FheUint32, moreThan64Bits)
 }
 
 func TestFheRandBoundedInvalidBound64(t *testing.T) {
-	FheRandBoundedInvalidBound(t, FheUint64, uint256.NewInt(0))
-	FheRandBoundedInvalidBound(t, FheUint64, uint256.NewInt(111999))
-	FheRandBoundedInvalidBound(t, FheUint64, uint256.NewInt(448884))
-	FheRandBoundedInvalidBound(t, FheUint64, uint256.NewInt(0xFFFFFFFFFFFFFFFF))
+	FheRandBoundedInvalidBound(t, tfhe.FheUint64, uint256.NewInt(0))
+	FheRandBoundedInvalidBound(t, tfhe.FheUint64, uint256.NewInt(111999))
+	FheRandBoundedInvalidBound(t, tfhe.FheUint64, uint256.NewInt(448884))
+	FheRandBoundedInvalidBound(t, tfhe.FheUint64, uint256.NewInt(0xFFFFFFFFFFFFFFFF))
 	moreThan64Bits := uint256.NewInt(0xFFFFFFFFFFFFFFFF)
 	moreThan64Bits.Add(moreThan64Bits, uint256.NewInt(1))
-	FheRandBoundedInvalidBound(t, FheUint32, moreThan64Bits)
+	FheRandBoundedInvalidBound(t, tfhe.FheUint32, moreThan64Bits)
 }
 
 func TestFheRandEthCall(t *testing.T) {
@@ -4125,7 +4141,7 @@ func TestFheRandEthCall(t *testing.T) {
 	environment.ethCall = true
 	addr := common.Address{}
 	readOnly := true
-	_, err := fheRandRun(environment, addr, addr, []byte{byte(FheUint8)}, readOnly, nil)
+	_, err := fheRandRun(environment, addr, addr, []byte{byte(tfhe.FheUint8)}, readOnly, nil)
 	if err == nil {
 		t.Fatalf("fheRand expected failure on EthCall")
 	}
@@ -4144,7 +4160,7 @@ func TestFheRandBoundedEthCall(t *testing.T) {
 	input := make([]byte, 0)
 	upperBound := uint256.NewInt(4).Bytes32()
 	input = append(input, upperBound[:]...)
-	input = append(input, byte(FheUint8))
+	input = append(input, byte(tfhe.FheUint8))
 	_, err := fheRandBoundedRun(environment, addr, addr, input, readOnly, nil)
 	if err == nil {
 		t.Fatalf("fheRandBounded expected failure on EthCall")
@@ -4210,7 +4226,7 @@ func TestLibOneTrueOptimisticRequire(t *testing.T) {
 	addr := common.Address{}
 	readOnly := false
 	input := make([]byte, 0)
-	hash := verifyCiphertextInTestMemory(environment, value, depth, FheUint8).GetHash()
+	hash := verifyCiphertextInTestMemory(environment, value, depth, tfhe.FheUint8).GetHash()
 	input = append(input, signatureBytes...)
 	input = append(input, hash.Bytes()...)
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
@@ -4237,7 +4253,7 @@ func TestOneFalseOptimisticRequire(t *testing.T) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	hash := verifyCiphertextInTestMemory(environment, value, depth, FheUint8).GetHash()
+	hash := verifyCiphertextInTestMemory(environment, value, depth, tfhe.FheUint8).GetHash()
 	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -4261,14 +4277,14 @@ func TestTwoTrueOptimisticRequires(t *testing.T) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	hash := verifyCiphertextInTestMemory(environment, value, depth, FheUint8).GetHash()
+	hash := verifyCiphertextInTestMemory(environment, value, depth, tfhe.FheUint8).GetHash()
 	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if len(out) != 0 {
 		t.Fatalf("require expected output len of 0, got %v", len(out))
 	}
-	hash = verifyCiphertextInTestMemory(environment, value, depth, FheUint8).GetHash()
+	hash = verifyCiphertextInTestMemory(environment, value, depth, tfhe.FheUint8).GetHash()
 	out, err = optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -4292,7 +4308,7 @@ func TestOptimisticRequireTwiceOnSameCiphertext(t *testing.T) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	ct := verifyCiphertextInTestMemory(environment, value, depth, FheUint8)
+	ct := verifyCiphertextInTestMemory(environment, value, depth, tfhe.FheUint8)
 	hash := ct.GetHash()
 	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
@@ -4322,14 +4338,14 @@ func TestOneFalseAndOneTrueOptimisticRequire(t *testing.T) {
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	hash := verifyCiphertextInTestMemory(environment, 0, depth, FheUint8).GetHash()
+	hash := verifyCiphertextInTestMemory(environment, 0, depth, tfhe.FheUint8).GetHash()
 	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	} else if len(out) != 0 {
 		t.Fatalf("require expected output len of 0, got %v", len(out))
 	}
-	hash = verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).GetHash()
+	hash = verifyCiphertextInTestMemory(environment, 1, depth, tfhe.FheUint8).GetHash()
 	out, err = optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -4353,7 +4369,7 @@ func TestDecryptWithFalseOptimisticRequire(t *testing.T) {
 	addr := common.Address{}
 	readOnly := false
 	// Call optimistic require with a false value and expect it succeeds.
-	hash := verifyCiphertextInTestMemory(environment, 0, depth, FheUint8).GetHash()
+	hash := verifyCiphertextInTestMemory(environment, 0, depth, tfhe.FheUint8).GetHash()
 	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -4378,7 +4394,7 @@ func TestDecryptWithTrueOptimisticRequire(t *testing.T) {
 	addr := common.Address{}
 	readOnly := false
 	// Call optimistic require with a false value and expect it succeeds.
-	hash := verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).GetHash()
+	hash := verifyCiphertextInTestMemory(environment, 1, depth, tfhe.FheUint8).GetHash()
 	out, err := optimisticRequireRun(environment, addr, addr, hash.Bytes(), readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -4407,7 +4423,7 @@ func TestDecryptInTransactionDisabled(t *testing.T) {
 	environment.fhevmParams.DisableDecryptionsInTransaction = true
 	addr := common.Address{}
 	readOnly := false
-	hash := verifyCiphertextInTestMemory(environment, 1, depth, FheUint8).GetHash()
+	hash := verifyCiphertextInTestMemory(environment, 1, depth, tfhe.FheUint8).GetHash()
 	// Call decrypt and expect it to fail due to disabling of decryptions during commit
 	_, err := decryptRunWithoutKms(environment, addr, addr, hash.Bytes(), readOnly)
 	if err == nil {
@@ -4440,7 +4456,7 @@ func TestFheLibGetCiphertextNonEthCall(t *testing.T) {
 	depth := 1
 	environment.depth = depth
 	plaintext := uint64(2)
-	ct := verifyCiphertextInTestMemory(environment, plaintext, depth, FheUint32)
+	ct := verifyCiphertextInTestMemory(environment, plaintext, depth, tfhe.FheUint32)
 	ctHash := ct.GetHash()
 	scope := newTestScopeConext()
 	loc := uint256.NewInt(10)
@@ -4477,7 +4493,7 @@ func TestFheLibGetCiphertextNonExistentHandle(t *testing.T) {
 	depth := 1
 	environment.depth = depth
 	plaintext := uint64(2)
-	ct := verifyCiphertextInTestMemory(environment, plaintext, depth, FheUint32)
+	ct := verifyCiphertextInTestMemory(environment, plaintext, depth, tfhe.FheUint32)
 	ctHash := ct.GetHash()
 	scope := newTestScopeConext()
 	loc := uint256.NewInt(10)
@@ -4520,7 +4536,7 @@ func TestFheLibGetCiphertextWrongContractAddress(t *testing.T) {
 	depth := 1
 	environment.depth = depth
 	plaintext := uint64(2)
-	ct := verifyCiphertextInTestMemory(environment, plaintext, depth, FheUint32)
+	ct := verifyCiphertextInTestMemory(environment, plaintext, depth, tfhe.FheUint32)
 	ctHash := ct.GetHash()
 	scope := newTestScopeConext()
 	loc := uint256.NewInt(10)
@@ -4557,7 +4573,7 @@ func TestFheLibGetCiphertextWrongContractAddress(t *testing.T) {
 	}
 }
 
-func FheLibGetCiphertext(t *testing.T, fheUintType FheUintType) {
+func FheLibGetCiphertext(t *testing.T, fheUintType tfhe.FheUintType) {
 	environment := newTestEVMEnvironment()
 	pc := uint64(0)
 	depth := 1
@@ -4592,12 +4608,12 @@ func FheLibGetCiphertext(t *testing.T, fheUintType FheUintType) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	size, _ := GetExpandedFheCiphertextSize(fheUintType)
+	size, _ := tfhe.GetExpandedFheCiphertextSize(fheUintType)
 	if size != uint(len(out)) {
 		t.Fatalf("getCiphertext returned ciphertext size of %d, expected %d", len(out), size)
 	}
 
-	outCt := new(TfheCiphertext)
+	outCt := new(tfhe.TfheCiphertext)
 	err = outCt.Deserialize(out, fheUintType)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -4612,17 +4628,17 @@ func FheLibGetCiphertext(t *testing.T, fheUintType FheUintType) {
 }
 
 func TestFheLibGetCiphertext8(t *testing.T) {
-	FheLibGetCiphertext(t, FheUint8)
+	FheLibGetCiphertext(t, tfhe.FheUint8)
 }
 
 func TestFheLibGetCiphertext16(t *testing.T) {
-	FheLibGetCiphertext(t, FheUint16)
+	FheLibGetCiphertext(t, tfhe.FheUint16)
 }
 
 func TestFheLibGetCiphertext32(t *testing.T) {
-	FheLibGetCiphertext(t, FheUint32)
+	FheLibGetCiphertext(t, tfhe.FheUint32)
 }
 
 func TestFheLibGetCiphertext64(t *testing.T) {
-	FheLibGetCiphertext(t, FheUint64)
+	FheLibGetCiphertext(t, tfhe.FheUint64)
 }

@@ -6,6 +6,7 @@ require (
 	github.com/ethereum/go-ethereum v1.12.0
 	github.com/holiman/uint256 v1.2.2-0.20230321075855-87b91420868c
 	go.opentelemetry.io/otel v1.23.1
+	go.opentelemetry.io/otel/trace v1.23.1
 	golang.org/x/crypto v0.16.0
 )
 
@@ -13,7 +14,6 @@ require (
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	go.opentelemetry.io/otel/metric v1.23.1 // indirect
-	go.opentelemetry.io/otel/trace v1.23.1 // indirect
 	golang.org/x/net v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
 )

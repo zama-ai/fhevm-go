@@ -7,7 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
-	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
+	fhevm_crypto "github.com/zama-ai/fhevm-go/fhevm/crypto"
+	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 )
 
 var protectedStorageAddrCallerAddr common.Address
@@ -56,7 +57,7 @@ func getVerifiedCiphertext(environment EVMEnvironment, ciphertextHash common.Has
 	return getVerifiedCiphertextFromEVM(environment, ciphertextHash)
 }
 
-func importCiphertextToEVMAtDepth(environment EVMEnvironment, ct *TfheCiphertext, depth int) *verifiedCiphertext {
+func importCiphertextToEVMAtDepth(environment EVMEnvironment, ct *tfhe.TfheCiphertext, depth int) *verifiedCiphertext {
 	existing, ok := environment.FhevmData().verifiedCiphertexts[ct.GetHash()]
 	if ok {
 		existing.verifiedDepths.add(depth)
@@ -73,21 +74,21 @@ func importCiphertextToEVMAtDepth(environment EVMEnvironment, ct *TfheCiphertext
 	}
 }
 
-func importCiphertextToEVM(environment EVMEnvironment, ct *TfheCiphertext) *verifiedCiphertext {
+func importCiphertextToEVM(environment EVMEnvironment, ct *tfhe.TfheCiphertext) *verifiedCiphertext {
 	return importCiphertextToEVMAtDepth(environment, ct, environment.GetDepth())
 }
 
-func importCiphertext(environment EVMEnvironment, ct *TfheCiphertext) *verifiedCiphertext {
+func importCiphertext(environment EVMEnvironment, ct *tfhe.TfheCiphertext) *verifiedCiphertext {
 	return importCiphertextToEVM(environment, ct)
 }
 
-func importRandomCiphertext(environment EVMEnvironment, t FheUintType) []byte {
+func importRandomCiphertext(environment EVMEnvironment, t tfhe.FheUintType) []byte {
 	nextCtHash := &environment.FhevmData().nextCiphertextHashOnGasEst
 	ctHashBytes := crypto.Keccak256(nextCtHash.Bytes())
 	handle := common.BytesToHash(ctHashBytes)
-	ct := new(TfheCiphertext)
-	ct.fheUintType = t
-	ct.hash = &handle
+	ct := new(tfhe.TfheCiphertext)
+	ct.FheUintType = t
+	ct.Hash = &handle
 	importCiphertext(environment, ct)
 	temp := nextCtHash.Clone()
 	nextCtHash.Add(temp, uint256.NewInt(1))
@@ -101,6 +102,7 @@ func InitFhevm(accessibleState EVMEnvironment) {
 func persistFhePubKeyHash(accessibleState EVMEnvironment) {
 	existing := accessibleState.GetState(fhePubKeyHashPrecompile, fhePubKeyHashSlot)
 	if newInt(existing[:]).IsZero() {
+		var pksHash = tfhe.GetPksHash()
 		accessibleState.SetState(fhePubKeyHashPrecompile, fhePubKeyHashSlot, pksHash)
 	}
 }

@@ -1,5 +1,7 @@
 package fhevm
 
+import "github.com/zama-ai/fhevm-go/fhevm/tfhe"
+
 // This file contains default gas costs of fhEVM-related operations.
 // Users can change the values based on specific requirements in their blockchain.
 
@@ -40,201 +42,201 @@ type FhevmParams struct {
 type GasCosts struct {
 	FheCast             uint64
 	FhePubKey           uint64
-	FheAddSub           map[FheUintType]uint64
-	FheDecrypt          map[FheUintType]uint64
-	FheBitwiseOp        map[FheUintType]uint64
-	FheMul              map[FheUintType]uint64
-	FheScalarMul        map[FheUintType]uint64
-	FheScalarDiv        map[FheUintType]uint64
-	FheScalarRem        map[FheUintType]uint64
-	FheShift            map[FheUintType]uint64
-	FheScalarShift      map[FheUintType]uint64
-	FheEq               map[FheUintType]uint64
-	FheLe               map[FheUintType]uint64
-	FheMinMax           map[FheUintType]uint64
-	FheScalarMinMax     map[FheUintType]uint64
-	FheNot              map[FheUintType]uint64
-	FheNeg              map[FheUintType]uint64
-	FheReencrypt        map[FheUintType]uint64
-	FheTrivialEncrypt   map[FheUintType]uint64
-	FheRand             map[FheUintType]uint64
-	FheIfThenElse       map[FheUintType]uint64
-	FheVerify           map[FheUintType]uint64
-	FheOptRequire       map[FheUintType]uint64
-	FheOptRequireBitAnd map[FheUintType]uint64
-	FheGetCiphertext    map[FheUintType]uint64
+	FheAddSub           map[tfhe.FheUintType]uint64
+	FheDecrypt          map[tfhe.FheUintType]uint64
+	FheBitwiseOp        map[tfhe.FheUintType]uint64
+	FheMul              map[tfhe.FheUintType]uint64
+	FheScalarMul        map[tfhe.FheUintType]uint64
+	FheScalarDiv        map[tfhe.FheUintType]uint64
+	FheScalarRem        map[tfhe.FheUintType]uint64
+	FheShift            map[tfhe.FheUintType]uint64
+	FheScalarShift      map[tfhe.FheUintType]uint64
+	FheEq               map[tfhe.FheUintType]uint64
+	FheLe               map[tfhe.FheUintType]uint64
+	FheMinMax           map[tfhe.FheUintType]uint64
+	FheScalarMinMax     map[tfhe.FheUintType]uint64
+	FheNot              map[tfhe.FheUintType]uint64
+	FheNeg              map[tfhe.FheUintType]uint64
+	FheReencrypt        map[tfhe.FheUintType]uint64
+	FheTrivialEncrypt   map[tfhe.FheUintType]uint64
+	FheRand             map[tfhe.FheUintType]uint64
+	FheIfThenElse       map[tfhe.FheUintType]uint64
+	FheVerify           map[tfhe.FheUintType]uint64
+	FheOptRequire       map[tfhe.FheUintType]uint64
+	FheOptRequireBitAnd map[tfhe.FheUintType]uint64
+	FheGetCiphertext    map[tfhe.FheUintType]uint64
 }
 
 func DefaultGasCosts() GasCosts {
 	return GasCosts{
-		FheAddSub: map[FheUintType]uint64{
-			FheUint4:  55000 + AdjustFHEGas,
-			FheUint8:  84000 + AdjustFHEGas,
-			FheUint16: 123000 + AdjustFHEGas,
-			FheUint32: 152000 + AdjustFHEGas,
-			FheUint64: 178000 + AdjustFHEGas,
+		FheAddSub: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  55000 + AdjustFHEGas,
+			tfhe.FheUint8:  84000 + AdjustFHEGas,
+			tfhe.FheUint16: 123000 + AdjustFHEGas,
+			tfhe.FheUint32: 152000 + AdjustFHEGas,
+			tfhe.FheUint64: 178000 + AdjustFHEGas,
 		},
-		FheDecrypt: map[FheUintType]uint64{
-			FheUint4:  500000,
-			FheUint8:  500000,
-			FheUint16: 500000,
-			FheUint32: 500000,
-			FheUint64: 500000,
+		FheDecrypt: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  500000,
+			tfhe.FheUint8:  500000,
+			tfhe.FheUint16: 500000,
+			tfhe.FheUint32: 500000,
+			tfhe.FheUint64: 500000,
 		},
-		FheBitwiseOp: map[FheUintType]uint64{
-			FheBool:  16000 + AdjustFHEGas,
-			FheUint4:  22000 + AdjustFHEGas,
-			FheUint8:  24000 + AdjustFHEGas,
-			FheUint16: 24000 + AdjustFHEGas,
-			FheUint32: 25000 + AdjustFHEGas,
-			FheUint64: 28000 + AdjustFHEGas,
+		FheBitwiseOp: map[tfhe.FheUintType]uint64{
+			tfhe.FheBool:   16000 + AdjustFHEGas,
+			tfhe.FheUint4:  22000 + AdjustFHEGas,
+			tfhe.FheUint8:  24000 + AdjustFHEGas,
+			tfhe.FheUint16: 24000 + AdjustFHEGas,
+			tfhe.FheUint32: 25000 + AdjustFHEGas,
+			tfhe.FheUint64: 28000 + AdjustFHEGas,
 		},
-		FheMul: map[FheUintType]uint64{
-			FheUint4:  140000 + AdjustFHEGas,
-			FheUint8:  187000 + AdjustFHEGas,
-			FheUint16: 252000 + AdjustFHEGas,
-			FheUint32: 349000 + AdjustFHEGas,
-			FheUint64: 631000 + AdjustFHEGas,
+		FheMul: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  140000 + AdjustFHEGas,
+			tfhe.FheUint8:  187000 + AdjustFHEGas,
+			tfhe.FheUint16: 252000 + AdjustFHEGas,
+			tfhe.FheUint32: 349000 + AdjustFHEGas,
+			tfhe.FheUint64: 631000 + AdjustFHEGas,
 		},
-		FheScalarMul: map[FheUintType]uint64{
-			FheUint4:  78000 + AdjustFHEGas,
-			FheUint8:  149000 + AdjustFHEGas,
-			FheUint16: 198000 + AdjustFHEGas,
-			FheUint32: 254000 + AdjustFHEGas,
-			FheUint64: 346000 + AdjustFHEGas,
+		FheScalarMul: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  78000 + AdjustFHEGas,
+			tfhe.FheUint8:  149000 + AdjustFHEGas,
+			tfhe.FheUint16: 198000 + AdjustFHEGas,
+			tfhe.FheUint32: 254000 + AdjustFHEGas,
+			tfhe.FheUint64: 346000 + AdjustFHEGas,
 		},
-		FheScalarDiv: map[FheUintType]uint64{
-			FheUint4:  129000 + AdjustFHEGas,
-			FheUint8:  228000 + AdjustFHEGas,
-			FheUint16: 304000 + AdjustFHEGas,
-			FheUint32: 388000 + AdjustFHEGas,
-			FheUint64: 574000 + AdjustFHEGas,
+		FheScalarDiv: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  129000 + AdjustFHEGas,
+			tfhe.FheUint8:  228000 + AdjustFHEGas,
+			tfhe.FheUint16: 304000 + AdjustFHEGas,
+			tfhe.FheUint32: 388000 + AdjustFHEGas,
+			tfhe.FheUint64: 574000 + AdjustFHEGas,
 		},
-		FheScalarRem: map[FheUintType]uint64{
-			FheUint4:  276000 + AdjustFHEGas,
-			FheUint8:  450000 + AdjustFHEGas,
-			FheUint16: 612000 + AdjustFHEGas,
-			FheUint32: 795000 + AdjustFHEGas,
-			FheUint64: 1095000 + AdjustFHEGas,
+		FheScalarRem: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  276000 + AdjustFHEGas,
+			tfhe.FheUint8:  450000 + AdjustFHEGas,
+			tfhe.FheUint16: 612000 + AdjustFHEGas,
+			tfhe.FheUint32: 795000 + AdjustFHEGas,
+			tfhe.FheUint64: 1095000 + AdjustFHEGas,
 		},
-		FheShift: map[FheUintType]uint64{
-			FheUint4:  106000 + AdjustFHEGas,
-			FheUint8:  123000 + AdjustFHEGas,
-			FheUint16: 143000 + AdjustFHEGas,
-			FheUint32: 173000 + AdjustFHEGas,
-			FheUint64: 217000 + AdjustFHEGas,
+		FheShift: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  106000 + AdjustFHEGas,
+			tfhe.FheUint8:  123000 + AdjustFHEGas,
+			tfhe.FheUint16: 143000 + AdjustFHEGas,
+			tfhe.FheUint32: 173000 + AdjustFHEGas,
+			tfhe.FheUint64: 217000 + AdjustFHEGas,
 		},
-		FheScalarShift: map[FheUintType]uint64{
-			FheUint4:  25000 + AdjustFHEGas,
-			FheUint8:  25000 + AdjustFHEGas,
-			FheUint16: 25000 + AdjustFHEGas,
-			FheUint32: 25000 + AdjustFHEGas,
-			FheUint64: 28000 + AdjustFHEGas,
+		FheScalarShift: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  25000 + AdjustFHEGas,
+			tfhe.FheUint8:  25000 + AdjustFHEGas,
+			tfhe.FheUint16: 25000 + AdjustFHEGas,
+			tfhe.FheUint32: 25000 + AdjustFHEGas,
+			tfhe.FheUint64: 28000 + AdjustFHEGas,
 		},
-		FheEq: map[FheUintType]uint64{
-			FheUint4:  41000 + AdjustFHEGas,
-			FheUint8:  43000 + AdjustFHEGas,
-			FheUint16: 44000 + AdjustFHEGas,
-			FheUint32: 72000 + AdjustFHEGas,
-			FheUint64: 76000 + AdjustFHEGas,
+		FheEq: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  41000 + AdjustFHEGas,
+			tfhe.FheUint8:  43000 + AdjustFHEGas,
+			tfhe.FheUint16: 44000 + AdjustFHEGas,
+			tfhe.FheUint32: 72000 + AdjustFHEGas,
+			tfhe.FheUint64: 76000 + AdjustFHEGas,
 		},
-		FheLe: map[FheUintType]uint64{
-			FheUint4:  60000 + AdjustFHEGas,
-			FheUint8:  72000 + AdjustFHEGas,
-			FheUint16: 95000 + AdjustFHEGas,
-			FheUint32: 118000 + AdjustFHEGas,
-			FheUint64: 146000 + AdjustFHEGas,
+		FheLe: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  60000 + AdjustFHEGas,
+			tfhe.FheUint8:  72000 + AdjustFHEGas,
+			tfhe.FheUint16: 95000 + AdjustFHEGas,
+			tfhe.FheUint32: 118000 + AdjustFHEGas,
+			tfhe.FheUint64: 146000 + AdjustFHEGas,
 		},
-		FheMinMax: map[FheUintType]uint64{
-			FheUint4:  106000 + AdjustFHEGas,
-			FheUint8:  118000 + AdjustFHEGas,
-			FheUint16: 143000 + AdjustFHEGas,
-			FheUint32: 173000 + AdjustFHEGas,
-			FheUint64: 200000 + AdjustFHEGas,
+		FheMinMax: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  106000 + AdjustFHEGas,
+			tfhe.FheUint8:  118000 + AdjustFHEGas,
+			tfhe.FheUint16: 143000 + AdjustFHEGas,
+			tfhe.FheUint32: 173000 + AdjustFHEGas,
+			tfhe.FheUint64: 200000 + AdjustFHEGas,
 		},
-		FheScalarMinMax: map[FheUintType]uint64{
-			FheUint4:  111000 + AdjustFHEGas,
-			FheUint8:  114000 + AdjustFHEGas,
-			FheUint16: 140000 + AdjustFHEGas,
-			FheUint32: 154000 + AdjustFHEGas,
-			FheUint64: 182000 + AdjustFHEGas,
+		FheScalarMinMax: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  111000 + AdjustFHEGas,
+			tfhe.FheUint8:  114000 + AdjustFHEGas,
+			tfhe.FheUint16: 140000 + AdjustFHEGas,
+			tfhe.FheUint32: 154000 + AdjustFHEGas,
+			tfhe.FheUint64: 182000 + AdjustFHEGas,
 		},
-		FheNot: map[FheUintType]uint64{
-			FheUint4:  23000 + AdjustFHEGas,
-			FheUint8:  24000 + AdjustFHEGas,
-			FheUint16: 25000 + AdjustFHEGas,
-			FheUint32: 26000 + AdjustFHEGas,
-			FheUint64: 27000 + AdjustFHEGas,
+		FheNot: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  23000 + AdjustFHEGas,
+			tfhe.FheUint8:  24000 + AdjustFHEGas,
+			tfhe.FheUint16: 25000 + AdjustFHEGas,
+			tfhe.FheUint32: 26000 + AdjustFHEGas,
+			tfhe.FheUint64: 27000 + AdjustFHEGas,
 		},
-		FheNeg: map[FheUintType]uint64{
-			FheUint4:  50000 + AdjustFHEGas,
-			FheUint8:  85000 + AdjustFHEGas,
-			FheUint16: 121000 + AdjustFHEGas,
-			FheUint32: 150000 + AdjustFHEGas,
-			FheUint64: 189000 + AdjustFHEGas,
+		FheNeg: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  50000 + AdjustFHEGas,
+			tfhe.FheUint8:  85000 + AdjustFHEGas,
+			tfhe.FheUint16: 121000 + AdjustFHEGas,
+			tfhe.FheUint32: 150000 + AdjustFHEGas,
+			tfhe.FheUint64: 189000 + AdjustFHEGas,
 		},
 		// TODO: Costs will depend on the complexity of doing reencryption/decryption by the oracle.
-		FheReencrypt: map[FheUintType]uint64{
-			FheBool:  1000,
-			FheUint4:  1000,
-			FheUint8:  1000,
-			FheUint16: 1100,
-			FheUint32: 1200,
+		FheReencrypt: map[tfhe.FheUintType]uint64{
+			tfhe.FheBool:   1000,
+			tfhe.FheUint4:  1000,
+			tfhe.FheUint8:  1000,
+			tfhe.FheUint16: 1100,
+			tfhe.FheUint32: 1200,
 		},
 		// As of now, verification costs only cover ciphertext deserialization and assume there is no ZKPoK to verify.
-		FheVerify: map[FheUintType]uint64{
-			FheBool:  200,
-			FheUint4:  200,
-			FheUint8:  200,
-			FheUint16: 300,
-			FheUint32: 400,
-			FheUint64: 800,
+		FheVerify: map[tfhe.FheUintType]uint64{
+			tfhe.FheBool:   200,
+			tfhe.FheUint4:  200,
+			tfhe.FheUint8:  200,
+			tfhe.FheUint16: 300,
+			tfhe.FheUint32: 400,
+			tfhe.FheUint64: 800,
 		},
-		FheTrivialEncrypt: map[FheUintType]uint64{
-			FheBool:  100,
-			FheUint4:  100,
-			FheUint8:  100,
-			FheUint16: 200,
-			FheUint32: 300,
-			FheUint64: 600,
+		FheTrivialEncrypt: map[tfhe.FheUintType]uint64{
+			tfhe.FheBool:   100,
+			tfhe.FheUint4:  100,
+			tfhe.FheUint8:  100,
+			tfhe.FheUint16: 200,
+			tfhe.FheUint32: 300,
+			tfhe.FheUint64: 600,
 		},
 		// TODO: These will change once we have an FHE-based random generaration.
-		FheRand: map[FheUintType]uint64{
-			FheUint4:  EvmNetSstoreInitGas + 100000,
-			FheUint8:  EvmNetSstoreInitGas + 100000,
-			FheUint16: EvmNetSstoreInitGas + 100000,
-			FheUint32: EvmNetSstoreInitGas + 100000,
-			FheUint64: EvmNetSstoreInitGas + 100000,
+		FheRand: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  EvmNetSstoreInitGas + 100000,
+			tfhe.FheUint8:  EvmNetSstoreInitGas + 100000,
+			tfhe.FheUint16: EvmNetSstoreInitGas + 100000,
+			tfhe.FheUint32: EvmNetSstoreInitGas + 100000,
+			tfhe.FheUint64: EvmNetSstoreInitGas + 100000,
 		},
-		FheIfThenElse: map[FheUintType]uint64{
-			FheUint4:  35000 + AdjustFHEGas,
-			FheUint8:  37000 + AdjustFHEGas,
-			FheUint16: 37000 + AdjustFHEGas,
-			FheUint32: 40000 + AdjustFHEGas,
-			FheUint64: 43000 + AdjustFHEGas,
+		FheIfThenElse: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  35000 + AdjustFHEGas,
+			tfhe.FheUint8:  37000 + AdjustFHEGas,
+			tfhe.FheUint16: 37000 + AdjustFHEGas,
+			tfhe.FheUint32: 40000 + AdjustFHEGas,
+			tfhe.FheUint64: 43000 + AdjustFHEGas,
 		},
 		// TODO: As of now, only support FheUint8. All optimistic require predicates are
 		// downcast to FheUint8 at the solidity level. Eventually move to ebool.
 		// If there is at least one optimistic require, we need to decrypt it as it was a normal FHE require.
 		// For every subsequent optimistic require, we need to bitand it with the current require value - that
 		// works, because we assume requires have a value of 0 or 1.
-		FheOptRequire: map[FheUintType]uint64{
-			FheUint4:  170000,
-			FheUint8:  170000,
-			FheUint16: 180000,
-			FheUint32: 190000,
+		FheOptRequire: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  170000,
+			tfhe.FheUint8:  170000,
+			tfhe.FheUint16: 180000,
+			tfhe.FheUint32: 190000,
 		},
-		FheOptRequireBitAnd: map[FheUintType]uint64{
-			FheUint4:  20000,
-			FheUint8:  20000,
-			FheUint16: 20000,
-			FheUint32: 20000,
+		FheOptRequireBitAnd: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  20000,
+			tfhe.FheUint8:  20000,
+			tfhe.FheUint16: 20000,
+			tfhe.FheUint32: 20000,
 		},
-		FheGetCiphertext: map[FheUintType]uint64{
-			FheUint8:  12000,
-			FheUint16: 14000,
-			FheUint32: 18000,
-			FheUint64: 28000,
+		FheGetCiphertext: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint8:  12000,
+			tfhe.FheUint16: 14000,
+			tfhe.FheUint32: 18000,
+			tfhe.FheUint64: 28000,
 		},
 	}
 }
