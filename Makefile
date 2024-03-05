@@ -4,8 +4,7 @@ build: build-tfhe-rs-capi
 
 .PHONY: test
 test: build-tfhe-rs-capi
-	cd pkg/fhevm && go test -v . \
-	&& cd ../tfhe && go test -v .
+	cd pkg && go test -v ./...
 
 .PHONY: build-tfhe-rs-capi
 build-tfhe-rs-capi:
