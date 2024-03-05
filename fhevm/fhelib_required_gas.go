@@ -107,8 +107,33 @@ func fheLtRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 }
 
 func fheEqRequiredGas(environment EVMEnvironment, input []byte) uint64 {
-	// Implement in terms of le, because comparison costs are currently the same.
-	return fheLeRequiredGas(environment, input)
+	input = input[:minInt(65, len(input))]
+
+	logger := environment.GetLogger()
+	isScalar, err := isScalarOp(input)
+	if err != nil {
+		logger.Error("comparison RequiredGas() can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
+		return 0
+	}
+	var lhs, rhs *verifiedCiphertext
+	if !isScalar {
+		lhs, rhs, err = get2VerifiedOperands(environment, input)
+		if err != nil {
+			logger.Error("comparison RequiredGas() ciphertext inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return 0
+		}
+		if lhs.fheUintType() != rhs.fheUintType() {
+			logger.Error("comparison RequiredGas() operand type mismatch", "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+			return 0
+		}
+	} else {
+		lhs, _, err = getScalarOperands(environment, input)
+		if err != nil {
+			logger.Error("comparison RequiredGas() scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return 0
+		}
+	}
+	return environment.FhevmParams().GasCosts.FheEq[lhs.fheUintType()]
 }
 
 func fheGeRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -123,7 +148,7 @@ func fheGtRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 
 func fheNeRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	// Implement in terms of le, because comparison costs are currently the same.
-	return fheLeRequiredGas(environment, input)
+	return fheEqRequiredGas(environment, input)
 }
 
 func fheShlRequiredGas(environment EVMEnvironment, input []byte) uint64 {
