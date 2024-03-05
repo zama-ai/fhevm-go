@@ -1,6 +1,10 @@
 package fhevm
 
-import "encoding/hex"
+import (
+	"encoding/hex"
+
+	"github.com/zama-ai/fhevm-go/tfhe"
+)
 
 func fheLeRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	input = input[:minInt(65, len(input))]
@@ -129,7 +133,7 @@ func fheIfThenElseRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("IfThenElse op RequiredGas() inputs not verified", "err", err, "input", hex.EncodeToString(input))
 		return 0
 	}
-	if first.fheUintType() != FheBool {
+	if first.fheUintType() != tfhe.FheBool {
 		logger.Error("IfThenElse op RequiredGas() invalid type for condition", "first", first.fheUintType())
 		return 0
 	}

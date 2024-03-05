@@ -3,6 +3,7 @@ package fhevm
 import (
 	"math/big"
 
+	"github.com/zama-ai/fhevm-go/tfhe"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -42,7 +43,7 @@ func otelDescribeOperands(span trace.Span, operands ...operand) {
 	span.SetAttributes(attribute.KeyValue{Key: operandTypeAttrName, Value: attribute.StringValue(operandTypes)})
 }
 
-func otelDescribeOperandsFheTypes(span trace.Span, types ...FheUintType) {
+func otelDescribeOperandsFheTypes(span trace.Span, types ...tfhe.FheUintType) {
 	if span == nil {
 		return
 	}

@@ -9,6 +9,7 @@ import (
 	crypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
+	"github.com/zama-ai/fhevm-go/tfhe"
 	"go.opentelemetry.io/otel"
 )
 
@@ -51,7 +52,7 @@ func verifyIfCiphertextHandle(handle common.Hash, env EVMEnvironment, contractAd
 
 	ciphertext := getCiphertextFromProtectedStoage(env, contractAddress, handle)
 	if ciphertext != nil {
-		ct := new(TfheCiphertext)
+		ct := new(tfhe.TfheCiphertext)
 		err := ct.Deserialize(ciphertext.bytes, ciphertext.metadata.fheUintType)
 		if err != nil {
 			msg := "opSload failed to deserialize a ciphertext"

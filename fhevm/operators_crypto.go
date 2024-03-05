@@ -11,6 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zama-ai/fhevm-go/kms"
+	"github.com/zama-ai/fhevm-go/tfhe"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -43,15 +44,15 @@ func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr
 
 	ctBytes := input[:len(input)-1]
 	ctTypeByte := input[len(input)-1]
-	if !isValidFheType(ctTypeByte) {
+	if !tfhe.IsValidFheType(ctTypeByte) {
 		msg := "verifyCiphertext Run() ciphertext type is invalid"
 		logger.Error(msg, "type", ctTypeByte)
 		return nil, errors.New(msg)
 	}
-	ctType := FheUintType(ctTypeByte)
+	ctType := tfhe.FheUintType(ctTypeByte)
 	otelDescribeOperandsFheTypes(runSpan, ctType)
 
-	expectedSize, found := GetCompactFheCiphertextSize(ctType)
+	expectedSize, found := tfhe.GetCompactFheCiphertextSize(ctType)
 	if !found || expectedSize != uint(len(ctBytes)) {
 		msg := "verifyCiphertext Run() compact ciphertext size is invalid"
 		logger.Error(msg, "type", ctTypeByte, "size", len(ctBytes), "expectedSize", expectedSize)
@@ -63,7 +64,7 @@ func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr
 		return importRandomCiphertext(environment, ctType), nil
 	}
 
-	ct := new(TfheCiphertext)
+	ct := new(tfhe.TfheCiphertext)
 	err := ct.DeserializeCompact(ctBytes, ctType)
 	if err != nil {
 		logger.Error("verifyCiphertext failed to deserialize input ciphertext",
@@ -110,17 +111,17 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 
 		var fheType kms.FheType
 		switch ct.fheUintType() {
-		case FheBool:
+		case tfhe.FheBool:
 			fheType = kms.FheType_Bool
-		case FheUint4:
+		case tfhe.FheUint4:
 			fheType = kms.FheType_Euint4
-		case FheUint8:
+		case tfhe.FheUint8:
 			fheType = kms.FheType_Euint8
-		case FheUint16:
+		case tfhe.FheUint16:
 			fheType = kms.FheType_Euint16
-		case FheUint32:
+		case tfhe.FheUint32:
 			fheType = kms.FheType_Euint32
-		case FheUint64:
+		case tfhe.FheUint64:
 			fheType = kms.FheType_Euint64
 		}
 
@@ -192,7 +193,7 @@ func optimisticRequireRun(environment EVMEnvironment, caller common.Address, add
 	if !environment.IsCommitting() && !environment.IsEthCall() {
 		return nil, nil
 	}
-	if ct.fheUintType() != FheUint8 {
+	if ct.fheUintType() != tfhe.FheUint8 {
 		msg := "optimisticRequire ciphertext type is not FheUint8"
 		logger.Error(msg, "type", ct.fheUintType())
 		return nil, errors.New(msg)
@@ -279,22 +280,22 @@ func getCiphertextRun(environment EVMEnvironment, caller common.Address, addr co
 	return ciphertext.bytes, nil
 }
 
-func decryptValue(environment EVMEnvironment, ct *TfheCiphertext) (uint64, error) {
+func decryptValue(environment EVMEnvironment, ct *tfhe.TfheCiphertext) (uint64, error) {
 
 	logger := environment.GetLogger()
 	var fheType kms.FheType
 	switch ct.Type() {
-	case FheBool:
+	case tfhe.FheBool:
 		fheType = kms.FheType_Bool
-	case FheUint4:
+	case tfhe.FheUint4:
 		fheType = kms.FheType_Euint4
-	case FheUint8:
+	case tfhe.FheUint8:
 		fheType = kms.FheType_Euint8
-	case FheUint16:
+	case tfhe.FheUint16:
 		fheType = kms.FheType_Euint16
-	case FheUint32:
+	case tfhe.FheUint32:
 		fheType = kms.FheType_Euint32
-	case FheUint64:
+	case tfhe.FheUint64:
 		fheType = kms.FheType_Euint64
 	}
 
@@ -339,7 +340,7 @@ func evaluateRemainingOptimisticRequires(environment EVMEnvironment) (bool, erro
 	len := len(requires)
 	defer func() { environment.FhevmData().resetOptimisticRequires() }()
 	if len != 0 {
-		var cumulative *TfheCiphertext = requires[0]
+		var cumulative *tfhe.TfheCiphertext = requires[0]
 		var err error
 		for i := 1; i < len; i++ {
 			cumulative, err = cumulative.Bitand(requires[i])
@@ -370,11 +371,11 @@ func castRun(environment EVMEnvironment, caller common.Address, addr common.Addr
 		return nil, errors.New("unverified ciphertext handle")
 	}
 
-	if !isValidFheType(input[32]) {
+	if !tfhe.IsValidFheType(input[32]) {
 		logger.Error("invalid type to cast to")
 		return nil, errors.New("invalid type provided")
 	}
-	castToType := FheUintType(input[32])
+	castToType := tfhe.FheUintType(input[32])
 
 	otelDescribeOperandsFheTypes(runSpan, ct.fheUintType(), castToType)
 
@@ -409,13 +410,13 @@ func fhePubKeyRun(environment EVMEnvironment, caller common.Address, addr common
 	input = input[:minInt(1, len(input))]
 
 	existing := environment.GetState(fhePubKeyHashPrecompile, fhePubKeyHashSlot)
-	if existing != GetPksHash() {
+	if existing != tfhe.GetPksHash() {
 		msg := "fhePubKey FHE public key hash doesn't match one stored in state"
-		environment.GetLogger().Error(msg, "existing", existing.Hex(), "pksHash", GetPksHash().Hex())
+		environment.GetLogger().Error(msg, "existing", existing.Hex(), "pksHash", tfhe.GetPksHash().Hex())
 		return nil, errors.New(msg)
 	}
 	// serialize public key
-	pksBytes, err := serializePublicKey()
+	pksBytes, err := tfhe.SerializePublicKey()
 	if err != nil {
 		return nil, err
 	}
@@ -441,10 +442,10 @@ func trivialEncryptRun(environment EVMEnvironment, caller common.Address, addr c
 	}
 
 	valueToEncrypt := *new(big.Int).SetBytes(input[0:32])
-	encryptToType := FheUintType(input[32])
+	encryptToType := tfhe.FheUintType(input[32])
 	otelDescribeOperandsFheTypes(runSpan, encryptToType)
 
-	ct := new(TfheCiphertext).TrivialEncrypt(valueToEncrypt, encryptToType)
+	ct := new(tfhe.TfheCiphertext).TrivialEncrypt(valueToEncrypt, encryptToType)
 
 	ctHash := ct.GetHash()
 	importCiphertext(environment, ct)

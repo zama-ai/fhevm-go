@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zama-ai/fhevm-go/tfhe"
 )
 
 func verifyCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -13,7 +14,7 @@ func verifyCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint6
 			"len", len(input))
 		return 0
 	}
-	ctType := FheUintType(input[len(input)-1])
+	ctType := tfhe.FheUintType(input[len(input)-1])
 	return environment.FhevmParams().GasCosts.FheVerify[ctType]
 }
 
@@ -48,15 +49,15 @@ func optimisticRequireRequiredGas(environment EVMEnvironment, input []byte) uint
 			"input", hex.EncodeToString(input))
 		return 0
 	}
-	if ct.fheUintType() != FheUint8 {
+	if ct.fheUintType() != tfhe.FheUint8 {
 		logger.Error("optimisticRequire RequiredGas() ciphertext type is not FheUint8",
 			"type", ct.fheUintType())
 		return 0
 	}
 	if len(environment.FhevmData().optimisticRequires) == 0 {
-		return environment.FhevmParams().GasCosts.FheOptRequire[FheUint8]
+		return environment.FhevmParams().GasCosts.FheOptRequire[tfhe.FheUint8]
 	}
-	return environment.FhevmParams().GasCosts.FheOptRequireBitAnd[FheUint8]
+	return environment.FhevmParams().GasCosts.FheOptRequireBitAnd[tfhe.FheUint8]
 }
 
 func getCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -118,6 +119,6 @@ func trivialEncryptRequiredGas(environment EVMEnvironment, input []byte) uint64 
 		logger.Error("trivialEncrypt RequiredGas() input len must be 33 bytes", "input", hex.EncodeToString(input), "len", len(input))
 		return 0
 	}
-	encryptToType := FheUintType(input[32])
+	encryptToType := tfhe.FheUintType(input[32])
 	return environment.FhevmParams().GasCosts.FheTrivialEncrypt[encryptToType]
 }

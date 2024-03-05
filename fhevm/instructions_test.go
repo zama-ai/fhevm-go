@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 	fhevm_crypto "github.com/zama-ai/fhevm-go/crypto"
+	"github.com/zama-ai/fhevm-go/tfhe"
 )
 
 func init() {
@@ -39,10 +40,10 @@ func init() {
 	)
 }
 
-func verifyCiphertextInTestMemory(environment EVMEnvironment, value uint64, depth int, t FheUintType) *TfheCiphertext {
+func verifyCiphertextInTestMemory(environment EVMEnvironment, value uint64, depth int, t tfhe.FheUintType) *tfhe.TfheCiphertext {
 	// Simulate as if the ciphertext is compact and comes externally.
-	ser := encryptAndSerializeCompact(uint64(value), t)
-	ct := new(TfheCiphertext)
+	ser := tfhe.EncryptAndSerializeCompact(uint64(value), t)
+	ct := new(tfhe.TfheCiphertext)
 	err := ct.DeserializeCompact(ser, t)
 	if err != nil {
 		panic(err)
@@ -50,7 +51,7 @@ func verifyCiphertextInTestMemory(environment EVMEnvironment, value uint64, dept
 	return verifyTfheCiphertextInTestMemory(environment, ct, depth)
 }
 
-func verifyTfheCiphertextInTestMemory(environment EVMEnvironment, ct *TfheCiphertext, depth int) *TfheCiphertext {
+func verifyTfheCiphertextInTestMemory(environment EVMEnvironment, ct *tfhe.TfheCiphertext, depth int) *tfhe.TfheCiphertext {
 	verifiedCiphertext := importCiphertextToEVMAtDepth(environment, ct, depth)
 	return verifiedCiphertext.ciphertext
 }
@@ -137,7 +138,7 @@ func (c testCallerAddress) Address() common.Address {
 func newTestScopeConext() TestScopeContextInterface {
 	c := new(TestScopeContext)
 	c.Memory = vm.NewMemory()
-	c.Memory.Resize(uint64(expandedFheCiphertextSize[FheUint8]) * 3)
+	c.Memory.Resize(uint64(tfhe.ExpandedFheCiphertextSize[tfhe.FheUint8]) * 3)
 	c.Stack = newstack()
 	c.Contract = vm.NewContract(testCallerAddress{}, testContractAddress{}, big.NewInt(10), 100000)
 	return c
@@ -242,7 +243,7 @@ func TestProtectedStorageSstoreSload(t *testing.T) {
 	pc := uint64(0)
 	depth := 1
 	environment.depth = depth
-	ct := verifyCiphertextInTestMemory(environment, 2, depth, FheUint32)
+	ct := verifyCiphertextInTestMemory(environment, 2, depth, tfhe.FheUint32)
 	ctHash := ct.GetHash()
 	scope := newTestScopeConext()
 	loc := uint256.NewInt(10)
@@ -281,7 +282,7 @@ func TestProtectedStorageGarbageCollectionNoFlaggedLocation(t *testing.T) {
 	pc := uint64(0)
 	depth := 1
 	environment.depth = depth
-	ctHash := verifyCiphertextInTestMemory(environment, 2, depth, FheUint8).GetHash()
+	ctHash := verifyCiphertextInTestMemory(environment, 2, depth, tfhe.FheUint8).GetHash()
 	scope := newTestScopeConext()
 	loc := uint256.NewInt(10)
 	locHash := common.BytesToHash(loc.Bytes())
@@ -333,7 +334,7 @@ func TestProtectedStorageGarbageCollection(t *testing.T) {
 	pc := uint64(0)
 	depth := 1
 	environment.depth = depth
-	ctHash := verifyCiphertextInTestMemory(environment, 2, depth, FheUint8).GetHash()
+	ctHash := verifyCiphertextInTestMemory(environment, 2, depth, tfhe.FheUint8).GetHash()
 	scope := newTestScopeConext()
 	loc := uint256.NewInt(10)
 	locHash := common.BytesToHash(loc.Bytes())
@@ -355,8 +356,8 @@ func TestProtectedStorageGarbageCollection(t *testing.T) {
 	if metadata.refCount != 1 {
 		t.Fatalf("metadata.refcount of ciphertext is not 1")
 	}
-	if metadata.length != uint64(expandedFheCiphertextSize[FheUint8]) {
-		t.Fatalf("metadata.length (%v) != ciphertext len (%v)", metadata.length, uint64(expandedFheCiphertextSize[FheUint8]))
+	if metadata.length != uint64(tfhe.ExpandedFheCiphertextSize[tfhe.FheUint8]) {
+		t.Fatalf("metadata.length (%v) != ciphertext len (%v)", metadata.length, uint64(tfhe.ExpandedFheCiphertextSize[tfhe.FheUint8]))
 	}
 	ciphertextLocationsToCheck := (metadata.length + 32 - 1) / 32
 	startOfCiphertext := newInt(metadataKey.Bytes())
@@ -445,7 +446,7 @@ func TestOpReturnDelegation(t *testing.T) {
 	pc := uint64(0)
 	depth := 2
 	scope := newTestScopeConext()
-	ct := verifyCiphertextInTestMemory(environment, 2, depth, FheUint8)
+	ct := verifyCiphertextInTestMemory(environment, 2, depth, tfhe.FheUint8)
 	ctHash := ct.GetHash()
 
 	offset := uint256.NewInt(0)
@@ -470,7 +471,7 @@ func TestOpReturnUnverifyIfNotReturned(t *testing.T) {
 	pc := uint64(0)
 	depth := 2
 	scope := newTestScopeConext()
-	ctHash := verifyCiphertextInTestMemory(environment, 2, depth, FheUint8).GetHash()
+	ctHash := verifyCiphertextInTestMemory(environment, 2, depth, tfhe.FheUint8).GetHash()
 
 	offset := uint256.NewInt(0)
 	len := uint256.NewInt(32)
@@ -491,7 +492,7 @@ func TestOpReturnDoesNotUnverifyIfNotVerified(t *testing.T) {
 	environment := newTestEVMEnvironment()
 	pc := uint64(0)
 	scope := newTestScopeConext()
-	ct := verifyCiphertextInTestMemory(environment, 2, 4, FheUint8)
+	ct := verifyCiphertextInTestMemory(environment, 2, 4, tfhe.FheUint8)
 	ctHash := ct.GetHash()
 
 	// Return from depth 3 to depth 2. However, ct is not verified at 3 and, hence, cannot

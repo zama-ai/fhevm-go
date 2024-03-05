@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zama-ai/fhevm-go/tfhe"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -35,7 +36,7 @@ func fheLeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, FheBool), nil
+			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
 		result, err := lhs.ciphertext.Le(rhs.ciphertext)
@@ -59,7 +60,7 @@ func fheLeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, FheBool), nil
+			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
 		result, err := lhs.ciphertext.ScalarLe(rhs.Uint64())
@@ -101,7 +102,7 @@ func fheLtRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, FheBool), nil
+			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
 		result, err := lhs.ciphertext.Lt(rhs.ciphertext)
@@ -125,7 +126,7 @@ func fheLtRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, FheBool), nil
+			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
 		result, err := lhs.ciphertext.ScalarLt(rhs.Uint64())
@@ -167,7 +168,7 @@ func fheEqRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, FheBool), nil
+			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
 		result, err := lhs.ciphertext.Eq(rhs.ciphertext)
@@ -191,7 +192,7 @@ func fheEqRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, FheBool), nil
+			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
 		result, err := lhs.ciphertext.ScalarEq(rhs.Uint64())
@@ -233,7 +234,7 @@ func fheGeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, FheBool), nil
+			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
 		result, err := lhs.ciphertext.Ge(rhs.ciphertext)
@@ -257,7 +258,7 @@ func fheGeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, FheBool), nil
+			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
 		result, err := lhs.ciphertext.ScalarGe(rhs.Uint64())
@@ -299,7 +300,7 @@ func fheGtRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, FheBool), nil
+			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
 		result, err := lhs.ciphertext.Gt(rhs.ciphertext)
@@ -323,7 +324,7 @@ func fheGtRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, FheBool), nil
+			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
 		result, err := lhs.ciphertext.ScalarGt(rhs.Uint64())
@@ -365,7 +366,7 @@ func fheNeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, FheBool), nil
+			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
 		result, err := lhs.ciphertext.Ne(rhs.ciphertext)
@@ -389,7 +390,7 @@ func fheNeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, FheBool), nil
+			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
 		result, err := lhs.ciphertext.ScalarNe(rhs.Uint64())
