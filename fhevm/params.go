@@ -148,7 +148,7 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint64: 146000 + AdjustFHEGas,
 		},
 		FheMinMax: map[tfhe.FheUintType]uint64{
-			tfhe.FheUint4:  106000 + AdjustFHEGas,
+			tfhe.FheUint4:  111000 + AdjustFHEGas,
 			tfhe.FheUint8:  118000 + AdjustFHEGas,
 			tfhe.FheUint16: 143000 + AdjustFHEGas,
 			tfhe.FheUint32: 173000 + AdjustFHEGas,
@@ -156,7 +156,7 @@ func DefaultGasCosts() GasCosts {
 		},
 		FheScalarMinMax: map[tfhe.FheUintType]uint64{
 			tfhe.FheUint4:  111000 + AdjustFHEGas,
-			tfhe.FheUint8:  114000 + AdjustFHEGas,
+			tfhe.FheUint8:  118000 + AdjustFHEGas,
 			tfhe.FheUint16: 140000 + AdjustFHEGas,
 			tfhe.FheUint32: 154000 + AdjustFHEGas,
 			tfhe.FheUint64: 182000 + AdjustFHEGas,
