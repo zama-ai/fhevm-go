@@ -227,12 +227,6 @@ var fhelibMethods = []*FheLibMethod{
 		runFunction:         verifyCiphertextRun,
 	},
 	{
-		name:                "optimisticRequire",
-		argTypes:            "(uint256)",
-		requiredGasFunction: optimisticRequireRequiredGas,
-		runFunction:         optimisticRequireRun,
-	},
-	{
 		name:                "getCiphertext",
 		argTypes:            "(address,uint256)",
 		requiredGasFunction: getCiphertextRequiredGas,

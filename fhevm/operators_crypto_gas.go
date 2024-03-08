@@ -34,32 +34,6 @@ func reencryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	return environment.FhevmParams().GasCosts.FheReencrypt[ct.fheUintType()]
 }
 
-func optimisticRequireRequiredGas(environment EVMEnvironment, input []byte) uint64 {
-	input = input[:minInt(32, len(input))]
-
-	logger := environment.GetLogger()
-	if len(input) != 32 {
-		logger.Error("optimisticRequire RequiredGas() input len must be 32 bytes",
-			"input", hex.EncodeToString(input), "len", len(input))
-		return 0
-	}
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input))
-	if ct == nil {
-		logger.Error("optimisticRequire RequiredGas() input doesn't point to verified ciphertext",
-			"input", hex.EncodeToString(input))
-		return 0
-	}
-	if ct.fheUintType() != tfhe.FheUint8 {
-		logger.Error("optimisticRequire RequiredGas() ciphertext type is not FheUint8",
-			"type", ct.fheUintType())
-		return 0
-	}
-	if len(environment.FhevmData().optimisticRequires) == 0 {
-		return environment.FhevmParams().GasCosts.FheOptRequire[tfhe.FheUint8]
-	}
-	return environment.FhevmParams().GasCosts.FheOptRequireBitAnd[tfhe.FheUint8]
-}
-
 func getCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	input = input[:minInt(64, len(input))]
 

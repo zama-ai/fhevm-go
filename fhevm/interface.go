@@ -6,7 +6,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
-	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 )
 
 type EVMEnvironment interface {
@@ -47,25 +46,11 @@ type FhevmData struct {
 	// A map from a ciphertext hash to itself and stack depth at which it is verified
 	verifiedCiphertexts map[common.Hash]*verifiedCiphertext
 
-	// All optimistic requires encountered up to that point in the txn execution
-	optimisticRequires []*tfhe.TfheCiphertext
-
 	nextCiphertextHashOnGasEst uint256.Int
-}
-
-// Set the optimisticRequires array to an empty array
-func (data *FhevmData) resetOptimisticRequires() {
-	data.optimisticRequires = make([]*tfhe.TfheCiphertext, 0)
-}
-
-// Append one ciphertext to the optimisticRequires array
-func (data *FhevmData) appendOptimisticRequires(ct *tfhe.TfheCiphertext) {
-	data.optimisticRequires = append(data.optimisticRequires, ct)
 }
 
 func NewFhevmData() FhevmData {
 	return FhevmData{
 		verifiedCiphertexts: make(map[common.Hash]*verifiedCiphertext),
-		optimisticRequires:  make([]*tfhe.TfheCiphertext, 0),
 	}
 }
