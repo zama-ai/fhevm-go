@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -115,6 +116,8 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 			fheType = kms.FheType_Euint32
 		case tfhe.FheUint64:
 			fheType = kms.FheType_Euint64
+		case tfhe.FheUint160:
+			fheType = kms.FheType_Euint160
 		}
 
 		pubKey := input[32:64]
@@ -165,7 +168,6 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 	return nil, errors.New(msg)
 }
 
-
 func decryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(32, len(input))]
 
@@ -205,9 +207,7 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 
 	// Always return a 32-byte big-endian integer.
 	ret := make([]byte, 32)
-	bigIntValue := big.NewInt(0)
-	bigIntValue.SetUint64(plaintext)
-	bigIntValue.FillBytes(ret)
+	plaintext.FillBytes(ret)
 	return ret, nil
 }
 
@@ -237,7 +237,7 @@ func getCiphertextRun(environment EVMEnvironment, caller common.Address, addr co
 	return ciphertext.bytes, nil
 }
 
-func decryptValue(environment EVMEnvironment, ct *tfhe.TfheCiphertext) (uint64, error) {
+func decryptValue(environment EVMEnvironment, ct *tfhe.TfheCiphertext) (*big.Int, error) {
 
 	logger := environment.GetLogger()
 	var fheType kms.FheType
@@ -254,6 +254,8 @@ func decryptValue(environment EVMEnvironment, ct *tfhe.TfheCiphertext) (uint64, 
 		fheType = kms.FheType_Euint32
 	case tfhe.FheUint64:
 		fheType = kms.FheType_Euint64
+	case tfhe.FheUint160:
+		fheType = kms.FheType_Euint160
 	}
 
 	// TODO: generate merkle proof for some data
@@ -271,7 +273,7 @@ func decryptValue(environment EVMEnvironment, ct *tfhe.TfheCiphertext) (uint64, 
 
 	conn, err := grpc.Dial(kms.KmsEndpointAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return 0, errors.New("kms unreachable")
+		return nil, errors.New("kms unreachable")
 	}
 	defer conn.Close()
 
@@ -283,10 +285,59 @@ func decryptValue(environment EVMEnvironment, ct *tfhe.TfheCiphertext) (uint64, 
 	res, err := ep.Decrypt(ctx, decryptionRequest)
 	if err != nil {
 		logger.Error("decrypt failed", "err", err)
-		return 0, err
+		return nil, err
 	}
 
-	return uint64(res.Plaintext), err
+	// plaintext is a byte slice
+	plaintextBytes := res.Plaintext
+
+	// Variable to hold the resulting big.Int
+	var plaintextBigInt *big.Int
+
+	switch fheType {
+	case kms.FheType_Bool, kms.FheType_Euint4, kms.FheType_Euint8:
+
+		if len(plaintextBytes) > 0 {
+			plaintextBigInt = big.NewInt(int64(plaintextBytes[0]))
+		} else {
+			return nil, errors.New("decryption resulted in empty plaintext for a single-byte FheType")
+		}
+	case kms.FheType_Euint16:
+		// For Euint16, ensure plaintextBytes has at least 2 bytes.
+		if len(plaintextBytes) >= 2 {
+			// Use binary.BigEndian.Uint16 to convert bytes to uint16, then to big.Int.
+			uintVal := binary.BigEndian.Uint16(plaintextBytes)
+			plaintextBigInt = big.NewInt(int64(uintVal))
+		} else {
+			return nil, errors.New("decryption resulted in insufficient bytes for FheType_Euint16")
+		}
+	case kms.FheType_Euint32:
+		// Similar to Euint16, but with 4 bytes to uint32.
+		if len(plaintextBytes) >= 4 {
+			uintVal := binary.BigEndian.Uint32(plaintextBytes)
+			plaintextBigInt = big.NewInt(int64(uintVal))
+		} else {
+			return nil, errors.New("decryption resulted in insufficient bytes for FheType_Euint32")
+		}
+	case kms.FheType_Euint64:
+		// For Euint64, ensure there are 8 bytes to work with.
+		if len(plaintextBytes) >= 8 {
+			uintVal := binary.BigEndian.Uint64(plaintextBytes)
+			plaintextBigInt = new(big.Int).SetUint64(uintVal)
+		} else {
+			return nil, errors.New("decryption resulted in insufficient bytes for FheType_Euint64")
+		}
+	case kms.FheType_Euint160:
+		logger.Info("decrypt success", "plaintextBytes", plaintextBytes)
+		logger.Info("decrypt success", "plaintextBytes", fmt.Sprintf("%v", plaintextBytes))
+		// Special handling for FheUint160, already covered.
+		plaintextBigInt, err = tfhe.U256BytesToBigInt(plaintextBytes)
+	default:
+		return nil, fmt.Errorf("unsupported FheType: %v", fheType)
+	}
+
+	return plaintextBigInt, nil
+
 }
 
 func castRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {

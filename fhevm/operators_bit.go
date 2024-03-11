@@ -61,7 +61,7 @@ func fheShlRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 			return importRandomCiphertext(environment, lhs.fheUintType()), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarShl(rhs.Uint64())
+		result, err := lhs.ciphertext.ScalarShl(rhs)
 		if err != nil {
 			logger.Error("fheShl failed", "err", err)
 			return nil, err
@@ -127,7 +127,7 @@ func fheShrRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 			return importRandomCiphertext(environment, lhs.fheUintType()), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarShr(rhs.Uint64())
+		result, err := lhs.ciphertext.ScalarShr(rhs)
 		if err != nil {
 			logger.Error("fheShr failed", "err", err)
 			return nil, err

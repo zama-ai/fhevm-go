@@ -17,6 +17,8 @@ enum FheType {
   Euint16 = 3;
   Euint32 = 4;
   Euint64 = 5;
+  Euint128 = 6;
+  Euint160 = 7;
 }
 
 message Proof {
@@ -34,7 +36,7 @@ message DecryptionRequest {
 message DecryptionResponse {
   bytes signature = 1;
   FheType fhe_type = 2;
-  uint64 plaintext = 3;
+  bytes plaintext = 3;
 }
 
 message ReencryptionRequest {

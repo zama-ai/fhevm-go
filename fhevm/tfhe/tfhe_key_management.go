@@ -79,6 +79,7 @@ func initCiphertextSizes() {
 	compactFheCiphertextSize[FheUint16] = uint(len(EncryptAndSerializeCompact(0, FheUint16)))
 	compactFheCiphertextSize[FheUint32] = uint(len(EncryptAndSerializeCompact(0, FheUint32)))
 	compactFheCiphertextSize[FheUint64] = uint(len(EncryptAndSerializeCompact(0, FheUint64)))
+	compactFheCiphertextSize[FheUint160] = uint(len(EncryptAndSerializeCompact(0, FheUint160)))
 }
 
 func InitGlobalKeysFromFiles(keysDir string) error {
