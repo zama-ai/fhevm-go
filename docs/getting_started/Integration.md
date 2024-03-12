@@ -13,6 +13,7 @@ This document is based on go-ethereum v1.13.5
 ```go
 func IntrinsicGas(data []byte, accessList types.AccessList, isContractCreation bool, isHomestead, isEIP2028 bool, isEIP3860 bool) (uint64, error)
 ```
+
 replace the last return with:
 
 ```go
@@ -39,9 +40,11 @@ type PrecompiledContract interface {
 #### Update all previous uses of this interface
 
 Add:
+
 ```go
 common.BytesToAddress([]byte{93}): &fheLib{}
 ```
+
 to all precompiled contract maps (e.g. `PrecompiledContractsHomestead` )
 
 {% hint style="info" %}
@@ -129,10 +132,13 @@ func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig
 #### Update RunPrecompiledContract
 
 After changing precompiled contract interface in 2, we have to change usages of:
+
 ```go
 RunPrecompiledContract(p, input, gas)
 ```
+
 to:
+
 ```go
 RunPrecompiledContract(p, evm, caller.Address(), addr, input, gas)
 ```
@@ -260,6 +266,7 @@ defer fhevm.RestoreVerifiedDepths(interpreter.evm.FhevmEnvironment(), verifiedBe
 ```
 
 The call function is named differently in the 3 functions to update:
+
 ```go
 ret, returnGas, err := interpreter.evm.Call(scope.Contract, toAddr, args, gas, bigVal)
 ```
@@ -267,11 +274,13 @@ ret, returnGas, err := interpreter.evm.Call(scope.Contract, toAddr, args, gas, b
 #### Update `opSelfdestruct`
 
 In:
+
 ```go
 func opSelfdestruct(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error)
 ```
 
 Replace the following lines:
+
 ```go
 beneficiary := scope.Stack.pop()
 balance := interpreter.evm.StateDB.GetBalance(scope.Contract.Address())
@@ -280,6 +289,7 @@ interpreter.evm.StateDB.SelfDestruct(scope.Contract.Address())
 ```
 
 with this call to the fhevm:
+
 ```go
 beneficiary, balance := fhevm.OpSelfdestruct(pc, interpreter.evm.FhevmEnvironment(), scope)
 ```
@@ -326,14 +336,6 @@ defer func() {
 }()
 ```
 
-- Replace the clearing of the stop token error at the end with the evaluation of the remaining optimistic requires:
-
-```go
-if err == errStopToken {
-        err = fhevm.EvalRemOptReqWhenStopToken(in.evm.FhevmEnvironment())
-}
-```
-
 ### Step 7: update `core/vm/stack.go`
 
 #### Implement the following methods
@@ -351,9 +353,11 @@ func (st *Stack) Peek() *uint256.Int {
 ### Step 8: update `internal/ethapi/api.go`
 
 - Add `isGasEstimation, isEthCall bool` arguments to `func doCall` and pass them in `vm.Config` during EVM creation:
+
 ```go
 evm, vmError := b.GetEVM(ctx, msg, state, header, &vm.Config{NoBaseFee: true, IsGasEstimation: isGasEstimation, IsEthCall: isEthCall}, &blockCtx)
 ```
+
 - Add `isGasEstimation, isEthCall bool` arguments to `func DoCall` and forward them in the call to `doCall`
 - Update usages of `doCall` and `DoCall` by simply setting `IsEthCall` to `true` when it’s a call, and `IsGasEstimation` to `true` when it’s estimating gas
 

@@ -100,13 +100,6 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
 	if ct != nil {
 		otelDescribeOperandsFheTypes(runSpan, ct.fheUintType())
-		// Make sure we don't decrypt before any optimistic requires are checked.
-		// optReqResult, optReqErr := evaluateRemainingOptimisticRequires(environment)
-		// if optReqErr != nil {
-		// 	return nil, optReqErr
-		// } else if !optReqResult {
-		// 	return nil, ErrExecutionReverted
-		// }
 
 		var fheType kms.FheType
 		switch ct.fheUintType() {
@@ -172,34 +165,6 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 	return nil, errors.New(msg)
 }
 
-func optimisticRequireRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	input = input[:minInt(32, len(input))]
-
-	logger := environment.GetLogger()
-	if len(input) != 32 {
-		msg := "optimisticRequire input len must be 32 bytes"
-		logger.Error(msg, "input", hex.EncodeToString(input), "len", len(input))
-		return nil, errors.New(msg)
-	}
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input))
-	if ct == nil {
-		msg := "optimisticRequire unverified handle"
-		logger.Error(msg, "input", hex.EncodeToString(input))
-		return nil, errors.New(msg)
-	}
-	otelDescribeOperandsFheTypes(runSpan, ct.fheUintType())
-	// If we are doing gas estimation, don't do anything as we would assume all requires are true.
-	if !environment.IsCommitting() && !environment.IsEthCall() {
-		return nil, nil
-	}
-	if ct.fheUintType() != tfhe.FheUint8 {
-		msg := "optimisticRequire ciphertext type is not FheUint8"
-		logger.Error(msg, "type", ct.fheUintType())
-		return nil, errors.New(msg)
-	}
-	environment.FhevmData().appendOptimisticRequires(ct.ciphertext)
-	return nil, nil
-}
 
 func decryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(32, len(input))]
@@ -228,13 +193,6 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 	// We need that, because non-zero bytes cost more than zero bytes in some contexts (e.g. SSTORE or memory operations).
 	if !environment.IsCommitting() && !environment.IsEthCall() {
 		return bytes.Repeat([]byte{0xFF}, 32), nil
-	}
-	// Make sure we don't decrypt before any optimistic requires are checked.
-	optReqResult, optReqErr := evaluateRemainingOptimisticRequires(environment)
-	if optReqErr != nil {
-		return nil, optReqErr
-	} else if !optReqResult {
-		return nil, ErrExecutionReverted
 	}
 
 	plaintext, err := decryptValue(environment, ct.ciphertext)
@@ -329,29 +287,6 @@ func decryptValue(environment EVMEnvironment, ct *tfhe.TfheCiphertext) (uint64, 
 	}
 
 	return uint64(res.Plaintext), err
-}
-
-// If there are optimistic requires, check them by doing bitwise AND on all of them.
-// That works, because we assume their values are either 0 or 1. If there is at least
-// one 0, the result will be 0 (false).
-func evaluateRemainingOptimisticRequires(environment EVMEnvironment) (bool, error) {
-	requires := environment.FhevmData().optimisticRequires
-	len := len(requires)
-	defer func() { environment.FhevmData().resetOptimisticRequires() }()
-	if len != 0 {
-		var cumulative *tfhe.TfheCiphertext = requires[0]
-		var err error
-		for i := 1; i < len; i++ {
-			cumulative, err = cumulative.Bitand(requires[i])
-			if err != nil {
-				environment.GetLogger().Error("evaluateRemainingOptimisticRequires bitand failed", "err", err)
-				return false, err
-			}
-		}
-		result, err := decryptValue(environment, cumulative)
-		return result != 0, err
-	}
-	return true, nil
 }
 
 func castRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
