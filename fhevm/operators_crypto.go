@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"math/big"
 	"time"
 
@@ -292,49 +291,7 @@ func decryptValue(environment EVMEnvironment, ct *tfhe.TfheCiphertext) (*big.Int
 	plaintextBytes := res.Plaintext
 
 	// Variable to hold the resulting big.Int
-	var plaintextBigInt *big.Int
-
-	switch fheType {
-	case kms.FheType_Bool, kms.FheType_Euint4, kms.FheType_Euint8:
-
-		if len(plaintextBytes) > 0 {
-			plaintextBigInt = big.NewInt(int64(plaintextBytes[0]))
-		} else {
-			return nil, errors.New("decryption resulted in empty plaintext for a single-byte FheType")
-		}
-	case kms.FheType_Euint16:
-		// For Euint16, ensure plaintextBytes has at least 2 bytes.
-		if len(plaintextBytes) >= 2 {
-			// Use binary.BigEndian.Uint16 to convert bytes to uint16, then to big.Int.
-			uintVal := binary.BigEndian.Uint16(plaintextBytes)
-			plaintextBigInt = big.NewInt(int64(uintVal))
-		} else {
-			return nil, errors.New("decryption resulted in insufficient bytes for FheType_Euint16")
-		}
-	case kms.FheType_Euint32:
-		// Similar to Euint16, but with 4 bytes to uint32.
-		if len(plaintextBytes) >= 4 {
-			uintVal := binary.BigEndian.Uint32(plaintextBytes)
-			plaintextBigInt = big.NewInt(int64(uintVal))
-		} else {
-			return nil, errors.New("decryption resulted in insufficient bytes for FheType_Euint32")
-		}
-	case kms.FheType_Euint64:
-		// For Euint64, ensure there are 8 bytes to work with.
-		if len(plaintextBytes) >= 8 {
-			uintVal := binary.BigEndian.Uint64(plaintextBytes)
-			plaintextBigInt = new(big.Int).SetUint64(uintVal)
-		} else {
-			return nil, errors.New("decryption resulted in insufficient bytes for FheType_Euint64")
-		}
-	case kms.FheType_Euint160:
-		logger.Info("decrypt success", "plaintextBytes", plaintextBytes)
-		logger.Info("decrypt success", "plaintextBytes", fmt.Sprintf("%v", plaintextBytes))
-		// Special handling for FheUint160, already covered.
-		plaintextBigInt, err = tfhe.U256BytesToBigInt(plaintextBytes)
-	default:
-		return nil, fmt.Errorf("unsupported FheType: %v", fheType)
-	}
+	plaintextBigInt := new(big.Int).SetBytes(plaintextBytes)
 
 	return plaintextBigInt, nil
 

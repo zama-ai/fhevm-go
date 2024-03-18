@@ -13,7 +13,6 @@ import "C"
 
 import (
 	_ "embed"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"math/big"
@@ -134,37 +133,4 @@ func u256ToBigInt(u256 C.U256) *big.Int {
 	C.u256_big_endian_bytes(u256, (*C.uint8_t)(unsafe.Pointer(&buf[0])), C.size_t(len(buf)))
 
 	return new(big.Int).SetBytes(buf)
-}
-
-// U256BytesToBigInt takes a 32-byte big-endian slice and returns a big.Int.
-func U256BytesToBigInt(plaintextBytes []byte) (*big.Int, error) {
-	if len(plaintextBytes) != 32 {
-		return nil, fmt.Errorf("byte slice is not the correct length for U256: got %d bytes, want 32", len(plaintextBytes))
-	}
-
-	// Split the byte slice into four u64 parts considering big-endian encoding
-	w0 := binary.BigEndian.Uint64(plaintextBytes[0:8])
-	w1 := binary.BigEndian.Uint64(plaintextBytes[8:16])
-	w2 := binary.BigEndian.Uint64(plaintextBytes[16:24])
-	w3 := binary.BigEndian.Uint64(plaintextBytes[24:32])
-
-	// Print the u64 parts for verification
-	// fmt.Printf("U256\n")
-	// fmt.Printf("w0: %d\n", w0)
-	// fmt.Printf("w1: %d\n", w1)
-	// fmt.Printf("w2: %d\n", w2)
-	// fmt.Printf("w3: %d\n", w3)
-
-	// Combine the u64 parts into low and high u128 parts to construct the big.Int
-	low := new(big.Int).SetUint64(w0)
-	low.Or(low, new(big.Int).Lsh(new(big.Int).SetUint64(w1), 64))
-
-	high := new(big.Int).SetUint64(w2)
-	high.Or(high, new(big.Int).Lsh(new(big.Int).SetUint64(w3), 64))
-
-	// Shift the high part by 128 bits to the left and add it to the low part
-	bigIntValue := new(big.Int).Lsh(high, 128)
-	bigIntValue.Add(bigIntValue, low)
-
-	return bigIntValue, nil
 }
