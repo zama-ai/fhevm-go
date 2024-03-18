@@ -61,7 +61,7 @@ func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 			return importRandomCiphertext(environment, lhs.fheUintType()), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarAdd(rhs.Uint64())
+		result, err := lhs.ciphertext.ScalarAdd(rhs)
 		if err != nil {
 			logger.Error("fheAdd failed", "err", err)
 			return nil, err
@@ -127,7 +127,7 @@ func fheSubRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 			return importRandomCiphertext(environment, lhs.fheUintType()), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarSub(rhs.Uint64())
+		result, err := lhs.ciphertext.ScalarSub(rhs)
 		if err != nil {
 			logger.Error("fheSub failed", "err", err)
 			return nil, err
@@ -193,7 +193,7 @@ func fheMulRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 			return importRandomCiphertext(environment, lhs.fheUintType()), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarMul(rhs.Uint64())
+		result, err := lhs.ciphertext.ScalarMul(rhs)
 		if err != nil {
 			logger.Error("fheMul failed", "err", err)
 			return nil, err
@@ -234,7 +234,7 @@ func fheDivRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 			return importRandomCiphertext(environment, lhs.fheUintType()), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarDiv(rhs.Uint64())
+		result, err := lhs.ciphertext.ScalarDiv(rhs)
 		if err != nil {
 			logger.Error("fheDiv failed", "err", err)
 			return nil, err
@@ -275,7 +275,7 @@ func fheRemRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 			return importRandomCiphertext(environment, lhs.fheUintType()), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarRem(rhs.Uint64())
+		result, err := lhs.ciphertext.ScalarRem(rhs)
 		if err != nil {
 			logger.Error("fheRem failed", "err", err)
 			return nil, err

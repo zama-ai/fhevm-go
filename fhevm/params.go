@@ -137,6 +137,7 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint16: 44000 + AdjustFHEGas,
 			tfhe.FheUint32: 72000 + AdjustFHEGas,
 			tfhe.FheUint64: 76000 + AdjustFHEGas,
+			tfhe.FheUint160: 80000 + AdjustFHEGas,
 		},
 		FheLe: map[tfhe.FheUintType]uint64{
 			tfhe.FheUint4:  60000 + AdjustFHEGas,

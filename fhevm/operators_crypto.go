@@ -115,6 +115,8 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 			fheType = kms.FheType_Euint32
 		case tfhe.FheUint64:
 			fheType = kms.FheType_Euint64
+		case tfhe.FheUint160:
+			fheType = kms.FheType_Euint160
 		}
 
 		pubKey := input[32:64]
@@ -165,7 +167,6 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 	return nil, errors.New(msg)
 }
 
-
 func decryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(32, len(input))]
 
@@ -205,9 +206,7 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 
 	// Always return a 32-byte big-endian integer.
 	ret := make([]byte, 32)
-	bigIntValue := big.NewInt(0)
-	bigIntValue.SetUint64(plaintext)
-	bigIntValue.FillBytes(ret)
+	plaintext.FillBytes(ret)
 	return ret, nil
 }
 
@@ -237,7 +236,7 @@ func getCiphertextRun(environment EVMEnvironment, caller common.Address, addr co
 	return ciphertext.bytes, nil
 }
 
-func decryptValue(environment EVMEnvironment, ct *tfhe.TfheCiphertext) (uint64, error) {
+func decryptValue(environment EVMEnvironment, ct *tfhe.TfheCiphertext) (*big.Int, error) {
 
 	logger := environment.GetLogger()
 	var fheType kms.FheType
@@ -254,6 +253,8 @@ func decryptValue(environment EVMEnvironment, ct *tfhe.TfheCiphertext) (uint64, 
 		fheType = kms.FheType_Euint32
 	case tfhe.FheUint64:
 		fheType = kms.FheType_Euint64
+	case tfhe.FheUint160:
+		fheType = kms.FheType_Euint160
 	}
 
 	// TODO: generate merkle proof for some data
@@ -271,7 +272,7 @@ func decryptValue(environment EVMEnvironment, ct *tfhe.TfheCiphertext) (uint64, 
 
 	conn, err := grpc.Dial(kms.KmsEndpointAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return 0, errors.New("kms unreachable")
+		return nil, errors.New("kms unreachable")
 	}
 	defer conn.Close()
 
@@ -283,10 +284,17 @@ func decryptValue(environment EVMEnvironment, ct *tfhe.TfheCiphertext) (uint64, 
 	res, err := ep.Decrypt(ctx, decryptionRequest)
 	if err != nil {
 		logger.Error("decrypt failed", "err", err)
-		return 0, err
+		return nil, err
 	}
 
-	return uint64(res.Plaintext), err
+	// plaintext is a byte slice
+	plaintextBytes := res.Plaintext
+
+	// Variable to hold the resulting big.Int
+	plaintextBigInt := new(big.Int).SetBytes(plaintextBytes)
+
+	return plaintextBigInt, nil
+
 }
 
 func castRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {

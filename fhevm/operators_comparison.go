@@ -62,7 +62,7 @@ func fheLeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarLe(rhs.Uint64())
+		result, err := lhs.ciphertext.ScalarLe(rhs)
 		if err != nil {
 			logger.Error("fheLe failed", "err", err)
 			return nil, err
@@ -128,7 +128,7 @@ func fheLtRun(environment EVMEnvironment, caller common.Address, addr common.Add
 			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarLt(rhs.Uint64())
+		result, err := lhs.ciphertext.ScalarLt(rhs)
 		if err != nil {
 			logger.Error("fheLt failed", "err", err)
 			return nil, err
@@ -194,7 +194,7 @@ func fheEqRun(environment EVMEnvironment, caller common.Address, addr common.Add
 			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarEq(rhs.Uint64())
+		result, err := lhs.ciphertext.ScalarEq(rhs)
 		if err != nil {
 			logger.Error("fheEq failed", "err", err)
 			return nil, err
@@ -260,7 +260,7 @@ func fheGeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarGe(rhs.Uint64())
+		result, err := lhs.ciphertext.ScalarGe(rhs)
 		if err != nil {
 			logger.Error("fheGe failed", "err", err)
 			return nil, err
@@ -326,7 +326,7 @@ func fheGtRun(environment EVMEnvironment, caller common.Address, addr common.Add
 			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarGt(rhs.Uint64())
+		result, err := lhs.ciphertext.ScalarGt(rhs)
 		if err != nil {
 			logger.Error("fheGt failed", "err", err)
 			return nil, err
@@ -392,7 +392,7 @@ func fheNeRun(environment EVMEnvironment, caller common.Address, addr common.Add
 			return importRandomCiphertext(environment, tfhe.FheBool), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarNe(rhs.Uint64())
+		result, err := lhs.ciphertext.ScalarNe(rhs)
 		if err != nil {
 			logger.Error("fheNe failed", "err", err)
 			return nil, err
@@ -458,7 +458,7 @@ func fheMinRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 			return importRandomCiphertext(environment, lhs.fheUintType()), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarMin(rhs.Uint64())
+		result, err := lhs.ciphertext.ScalarMin(rhs)
 		if err != nil {
 			logger.Error("fheMin failed", "err", err)
 			return nil, err
@@ -524,7 +524,7 @@ func fheMaxRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 			return importRandomCiphertext(environment, lhs.fheUintType()), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarMax(rhs.Uint64())
+		result, err := lhs.ciphertext.ScalarMax(rhs)
 		if err != nil {
 			logger.Error("fheMax failed", "err", err)
 			return nil, err
