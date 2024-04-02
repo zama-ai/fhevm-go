@@ -4,10 +4,44 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"os"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/naoina/toml"
 	"go.opentelemetry.io/otel"
 )
+
+type tomlConfigOptions struct {
+	Fhevm struct {
+		MockOpsFlag bool
+	}
+}
+
+var tomlConfig tomlConfigOptions
+
+func homeDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+	return home
+}
+
+func init() {
+	home := homeDir()
+
+	f, err := os.Open(home + "/.incod/config/node_config.toml")
+	if err != nil {
+		fmt.Println("failed to open node_config.toml file")
+		return
+	}
+	defer f.Close()
+	if err := toml.NewDecoder(f).Decode(&tomlConfig); err != nil {
+		fmt.Println("failed to parse node_config.toml file: " + err.Error())
+		return
+	}
+}
 
 func FheLibRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	logger := environment.GetLogger()
