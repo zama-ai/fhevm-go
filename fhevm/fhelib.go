@@ -155,6 +155,18 @@ var fhelibMethods = []*FheLibMethod{
 		runFunction:         fheShrRun,
 	},
 	{
+		name:                "fheRotl",
+		argTypes:            "(uint256,uint256,bytes1)",
+		requiredGasFunction: fheRotlRequiredGas,
+		runFunction:         fheRotlRun,
+	},
+	{
+		name:                "fheRotr",
+		argTypes:            "(uint256,uint256,bytes1)",
+		requiredGasFunction: fheRotrRequiredGas,
+		runFunction:         fheRotrRun,
+	},
+	{
 		name:                "fheNe",
 		argTypes:            "(uint256,uint256,bytes1)",
 		requiredGasFunction: fheNeRequiredGas,

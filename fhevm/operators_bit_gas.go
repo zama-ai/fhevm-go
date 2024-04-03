@@ -42,6 +42,16 @@ func fheShrRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	return fheShlRequiredGas(environment, input)
 }
 
+func fheRotrRequiredGas(environment EVMEnvironment, input []byte) uint64 {
+	// Implement in terms of shl, because comparison costs are currently the same.
+	return fheShlRequiredGas(environment, input)
+}
+
+func fheRotlRequiredGas(environment EVMEnvironment, input []byte) uint64 {
+	// Implement in terms of shl, because comparison costs are currently the same.
+	return fheShlRequiredGas(environment, input)
+}
+
 func fheNegRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	input = input[:minInt(32, len(input))]
 

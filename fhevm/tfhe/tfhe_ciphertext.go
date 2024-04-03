@@ -1485,6 +1485,92 @@ func (lhs *TfheCiphertext) ScalarShr(rhs *big.Int) (*TfheCiphertext, error) {
 		fheUint160BinaryScalarNotSupportedOp, false)
 }
 
+
+func (lhs *TfheCiphertext) Rotl(rhs *TfheCiphertext) (*TfheCiphertext, error) {
+	return lhs.executeBinaryCiphertextOperation(rhs,
+		boolBinaryNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.rotl_fhe_uint4(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.rotl_fhe_uint8(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.rotl_fhe_uint16(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.rotl_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.rotl_fhe_uint64(lhs, rhs, sks), nil
+		},
+		fheUint160BinaryNotSupportedOp, false)
+}
+
+func (lhs *TfheCiphertext) ScalarRotl(rhs *big.Int) (*TfheCiphertext, error) {
+	return lhs.executeBinaryScalarOperation(rhs,
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_rotl_fhe_uint4(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_rotl_fhe_uint8(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_rotl_fhe_uint16(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_rotl_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_rotl_fhe_uint64(lhs, rhs, sks), nil
+		},
+		fheUint160BinaryScalarNotSupportedOp, false)
+}
+
+func (lhs *TfheCiphertext) Rotr(rhs *TfheCiphertext) (*TfheCiphertext, error) {
+	return lhs.executeBinaryCiphertextOperation(rhs,
+		boolBinaryNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.rotr_fhe_uint4(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.rotr_fhe_uint8(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.rotr_fhe_uint16(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.rotr_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs unsafe.Pointer) (unsafe.Pointer, error) {
+			return C.rotr_fhe_uint64(lhs, rhs, sks), nil
+		},
+		fheUint160BinaryNotSupportedOp,
+		false)
+}
+
+func (lhs *TfheCiphertext) ScalarRotr(rhs *big.Int) (*TfheCiphertext, error) {
+	return lhs.executeBinaryScalarOperation(rhs,
+		boolBinaryScalarNotSupportedOp,
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_rotr_fhe_uint4(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint8_t) (unsafe.Pointer, error) {
+			return C.scalar_rotr_fhe_uint8(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint16_t) (unsafe.Pointer, error) {
+			return C.scalar_rotr_fhe_uint16(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint32_t) (unsafe.Pointer, error) {
+			return C.scalar_rotr_fhe_uint32(lhs, rhs, sks), nil
+		},
+		func(lhs unsafe.Pointer, rhs C.uint64_t) (unsafe.Pointer, error) {
+			return C.scalar_rotr_fhe_uint64(lhs, rhs, sks), nil
+		},
+		fheUint160BinaryScalarNotSupportedOp, false)
+}
+
 func (lhs *TfheCiphertext) Eq(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		boolBinaryNotSupportedOp,
