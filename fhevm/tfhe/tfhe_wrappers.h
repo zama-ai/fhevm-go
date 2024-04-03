@@ -231,6 +231,46 @@ void* scalar_shr_fhe_uint32(void* ct, uint32_t pt, void* sks);
 
 void* scalar_shr_fhe_uint64(void* ct, uint64_t pt, void* sks);
 
+void* rotl_fhe_uint4(void* ct1, void* ct2, void* sks);
+
+void* rotl_fhe_uint8(void* ct1, void* ct2, void* sks);
+
+void* rotl_fhe_uint16(void* ct1, void* ct2, void* sks);
+
+void* rotl_fhe_uint32(void* ct1, void* ct2, void* sks);
+
+void* rotl_fhe_uint64(void* ct1, void* ct2, void* sks);
+
+void* scalar_rotl_fhe_uint4(void* ct, uint8_t pt, void* sks);
+
+void* scalar_rotl_fhe_uint8(void* ct, uint8_t pt, void* sks);
+
+void* scalar_rotl_fhe_uint16(void* ct, uint16_t pt, void* sks);
+
+void* scalar_rotl_fhe_uint32(void* ct, uint32_t pt, void* sks);
+
+void* scalar_rotl_fhe_uint64(void* ct, uint64_t pt, void* sks);
+
+void* rotr_fhe_uint4(void* ct1, void* ct2, void* sks);
+
+void* rotr_fhe_uint8(void* ct1, void* ct2, void* sks);
+
+void* rotr_fhe_uint16(void* ct1, void* ct2, void* sks);
+
+void* rotr_fhe_uint32(void* ct1, void* ct2, void* sks);
+
+void* rotr_fhe_uint64(void* ct1, void* ct2, void* sks);
+
+void* scalar_rotr_fhe_uint4(void* ct, uint8_t pt, void* sks);
+
+void* scalar_rotr_fhe_uint8(void* ct, uint8_t pt, void* sks);
+
+void* scalar_rotr_fhe_uint16(void* ct, uint16_t pt, void* sks);
+
+void* scalar_rotr_fhe_uint32(void* ct, uint32_t pt, void* sks);
+
+void* scalar_rotr_fhe_uint64(void* ct, uint64_t pt, void* sks);
+
 void* eq_fhe_uint4(void* ct1, void* ct2, void* sks);
 
 void* eq_fhe_uint8(void* ct1, void* ct2, void* sks);

@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"math/big"
+	"math/bits"
 	"os"
 	"testing"
 )
@@ -712,6 +713,147 @@ func TfheScalarShr(t *testing.T, fheUintType FheUintType) {
 	res, err := ctRes.Decrypt()
 	if err != nil || res.Uint64() != expected.Uint64() {
 		t.Fatalf("%d != %d", expected.Uint64(), res.Uint64())
+	}
+}
+
+func TfheRotl(t *testing.T, fheUintType FheUintType) {
+	var a, b big.Int
+	var expected uint64
+	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
+		expected = uint64(bits.RotateLeft8(uint8(a.Uint64()), int(b.Uint64())))
+	case FheUint8:
+		a.SetUint64(2)
+		b.SetUint64(1)
+		expected = uint64(bits.RotateLeft8(uint8(a.Uint64()), int(b.Uint64())))
+	case FheUint16:
+		a.SetUint64(169)
+		b.SetUint64(5)
+		expected = uint64(bits.RotateLeft16(uint16(a.Uint64()), int(b.Uint64())))
+	case FheUint32:
+		a.SetUint64(137)
+		b.SetInt64(17)
+		expected = uint64(bits.RotateLeft32(uint32(a.Uint64()), int(b.Uint64())))
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(45)
+		expected = bits.RotateLeft64(a.Uint64(), int(b.Uint64()))
+	}
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes, _ := ctA.Rotl(ctB)
+	res, err := ctRes.Decrypt()
+	if err != nil || res.Uint64() != expected {
+		t.Fatalf("%d != %d", expected, res.Uint64())
+	}
+}
+
+
+func TfheScalarRotl(t *testing.T, fheUintType FheUintType) {
+	var a, b big.Int
+	var expected uint64
+	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
+		expected = uint64(bits.RotateLeft8(uint8(a.Uint64()), int(b.Uint64())))
+	case FheUint8:
+		a.SetUint64(2)
+		b.SetUint64(1)
+		expected = uint64(bits.RotateLeft8(uint8(a.Uint64()), int(b.Uint64())))
+	case FheUint16:
+		a.SetUint64(169)
+		b.SetUint64(5)
+		expected = uint64(bits.RotateLeft16(uint16(a.Uint64()), int(b.Uint64())))
+	case FheUint32:
+		a.SetUint64(137)
+		b.SetInt64(17)
+		expected = uint64(bits.RotateLeft32(uint32(a.Uint64()), int(b.Uint64())))
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(45)
+		expected = uint64(bits.RotateLeft64(a.Uint64(), int(b.Uint64())))
+	}
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes, _ := ctA.ScalarRotl(&b)
+	res, err := ctRes.Decrypt()
+	if err != nil || res.Uint64() != expected {
+		t.Fatalf("%d != %d", expected, res.Uint64())
+	}
+}
+
+func TfheRotr(t *testing.T, fheUintType FheUintType) {
+	var a, b big.Int
+	var expected uint64
+	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
+		expected = uint64(bits.RotateLeft8(uint8(a.Uint64()), -int(b.Uint64())))
+	case FheUint8:
+		a.SetUint64(2)
+		b.SetUint64(1)
+		expected = uint64(bits.RotateLeft8(uint8(a.Uint64()), -int(b.Uint64())))
+	case FheUint16:
+		a.SetUint64(169)
+		b.SetUint64(5)
+		expected = uint64(bits.RotateLeft16(uint16(a.Uint64()), -int(b.Uint64())))
+	case FheUint32:
+		a.SetUint64(137)
+		b.SetInt64(17)
+		expected = uint64(bits.RotateLeft32(uint32(a.Uint64()), -int(b.Uint64())))
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
+		expected = uint64(bits.RotateLeft64(a.Uint64(), -int(b.Uint64())))
+	}
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctB := new(TfheCiphertext)
+	ctB.Encrypt(b, fheUintType)
+	ctRes, _ := ctA.Rotr(ctB)
+	res, err := ctRes.Decrypt()
+	if err != nil || res.Uint64() != expected {
+		t.Fatalf("%d != %d", expected, res.Uint64())
+	}
+}
+
+func TfheScalarRotr(t *testing.T, fheUintType FheUintType) {
+	var a, b big.Int
+	var expected uint64
+	switch fheUintType {
+	case FheUint4:
+		a.SetUint64(2)
+		b.SetUint64(1)
+		expected = uint64(bits.RotateLeft8(uint8(a.Uint64()), -int(b.Uint64())))
+	case FheUint8:
+		a.SetUint64(2)
+		b.SetUint64(1)
+		expected = uint64(bits.RotateLeft8(uint8(a.Uint64()), -int(b.Uint64())))
+	case FheUint16:
+		a.SetUint64(169)
+		b.SetUint64(5)
+		expected = uint64(bits.RotateLeft16(uint16(a.Uint64()), -int(b.Uint64())))
+	case FheUint32:
+		a.SetUint64(137)
+		b.SetInt64(17)
+		expected = uint64(bits.RotateLeft32(uint32(a.Uint64()), -int(b.Uint64())))
+	case FheUint64:
+		a.SetUint64(13371337)
+		b.SetUint64(1337)
+		expected = uint64(bits.RotateLeft64(a.Uint64(), -int(b.Uint64())))
+	}
+	ctA := new(TfheCiphertext)
+	ctA.Encrypt(a, fheUintType)
+	ctRes, _ := ctA.ScalarRotr(&b)
+	res, err := ctRes.Decrypt()
+	if err != nil || res.Uint64() != expected {
+		t.Fatalf("%d != %d", expected, res.Uint64())
 	}
 }
 
@@ -1924,6 +2066,83 @@ func TestTfheScalarShr32(t *testing.T) {
 
 func TestTfheScalarShr64(t *testing.T) {
 	TfheScalarShr(t, FheUint64)
+}
+
+
+func TestTfheRotl4(t *testing.T) {
+	TfheRotl(t, FheUint4)
+}
+
+func TestTfheRotl8(t *testing.T) {
+	TfheRotl(t, FheUint8)
+}
+
+func TestTfheRotl16(t *testing.T) {
+	TfheRotl(t, FheUint16)
+}
+
+func TestTfheRotl32(t *testing.T) {
+	TfheRotl(t, FheUint32)
+}
+
+func TestTfheRotl64(t *testing.T) {
+	TfheRotl(t, FheUint64)
+}
+
+func TestTfheScalarRotl4(t *testing.T) {
+	TfheScalarRotl(t, FheUint4)
+}
+
+func TestTfheScalarRotl8(t *testing.T) {
+	TfheScalarRotl(t, FheUint8)
+}
+
+func TestTfheScalarRotl16(t *testing.T) {
+	TfheScalarRotl(t, FheUint16)
+}
+
+func TestTfheScalarRotl32(t *testing.T) {
+	TfheScalarRotl(t, FheUint32)
+}
+
+func TestTfheScalarRotl64(t *testing.T) {
+	TfheScalarRotl(t, FheUint64)
+}
+
+func TestTfheRotr4(t *testing.T) {
+	TfheRotr(t, FheUint4)
+}
+
+func TestTfheRotr8(t *testing.T) {
+	TfheRotr(t, FheUint8)
+}
+
+func TestTfheRotr16(t *testing.T) {
+	TfheRotr(t, FheUint16)
+}
+
+func TestTfheRotr32(t *testing.T) {
+	TfheRotr(t, FheUint32)
+}
+
+func TestTfheRotr64(t *testing.T) {
+	TfheRotr(t, FheUint64)
+}
+
+func TestTfheScalarRotr8(t *testing.T) {
+	TfheScalarRotr(t, FheUint8)
+}
+
+func TestTfheScalarRotr16(t *testing.T) {
+	TfheScalarRotr(t, FheUint16)
+}
+
+func TestTfheScalarRotr32(t *testing.T) {
+	TfheScalarRotr(t, FheUint32)
+}
+
+func TestTfheScalarRotr64(t *testing.T) {
+	TfheScalarRotr(t, FheUint64)
 }
 
 func TestTfheEq4(t *testing.T) {

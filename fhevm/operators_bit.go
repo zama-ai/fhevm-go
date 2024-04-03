@@ -140,6 +140,139 @@ func fheShrRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 }
 
+
+func fheRotlRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+	input = input[:minInt(65, len(input))]
+
+	logger := environment.GetLogger()
+
+	isScalar, err := isScalarOp(input)
+	if err != nil {
+		logger.Error("fheShl can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
+		return nil, err
+	}
+
+	if !isScalar {
+		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
+		if err != nil {
+			logger.Error("fheShl inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return nil, err
+		}
+		if lhs.fheUintType() != rhs.fheUintType() {
+			msg := "fheShl operand type mismatch"
+			logger.Error(msg, "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+			return nil, errors.New(msg)
+		}
+
+		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+		if !environment.IsCommitting() && !environment.IsEthCall() {
+			return importRandomCiphertext(environment, lhs.fheUintType()), nil
+		}
+
+		result, err := lhs.ciphertext.Rotl(rhs.ciphertext)
+		if err != nil {
+			logger.Error("fheRotl failed", "err", err)
+			return nil, err
+		}
+		importCiphertext(environment, result)
+
+		resultHash := result.GetHash()
+		logger.Info("fheRotl success", "lhs", lhs.hash().Hex(), "rhs", rhs.hash().Hex(), "result", resultHash.Hex())
+		return resultHash[:], nil
+
+	} else {
+		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
+		if err != nil {
+			logger.Error("fheRotl scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return nil, err
+		}
+
+		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+		if !environment.IsCommitting() && !environment.IsEthCall() {
+			return importRandomCiphertext(environment, lhs.fheUintType()), nil
+		}
+
+		result, err := lhs.ciphertext.ScalarRotl(rhs)
+		if err != nil {
+			logger.Error("fheRotl failed", "err", err)
+			return nil, err
+		}
+		importCiphertext(environment, result)
+
+		resultHash := result.GetHash()
+		logger.Info("fheRotl scalar success", "lhs", lhs.hash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
+		return resultHash[:], nil
+	}
+}
+
+func fheRotrRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+	input = input[:minInt(65, len(input))]
+
+	logger := environment.GetLogger()
+
+	isScalar, err := isScalarOp(input)
+	if err != nil {
+		logger.Error("fheRotr can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
+		return nil, err
+	}
+
+	if !isScalar {
+		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
+		if err != nil {
+			logger.Error("fheRotr inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return nil, err
+		}
+		if lhs.fheUintType() != rhs.fheUintType() {
+			msg := "fheRotr operand type mismatch"
+			logger.Error(msg, "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+			return nil, errors.New(msg)
+		}
+
+		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+		if !environment.IsCommitting() && !environment.IsEthCall() {
+			return importRandomCiphertext(environment, lhs.fheUintType()), nil
+		}
+
+		result, err := lhs.ciphertext.Rotr(rhs.ciphertext)
+		if err != nil {
+			logger.Error("fheRotr failed", "err", err)
+			return nil, err
+		}
+		importCiphertext(environment, result)
+
+		resultHash := result.GetHash()
+		logger.Info("fheRotr success", "lhs", lhs.hash().Hex(), "rhs", rhs.hash().Hex(), "result", resultHash.Hex())
+		return resultHash[:], nil
+
+	} else {
+		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
+		if err != nil {
+			logger.Error("fheRotr scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return nil, err
+		}
+
+		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+		if !environment.IsCommitting() && !environment.IsEthCall() {
+			return importRandomCiphertext(environment, lhs.fheUintType()), nil
+		}
+
+		result, err := lhs.ciphertext.ScalarRotr(rhs)
+		if err != nil {
+			logger.Error("fheRotr failed", "err", err)
+			return nil, err
+		}
+		importCiphertext(environment, result)
+
+		resultHash := result.GetHash()
+		logger.Info("fheRotr scalar success", "lhs", lhs.hash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
+		return resultHash[:], nil
+	}
+}
+
 func fheNegRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(32, len(input))]
 

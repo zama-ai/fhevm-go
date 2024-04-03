@@ -1284,6 +1284,226 @@ void* scalar_shr_fhe_uint64(void* ct, uint64_t pt, void* sks)
 	return result;
 }
 
+void* rotl_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_rotate_left(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* rotl_fhe_uint8(void* ct1, void* ct2, void* sks)
+{
+	FheUint8* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint8_rotate_left(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* rotl_fhe_uint16(void* ct1, void* ct2, void* sks)
+{
+	FheUint16* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint16_rotate_left(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* rotl_fhe_uint32(void* ct1, void* ct2, void* sks)
+{
+	FheUint32* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint32_rotate_left(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* rotl_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_rotate_left(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_rotl_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_rotate_left(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_rotl_fhe_uint8(void* ct, uint8_t pt, void* sks)
+{
+	FheUint8* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint8_scalar_rotate_left(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_rotl_fhe_uint16(void* ct, uint16_t pt, void* sks)
+{
+	FheUint16* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint16_scalar_rotate_left(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_rotl_fhe_uint32(void* ct, uint32_t pt, void* sks)
+{
+	FheUint32* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint32_scalar_rotate_left(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_rotl_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_rotate_left(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* rotr_fhe_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_rotate_right(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* rotr_fhe_uint8(void* ct1, void* ct2, void* sks)
+{
+	FheUint8* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint8_rotate_right(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* rotr_fhe_uint16(void* ct1, void* ct2, void* sks)
+{
+	FheUint16* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint16_rotate_right(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* rotr_fhe_uint32(void* ct1, void* ct2, void* sks)
+{
+	FheUint32* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint32_rotate_right(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* rotr_fhe_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_rotate_right(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_rotr_fhe_uint4(void* ct, uint8_t pt, void* sks)
+{
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_scalar_rotate_right(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_rotr_fhe_uint8(void* ct, uint8_t pt, void* sks)
+{
+	FheUint8* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint8_scalar_rotate_right(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_rotr_fhe_uint16(void* ct, uint16_t pt, void* sks)
+{
+	FheUint16* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint16_scalar_rotate_right(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_rotr_fhe_uint32(void* ct, uint32_t pt, void* sks)
+{
+	FheUint32* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint32_scalar_rotate_right(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_rotr_fhe_uint64(void* ct, uint64_t pt, void* sks)
+{
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_scalar_rotate_right(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* eq_fhe_uint4(void* ct1, void* ct2, void* sks)
 {
 	FheBool* result = NULL;
