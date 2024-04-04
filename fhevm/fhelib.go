@@ -52,6 +52,33 @@ func GetFheLibMethod(signature uint32) (fheLibMethod *FheLibMethod, found bool) 
 
 // All methods available in the fhelib precompile
 var fhelibMethods = []*FheLibMethod{
+	// SGX operations
+	{
+		name:                "sgxAdd",
+		argTypes:            "(uint256,uint256,bytes1)",
+		requiredGasFunction: sgxAddSubRequiredGas,
+		runFunction:         sgxAddRun,
+	},
+	{
+		name:                "sgxSub",
+		argTypes:            "(uint256,uint256,bytes1)",
+		requiredGasFunction: sgxAddSubRequiredGas,
+		runFunction:         sgxSubRun,
+	},
+	{
+		name:                "sgxMul",
+		argTypes:            "(uint256,uint256,bytes1)",
+		requiredGasFunction: sgxMulRequiredGas,
+		runFunction:         sgxMulRun,
+	},
+	{
+		name:                "sgxDiv",
+		argTypes:            "(uint256,uint256,bytes1)",
+		requiredGasFunction: sgxDivRequiredGas,
+		runFunction:         sgxDivRun,
+	},
+
+	// FHE operations
 	{
 		name:                "fheAdd",
 		argTypes:            "(uint256,uint256,bytes1)",

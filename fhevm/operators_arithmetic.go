@@ -3,10 +3,192 @@ package fhevm
 import (
 	"encoding/hex"
 	"errors"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"go.opentelemetry.io/otel/trace"
 )
+
+func sgxAddRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+	input = input[:minInt(65, len(input))]
+
+	logger := environment.GetLogger()
+
+	lhs, rhs, err := get2VerifiedOperands(environment, input)
+	otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
+	if err != nil {
+		logger.Error("fheAdd inputs not verified", "err", err, "input", hex.EncodeToString(input))
+		return nil, err
+	}
+	if lhs.fheUintType() != rhs.fheUintType() {
+		msg := "fheAdd operand type mismatch"
+		logger.Error(msg, "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+		return nil, errors.New(msg)
+	}
+
+	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+	if !environment.IsCommitting() && !environment.IsEthCall() {
+		return importRandomCiphertext(environment, lhs.fheUintType()), nil
+	}
+
+	lb, err := decryptRun(environment, caller, addr, input[0:32], readOnly, runSpan)
+	rb, err := decryptRun(environment, caller, addr, input[32:64], readOnly, runSpan)
+
+	l := big.NewInt(0).SetBytes(lb).Uint64()
+	r := big.NewInt(0).SetBytes(rb).Uint64()
+
+	result_plaintext := l + r
+
+	result_plaintext_byte := make([]byte, 33)
+	result_byte := big.NewInt(0)
+	result_byte.SetUint64(result_plaintext)
+	result_byte.FillBytes(result_plaintext_byte)
+	result_plaintext_byte[32] = byte(lhs.fheUintType())
+
+	result, err := trivialEncryptRun(environment, caller, addr, result_plaintext_byte, readOnly, runSpan)
+
+	if err != nil {
+		logger.Error("fheAdd failed", "err", err)
+		return nil, err
+	}
+
+	// logger.Info("sgxAdd success", "lhs", lhs.hash().Hex(), "rhs", rhs.hash().Hex(), "result", result.Hex())
+	return result, nil
+}
+
+func sgxSubRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+	input = input[:minInt(65, len(input))]
+
+	logger := environment.GetLogger()
+
+	lhs, rhs, err := get2VerifiedOperands(environment, input)
+	otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
+	if err != nil {
+		logger.Error("fheAdd inputs not verified", "err", err, "input", hex.EncodeToString(input))
+		return nil, err
+	}
+	if lhs.fheUintType() != rhs.fheUintType() {
+		msg := "fheAdd operand type mismatch"
+		logger.Error(msg, "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+		return nil, errors.New(msg)
+	}
+
+	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+	if !environment.IsCommitting() && !environment.IsEthCall() {
+		return importRandomCiphertext(environment, lhs.fheUintType()), nil
+	}
+
+	lb, err := decryptRun(environment, caller, addr, input[0:32], readOnly, runSpan)
+	rb, err := decryptRun(environment, caller, addr, input[32:64], readOnly, runSpan)
+
+	l := big.NewInt(0).SetBytes(lb).Uint64()
+	r := big.NewInt(0).SetBytes(rb).Uint64()
+
+	result_plaintext := l - r
+
+	result_plaintext_byte := make([]byte, 33)
+	result_byte := big.NewInt(0)
+	result_byte.SetUint64(result_plaintext)
+	result_byte.FillBytes(result_plaintext_byte)
+	result_plaintext_byte[32] = byte(lhs.fheUintType())
+
+	result, err := trivialEncryptRun(environment, caller, addr, result_plaintext_byte, readOnly, runSpan)
+
+	if err != nil {
+		logger.Error("fheAdd failed", "err", err)
+		return nil, err
+	}
+
+	// logger.Info("sgxMul success", "lhs", lhs.hash().Hex(), "rhs", rhs.hash().Hex(), "result", result.Hex())
+	return result, nil
+}
+
+func sgxMulRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+	input = input[:minInt(65, len(input))]
+
+	logger := environment.GetLogger()
+
+	lhs, rhs, err := get2VerifiedOperands(environment, input)
+	otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
+	if err != nil {
+		logger.Error("fheMul inputs not verified", "err", err, "input", hex.EncodeToString(input))
+		return nil, err
+	}
+	if lhs.fheUintType() != rhs.fheUintType() {
+		msg := "fheMul operand type mismatch"
+		logger.Error(msg, "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+		return nil, errors.New(msg)
+	}
+
+	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+	if !environment.IsCommitting() && !environment.IsEthCall() {
+		return importRandomCiphertext(environment, lhs.fheUintType()), nil
+	}
+
+	lb, err := decryptRun(environment, caller, addr, input[0:32], readOnly, runSpan)
+	rb, err := decryptRun(environment, caller, addr, input[32:64], readOnly, runSpan)
+
+	l := big.NewInt(0).SetBytes(lb).Uint64()
+	r := big.NewInt(0).SetBytes(rb).Uint64()
+
+	result_plaintext := l * r
+
+	result_plaintext_byte := make([]byte, 33)
+	result_byte := big.NewInt(0)
+	result_byte.SetUint64(result_plaintext)
+	result_byte.FillBytes(result_plaintext_byte)
+	result_plaintext_byte[32] = byte(lhs.fheUintType())
+
+	result, err := trivialEncryptRun(environment, caller, addr, result_plaintext_byte, readOnly, runSpan)
+
+	if err != nil {
+		logger.Error("fheAdd failed", "err", err)
+		return nil, err
+	}
+	return result, nil
+}
+
+func sgxDivRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+	input = input[:minInt(65, len(input))]
+
+	logger := environment.GetLogger()
+
+	lhs, rhs, err := getScalarOperands(environment, input)
+	otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
+	if err != nil {
+		logger.Error("fheDiv scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+		return nil, err
+	}
+
+	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+	if !environment.IsCommitting() && !environment.IsEthCall() {
+		return importRandomCiphertext(environment, lhs.fheUintType()), nil
+	}
+
+	lb, err := decryptRun(environment, caller, addr, input[0:32], readOnly, runSpan)
+	rb, err := decryptRun(environment, caller, addr, input[32:64], readOnly, runSpan)
+
+	l := big.NewInt(0).SetBytes(lb).Uint64()
+	r := big.NewInt(0).SetBytes(rb).Uint64()
+
+	result_plaintext := l - r
+
+	result_plaintext_byte := make([]byte, 33)
+	result_byte := big.NewInt(0)
+	result_byte.SetUint64(result_plaintext)
+	result_byte.FillBytes(result_plaintext_byte)
+	result_plaintext_byte[32] = byte(lhs.fheUintType())
+
+	result, err := trivialEncryptRun(environment, caller, addr, result_plaintext_byte, readOnly, runSpan)
+
+	if err != nil {
+		logger.Error("fheAdd failed", "err", err)
+		return nil, err
+	}
+
+	// logger.Info("sgxDiv success", "lhs", lhs.hash().Hex(), "rhs", rhs.hash().Hex(), "result", result.Hex())
+	return result, nil
+}
 
 func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
