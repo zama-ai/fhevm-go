@@ -752,7 +752,6 @@ func TfheRotl(t *testing.T, fheUintType FheUintType) {
 	}
 }
 
-
 func TfheScalarRotl(t *testing.T, fheUintType FheUintType) {
 	var a, b big.Int
 	var expected uint64
@@ -1497,6 +1496,19 @@ func TfheIfThenElse(t *testing.T, fheUintType FheUintType) {
 	case FheUint64:
 		a.SetUint64(13333377777777777)
 		b.SetUint64(133337)
+	case FheUint160:
+		hexValue := "12345676876661323221435343"
+		hexValue2 := "12345676876661323221435344"
+		byteValue, err := hex.DecodeString(hexValue)
+		if err != nil {
+			log.Fatalf("Failed to decode hex string: %v", err)
+		}
+		byteValue2, err := hex.DecodeString(hexValue2)
+		if err != nil {
+			log.Fatalf("Failed to decode hex string: %v", err)
+		}
+		a.SetBytes(byteValue)
+		b.SetBytes(byteValue2)
 	}
 	ctCondition := new(TfheCiphertext)
 	ctCondition.Encrypt(condition, FheBool)
@@ -1510,10 +1522,10 @@ func TfheIfThenElse(t *testing.T, fheUintType FheUintType) {
 	ctRes2, _ := ctCondition2.IfThenElse(ctA, ctB)
 	res1, err1 := ctRes1.Decrypt()
 	res2, err2 := ctRes2.Decrypt()
-	if err1 != nil || res1.Uint64() != a.Uint64() {
+	if err1 != nil || res1.Cmp(&a) != 0 {
 		t.Fatalf("%d != %d", 0, res1.Uint64())
 	}
-	if err2 != nil || res2.Uint64() != b.Uint64() {
+	if err2 != nil || res2.Cmp(&b) != 0 {
 		t.Fatalf("%d != %d", 0, res2.Uint64())
 	}
 }
@@ -2068,7 +2080,6 @@ func TestTfheScalarShr64(t *testing.T) {
 	TfheScalarShr(t, FheUint64)
 }
 
-
 func TestTfheRotl4(t *testing.T) {
 	TfheRotl(t, FheUint4)
 }
@@ -2527,6 +2538,10 @@ func TestTfheIfThenElse32(t *testing.T) {
 }
 func TestTfheIfThenElse64(t *testing.T) {
 	TfheIfThenElse(t, FheUint64)
+}
+
+func TestTfheIfThenElse160(t *testing.T) {
+	TfheIfThenElse(t, FheUint160)
 }
 
 func TestTfhe4Cast8(t *testing.T) {
