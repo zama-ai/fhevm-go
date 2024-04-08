@@ -778,7 +778,8 @@ func (first *TfheCiphertext) executeTernaryCiphertextOperation(lhs *TfheCipherte
 	op8 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
 	op16 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
 	op32 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
-	op64 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer) (*TfheCiphertext, error) {
+	op64 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer,
+	op160 func(first unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer) (*TfheCiphertext, error) {
 	if lhs.FheUintType != rhs.FheUintType {
 		return nil, errors.New("ternary operations are only well-defined for identical types")
 	}
@@ -929,6 +930,35 @@ func (first *TfheCiphertext) executeTernaryCiphertextOperation(lhs *TfheCipherte
 		C.destroy_fhe_uint64(res_ptr)
 		if ret != 0 {
 			return nil, errors.New("64 bit binary op serialization failed")
+		}
+		res.Serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
+		C.destroy_dynamic_buffer(res_ser)
+	case FheUint160:
+		lhs_ptr := C.deserialize_fhe_uint160(toDynamicBufferView((lhs.Serialization)))
+		if lhs_ptr == nil {
+			return nil, errors.New("160 bit binary op deserialization failed")
+		}
+		rhs_ptr := C.deserialize_fhe_uint160(toDynamicBufferView((rhs.Serialization)))
+		if rhs_ptr == nil {
+			C.destroy_fhe_uint160(lhs_ptr)
+			return nil, errors.New("160 bit binary op deserialization failed")
+		}
+		first_ptr := C.deserialize_fhe_bool(toDynamicBufferView((first.Serialization)))
+		if first_ptr == nil {
+			C.destroy_fhe_uint160(lhs_ptr)
+			C.destroy_fhe_uint160(rhs_ptr)
+			return nil, errors.New("Bool binary op deserialization failed")
+		}
+		res_ptr := op160(first_ptr, lhs_ptr, rhs_ptr)
+		C.destroy_fhe_uint160(lhs_ptr)
+		C.destroy_fhe_uint160(rhs_ptr)
+		if res_ptr == nil {
+			return nil, errors.New("160 bit binary op failed")
+		}
+		ret := C.serialize_fhe_uint160(res_ptr, res_ser)
+		C.destroy_fhe_uint160(res_ptr)
+		if ret != 0 {
+			return nil, errors.New("160 bit binary op serialization failed")
 		}
 		res.Serialization = C.GoBytes(unsafe.Pointer(res_ser.pointer), C.int(res_ser.length))
 		C.destroy_dynamic_buffer(res_ser)
@@ -1485,7 +1515,6 @@ func (lhs *TfheCiphertext) ScalarShr(rhs *big.Int) (*TfheCiphertext, error) {
 		fheUint160BinaryScalarNotSupportedOp, false)
 }
 
-
 func (lhs *TfheCiphertext) Rotl(rhs *TfheCiphertext) (*TfheCiphertext, error) {
 	return lhs.executeBinaryCiphertextOperation(rhs,
 		boolBinaryNotSupportedOp,
@@ -1984,6 +2013,9 @@ func (condition *TfheCiphertext) IfThenElse(lhs *TfheCiphertext, rhs *TfheCipher
 		},
 		func(condition unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
 			return C.if_then_else_fhe_uint64(condition, lhs, rhs, sks)
+		},
+		func(condition unsafe.Pointer, lhs unsafe.Pointer, rhs unsafe.Pointer) unsafe.Pointer {
+			return C.if_then_else_fhe_uint160(condition, lhs, rhs, sks)
 		})
 }
 
