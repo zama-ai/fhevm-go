@@ -133,9 +133,6 @@ func generateRandom(environment EVMEnvironment, caller common.Address, resultTyp
 	randCt.TrivialEncrypt(*randBigInt, resultType)
 	importCiphertext(environment, randCt)
 
-	if err != nil {
-		return nil, err
-	}
 	ctHash := randCt.GetHash()
 	return ctHash[:], nil
 }

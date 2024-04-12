@@ -5,6 +5,7 @@ build: build-tfhe-rs-capi
 .PHONY: test
 test: build-tfhe-rs-capi
 	cd fhevm && go test -v ./...
+	cd sgx && go test -v ./...
 
 .PHONY: build-tfhe-rs-capi
 build-tfhe-rs-capi:

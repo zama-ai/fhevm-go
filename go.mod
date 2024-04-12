@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/otel v1.23.1
 	go.opentelemetry.io/otel/trace v1.23.1
 	golang.org/x/crypto v0.16.0
+	pgregory.net/rapid v1.1.0
 )
 
 require (

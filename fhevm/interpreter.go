@@ -74,4 +74,3 @@ type PrivilegedMemory struct {
 var PrivilegedMempory *PrivilegedMemory = &PrivilegedMemory{
 	make(map[common.Hash]*verifiedCiphertext),
 }
-

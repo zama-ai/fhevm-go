@@ -40,29 +40,36 @@ type FhevmParams struct {
 }
 
 type GasCosts struct {
-	FheCast             uint64
-	FhePubKey           uint64
-	FheAddSub           map[tfhe.FheUintType]uint64
-	FheDecrypt          map[tfhe.FheUintType]uint64
-	FheBitwiseOp        map[tfhe.FheUintType]uint64
-	FheMul              map[tfhe.FheUintType]uint64
-	FheScalarMul        map[tfhe.FheUintType]uint64
-	FheScalarDiv        map[tfhe.FheUintType]uint64
-	FheScalarRem        map[tfhe.FheUintType]uint64
-	FheShift            map[tfhe.FheUintType]uint64
-	FheScalarShift      map[tfhe.FheUintType]uint64
-	FheEq               map[tfhe.FheUintType]uint64
-	FheLe               map[tfhe.FheUintType]uint64
-	FheMinMax           map[tfhe.FheUintType]uint64
-	FheScalarMinMax     map[tfhe.FheUintType]uint64
-	FheNot              map[tfhe.FheUintType]uint64
-	FheNeg              map[tfhe.FheUintType]uint64
-	FheReencrypt        map[tfhe.FheUintType]uint64
-	FheTrivialEncrypt   map[tfhe.FheUintType]uint64
-	FheRand             map[tfhe.FheUintType]uint64
-	FheIfThenElse       map[tfhe.FheUintType]uint64
-	FheVerify           map[tfhe.FheUintType]uint64
-	FheGetCiphertext    map[tfhe.FheUintType]uint64
+	//FHE Operations
+	FheCast           uint64
+	FhePubKey         uint64
+	FheAddSub         map[tfhe.FheUintType]uint64
+	FheDecrypt        map[tfhe.FheUintType]uint64
+	FheBitwiseOp      map[tfhe.FheUintType]uint64
+	FheMul            map[tfhe.FheUintType]uint64
+	FheScalarMul      map[tfhe.FheUintType]uint64
+	FheScalarDiv      map[tfhe.FheUintType]uint64
+	FheScalarRem      map[tfhe.FheUintType]uint64
+	FheShift          map[tfhe.FheUintType]uint64
+	FheScalarShift    map[tfhe.FheUintType]uint64
+	FheEq             map[tfhe.FheUintType]uint64
+	FheLe             map[tfhe.FheUintType]uint64
+	FheMinMax         map[tfhe.FheUintType]uint64
+	FheScalarMinMax   map[tfhe.FheUintType]uint64
+	FheNot            map[tfhe.FheUintType]uint64
+	FheNeg            map[tfhe.FheUintType]uint64
+	FheReencrypt      map[tfhe.FheUintType]uint64
+	FheTrivialEncrypt map[tfhe.FheUintType]uint64
+	FheRand           map[tfhe.FheUintType]uint64
+	FheIfThenElse     map[tfhe.FheUintType]uint64
+	FheVerify         map[tfhe.FheUintType]uint64
+	FheGetCiphertext  map[tfhe.FheUintType]uint64
+
+	// SGX Operations
+	SgxAddSub  map[tfhe.FheUintType]uint64
+	SgxMul     map[tfhe.FheUintType]uint64
+	SgxEncrypt map[tfhe.FheUintType]uint64
+	SgxDecrypt map[tfhe.FheUintType]uint64
 }
 
 func DefaultGasCosts() GasCosts {
@@ -132,11 +139,11 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint64: 28000 + AdjustFHEGas,
 		},
 		FheEq: map[tfhe.FheUintType]uint64{
-			tfhe.FheUint4:  41000 + AdjustFHEGas,
-			tfhe.FheUint8:  43000 + AdjustFHEGas,
-			tfhe.FheUint16: 44000 + AdjustFHEGas,
-			tfhe.FheUint32: 72000 + AdjustFHEGas,
-			tfhe.FheUint64: 76000 + AdjustFHEGas,
+			tfhe.FheUint4:   41000 + AdjustFHEGas,
+			tfhe.FheUint8:   43000 + AdjustFHEGas,
+			tfhe.FheUint16:  44000 + AdjustFHEGas,
+			tfhe.FheUint32:  72000 + AdjustFHEGas,
+			tfhe.FheUint64:  76000 + AdjustFHEGas,
 			tfhe.FheUint160: 80000 + AdjustFHEGas,
 		},
 		FheLe: map[tfhe.FheUintType]uint64{
@@ -219,6 +226,37 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint16: 14000,
 			tfhe.FheUint32: 18000,
 			tfhe.FheUint64: 28000,
+		},
+
+		// SGX
+		SgxAddSub: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  55,
+			tfhe.FheUint8:  84,
+			tfhe.FheUint16: 123,
+			tfhe.FheUint32: 152,
+			tfhe.FheUint64: 178,
+		},
+		SgxMul: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  140,
+			tfhe.FheUint8:  187,
+			tfhe.FheUint16: 252,
+			tfhe.FheUint32: 349,
+			tfhe.FheUint64: 631,
+		},
+		SgxEncrypt: map[tfhe.FheUintType]uint64{
+			tfhe.FheBool:   10,
+			tfhe.FheUint4:  10,
+			tfhe.FheUint8:  10,
+			tfhe.FheUint16: 20,
+			tfhe.FheUint32: 30,
+			tfhe.FheUint64: 60,
+		},
+		SgxDecrypt: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  50,
+			tfhe.FheUint8:  50,
+			tfhe.FheUint16: 50,
+			tfhe.FheUint32: 50,
+			tfhe.FheUint64: 50,
 		},
 	}
 }
