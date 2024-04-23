@@ -1,12 +1,14 @@
 package fhevm
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 	"github.com/zama-ai/fhevm-go/sgx"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -27,13 +29,13 @@ func extract2Operands(op string, environment EVMEnvironment, input []byte, runSp
 		return nil, nil, nil, nil, errors.New("operand type mismatch")
 	}
 
-	lp, err := sgx.FromTfheCiphertext(lhs.ciphertext)
+	lp, err := sgx.Decrypt(lhs.ciphertext)
 	if err != nil {
 		logger.Error(fmt.Sprintf("%s failed", op), "err", err)
 		return nil, nil, lhs, rhs, err
 	}
 
-	rp, err := sgx.FromTfheCiphertext(rhs.ciphertext)
+	rp, err := sgx.Decrypt(rhs.ciphertext)
 	if err != nil {
 		logger.Error(fmt.Sprintf("%s failed", op), "err", err)
 		return nil, nil, lhs, rhs, err
@@ -56,32 +58,37 @@ func doArithmeticOperation(op string, environment EVMEnvironment, caller common.
 		return importRandomCiphertext(environment, lhs.fheUintType()), nil
 	}
 
+	// TODO ref: https://github.com/Inco-fhevm/inco-monorepo/issues/6
+	if lp.FheUintType == tfhe.FheUint128 || lp.FheUintType == tfhe.FheUint160 {
+		panic("TODO implement me")
+	}
+
 	// Using math/big here to make code more readable.
 	// A more efficient way would be to use binary.BigEndian.UintXX().
 	// However, that would require a switch case. We prefer for now to use
 	// big.Int as a one-liner that can handle variable-length bytes.
-	l := big.NewInt(0).SetBytes(lp.Plaintext).Uint64()
-	r := big.NewInt(0).SetBytes(rp.Plaintext).Uint64()
+	//
+	// Note that we do arithmetic operations on uint64, then we convert th
+	// result back to the FheUintType.
+	l := big.NewInt(0).SetBytes(lp.Value).Uint64()
+	r := big.NewInt(0).SetBytes(rp.Value).Uint64()
 
-	resultPlaintext := operator(l, r)
+	result := operator(l, r)
+	resultBz, err := marshalUint(result, lhs.fheUintType())
+	if err != nil {
+		return nil, err
+	}
+	sgxPlaintext := sgx.NewSgxPlaintext(resultBz, lhs.fheUintType(), caller)
 
-	resultPlaintextByte := make([]byte, 32)
-	resultByte := big.NewInt(0)
-	resultByte.SetUint64(resultPlaintext)
-	resultByte.FillBytes(resultPlaintextByte)
-
-	sgxPlaintext := sgx.NewSgxPlaintext(resultPlaintextByte, lhs.fheUintType(), caller)
-
-	result, err := sgx.ToTfheCiphertext(sgxPlaintext)
-
+	resultCt, err := sgx.Encrypt(sgxPlaintext)
 	if err != nil {
 		logger.Error(op, "failed", "err", err)
 		return nil, err
 	}
-	importCiphertext(environment, &result)
+	importCiphertext(environment, &resultCt)
 
-	resultHash := result.GetHash()
-	logger.Info(op, "success", "lhs", lhs.hash().Hex(), "rhs", rhs.hash().Hex(), "result", resultHash.Hex())
+	resultHash := resultCt.GetHash()
+	logger.Info(fmt.Sprintf("%s success", op), "lhs", lhs.hash().Hex(), "rhs", rhs.hash().Hex(), "result", resultHash.Hex())
 	return resultHash[:], nil
 }
 
@@ -101,4 +108,30 @@ func sgxMulRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	return doArithmeticOperation("sgxMulRun", environment, caller, input, runSpan, func(a uint64, b uint64) uint64 {
 		return a * b
 	})
+}
+
+// marshalUint converts a uint64 to a byte slice whose length is based on the
+// FheUintType.
+func marshalUint(value uint64, typ tfhe.FheUintType) ([]byte, error) {
+	var resultBz []byte
+
+	switch typ {
+	case tfhe.FheUint4:
+		resultBz = []byte{byte(value)}
+	case tfhe.FheUint8:
+		resultBz = []byte{byte(value)}
+	case tfhe.FheUint16:
+		resultBz = make([]byte, 2)
+		binary.BigEndian.PutUint16(resultBz, uint16(value))
+	case tfhe.FheUint32:
+		resultBz = make([]byte, 4)
+		binary.BigEndian.PutUint32(resultBz, uint32(value))
+	case tfhe.FheUint64:
+		resultBz = make([]byte, 8)
+		binary.BigEndian.PutUint64(resultBz, value)
+	default:
+		return nil, fmt.Errorf("unsupported FheUintType: %s", typ)
+	}
+
+	return resultBz, nil
 }
