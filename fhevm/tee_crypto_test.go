@@ -9,8 +9,8 @@ import (
 	"pgregory.net/rapid"
 )
 
-func TestSgxDecryptRun(t *testing.T) {
-	signature := "sgxDecrypt(uint256)"
+func TestTeeDecryptRun(t *testing.T) {
+	signature := "teeDecrypt(uint256)"
 	rapid.Check(t, func(t *rapid.T) {
 		testcases := []struct {
 			typ      tfhe.FheUintType
@@ -28,7 +28,7 @@ func TestSgxDecryptRun(t *testing.T) {
 			environment.depth = depth
 			addr := common.Address{}
 			readOnly := false
-			ct, err := importSgxPlaintextToEVM(environment, depth, tc.expected, tc.typ)
+			ct, err := importTeePlaintextToEVM(environment, depth, tc.expected, tc.typ)
 			if err != nil {
 				t.Fatalf(err.Error())
 			}

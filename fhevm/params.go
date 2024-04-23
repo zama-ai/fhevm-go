@@ -65,11 +65,11 @@ type GasCosts struct {
 	FheVerify         map[tfhe.FheUintType]uint64
 	FheGetCiphertext  map[tfhe.FheUintType]uint64
 
-	// SGX Operations
-	SgxAddSub  map[tfhe.FheUintType]uint64
-	SgxMul     map[tfhe.FheUintType]uint64
-	SgxEncrypt map[tfhe.FheUintType]uint64
-	SgxDecrypt map[tfhe.FheUintType]uint64
+	// TEE Operations
+	TeeAddSub  map[tfhe.FheUintType]uint64
+	TeeMul     map[tfhe.FheUintType]uint64
+	TeeEncrypt map[tfhe.FheUintType]uint64
+	TeeDecrypt map[tfhe.FheUintType]uint64
 }
 
 func DefaultGasCosts() GasCosts {
@@ -228,22 +228,22 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint64: 28000,
 		},
 
-		// SGX
-		SgxAddSub: map[tfhe.FheUintType]uint64{
+		// TEE
+		TeeAddSub: map[tfhe.FheUintType]uint64{
 			tfhe.FheUint4:  55,
 			tfhe.FheUint8:  84,
 			tfhe.FheUint16: 123,
 			tfhe.FheUint32: 152,
 			tfhe.FheUint64: 178,
 		},
-		SgxMul: map[tfhe.FheUintType]uint64{
+		TeeMul: map[tfhe.FheUintType]uint64{
 			tfhe.FheUint4:  140,
 			tfhe.FheUint8:  187,
 			tfhe.FheUint16: 252,
 			tfhe.FheUint32: 349,
 			tfhe.FheUint64: 631,
 		},
-		SgxEncrypt: map[tfhe.FheUintType]uint64{
+		TeeEncrypt: map[tfhe.FheUintType]uint64{
 			tfhe.FheBool:   10,
 			tfhe.FheUint4:  10,
 			tfhe.FheUint8:  10,
@@ -251,7 +251,7 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint32: 30,
 			tfhe.FheUint64: 60,
 		},
-		SgxDecrypt: map[tfhe.FheUintType]uint64{
+		TeeDecrypt: map[tfhe.FheUintType]uint64{
 			tfhe.FheUint4:  50,
 			tfhe.FheUint8:  50,
 			tfhe.FheUint16: 50,

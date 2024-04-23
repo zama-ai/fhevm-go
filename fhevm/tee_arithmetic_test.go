@@ -7,14 +7,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
-	"github.com/zama-ai/fhevm-go/sgx"
+	"github.com/zama-ai/fhevm-go/tee"
 )
 
-func TestSgxAddRun(t *testing.T) {
+func TestTeeAddRun(t *testing.T) {
 	op := func(lhs, rhs uint64) uint64 {
 		return lhs + rhs
 	}
-	signature := "sgxAdd(uint256,uint256,bytes1)"
+	signature := "teeAdd(uint256,uint256,bytes1)"
 
 	testcases := []struct {
 		typ tfhe.FheUintType
@@ -28,17 +28,17 @@ func TestSgxAddRun(t *testing.T) {
 		{tfhe.FheUint64, 13333377777777777, 133377777777},
 	}
 	for _, tc := range testcases {
-		t.Run(fmt.Sprintf("sgxAdd with %s", tc.typ), func(t *testing.T) {
-			sgxArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, op, signature)
+		t.Run(fmt.Sprintf("teeAdd with %s", tc.typ), func(t *testing.T) {
+			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, op, signature)
 		})
 	}
 }
 
-func TestSgxSubRun(t *testing.T) {
+func TestTeeSubRun(t *testing.T) {
 	op := func(lhs, rhs uint64) uint64 {
 		return lhs - rhs
 	}
-	signature := "sgxSub(uint256,uint256,bytes1)"
+	signature := "teeSub(uint256,uint256,bytes1)"
 
 	testcases := []struct {
 		typ tfhe.FheUintType
@@ -52,17 +52,17 @@ func TestSgxSubRun(t *testing.T) {
 		{tfhe.FheUint64, 13333377777777777, 133377777777},
 	}
 	for _, tc := range testcases {
-		t.Run(fmt.Sprintf("sgxSub with %s", tc.typ), func(t *testing.T) {
-			sgxArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, op, signature)
+		t.Run(fmt.Sprintf("teeSub with %s", tc.typ), func(t *testing.T) {
+			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, op, signature)
 		})
 	}
 }
 
-func TestSgxMulRun(t *testing.T) {
+func TestTeeMulRun(t *testing.T) {
 	op := func(lhs, rhs uint64) uint64 {
 		return lhs * rhs
 	}
-	signature := "sgxMul(uint256,uint256,bytes1)"
+	signature := "teeMul(uint256,uint256,bytes1)"
 
 	testcases := []struct {
 		typ tfhe.FheUintType
@@ -76,25 +76,25 @@ func TestSgxMulRun(t *testing.T) {
 		{tfhe.FheUint64, 137777, 17},
 	}
 	for _, tc := range testcases {
-		t.Run(fmt.Sprintf("sgxMul with %s", tc.typ), func(t *testing.T) {
-			sgxArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, op, signature)
+		t.Run(fmt.Sprintf("teeMul with %s", tc.typ), func(t *testing.T) {
+			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, op, signature)
 		})
 	}
 }
 
-// sgxArithmeticHelper is a helper function to test SGX arithmetic operations,
+// teeArithmeticHelper is a helper function to test TEE arithmetic operations,
 // which are passed into the last argument as a function.
-func sgxArithmeticHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs uint64, op func(lhs, rhs uint64) uint64, signature string) {
+func teeArithmeticHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs uint64, op func(lhs, rhs uint64) uint64, signature string) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
 	addr := common.Address{}
 	readOnly := false
-	lhsCt, err := importSgxPlaintextToEVM(environment, depth, lhs, fheUintType)
+	lhsCt, err := importTeePlaintextToEVM(environment, depth, lhs, fheUintType)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	rhsCt, err := importSgxPlaintextToEVM(environment, depth, rhs, fheUintType)
+	rhsCt, err := importTeePlaintextToEVM(environment, depth, rhs, fheUintType)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -108,16 +108,16 @@ func sgxArithmeticHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs ui
 	if res == nil {
 		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
 	}
-	sgxPlaintext, err := sgx.Decrypt(res.ciphertext)
+	teePlaintext, err := tee.Decrypt(res.ciphertext)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	if sgxPlaintext.FheUintType != fheUintType {
-		t.Fatalf("incorrect fheUintType, expected=%s, got=%s", fheUintType, sgxPlaintext.FheUintType)
+	if teePlaintext.FheUintType != fheUintType {
+		t.Fatalf("incorrect fheUintType, expected=%s, got=%s", fheUintType, teePlaintext.FheUintType)
 	}
 
-	result := new(big.Int).SetBytes(sgxPlaintext.Value).Uint64()
+	result := new(big.Int).SetBytes(teePlaintext.Value).Uint64()
 
 	expected := op(lhs, rhs)
 	if result != expected {
@@ -125,17 +125,17 @@ func sgxArithmeticHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs ui
 	}
 }
 
-func importSgxPlaintextToEVM(environment EVMEnvironment, depth int, value uint64, typ tfhe.FheUintType) (tfhe.TfheCiphertext, error) {
+func importTeePlaintextToEVM(environment EVMEnvironment, depth int, value uint64, typ tfhe.FheUintType) (tfhe.TfheCiphertext, error) {
 	valueBz, err := marshalUint(value, typ)
 	if err != nil {
 		return tfhe.TfheCiphertext{}, err
 	}
-	sgxPlaintext := sgx.NewSgxPlaintext(valueBz, typ, common.Address{})
+	teePlaintext := tee.NewTeePlaintext(valueBz, typ, common.Address{})
 
 	if err != nil {
 		return tfhe.TfheCiphertext{}, err
 	}
-	ct, err := sgx.Encrypt(sgxPlaintext)
+	ct, err := tee.Encrypt(teePlaintext)
 	if err != nil {
 		return tfhe.TfheCiphertext{}, err
 	}

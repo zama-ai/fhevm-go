@@ -1,4 +1,4 @@
-package sgx_test
+package tee_test
 
 import (
 	"bytes"
@@ -6,35 +6,35 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
-	"github.com/zama-ai/fhevm-go/sgx"
+	"github.com/zama-ai/fhevm-go/tee"
 	"pgregory.net/rapid"
 )
 
-var sgxPlaintextGen *rapid.Generator[sgx.SgxPlaintext] = rapid.Custom(func(t *rapid.T) sgx.SgxPlaintext {
+var teePlaintextGen *rapid.Generator[tee.TeePlaintext] = rapid.Custom(func(t *rapid.T) tee.TeePlaintext {
 	bz := rapid.SliceOf(rapid.Byte()).Draw(t, "bz")
 	fheType := tfhe.FheUintType(rapid.Uint8().Draw(t, "fheType"))
 	address := common.Address(rapid.SliceOfN(rapid.Byte(), common.AddressLength, common.AddressLength).Draw(t, "address"))
-	return sgx.NewSgxPlaintext(bz, fheType, address)
+	return tee.NewTeePlaintext(bz, fheType, address)
 })
 
-func compareSgxPlaintexts(a, b sgx.SgxPlaintext) bool {
+func compareTeePlaintexts(a, b tee.TeePlaintext) bool {
 	return bytes.Equal(a.Value, b.Value) && a.FheUintType == b.FheUintType && a.Address == b.Address
 }
 
 func TestRoundTrip(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
-		a := sgxPlaintextGen.Draw(t, "a")
+		a := teePlaintextGen.Draw(t, "a")
 
 		// Encrypt -> Decrypt round trip
-		b, err := sgx.Encrypt(a)
+		b, err := tee.Encrypt(a)
 		if err != nil {
 			t.Fatal(err)
 		}
-		c, err := sgx.Decrypt(&b)
+		c, err := tee.Decrypt(&b)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !compareSgxPlaintexts(a, c) {
+		if !compareTeePlaintexts(a, c) {
 			t.Fatalf("expected %v, got %v", a, c)
 		}
 	})
@@ -42,14 +42,14 @@ func TestRoundTrip(t *testing.T) {
 
 func TestUniqueCiphertexts(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
-		a := sgxPlaintextGen.Draw(t, "a")
+		a := teePlaintextGen.Draw(t, "a")
 
 		// Encrypt twice the same plaintext
-		b, err := sgx.Encrypt(a)
+		b, err := tee.Encrypt(a)
 		if err != nil {
 			t.Fatal(err)
 		}
-		c, err := sgx.Encrypt(a)
+		c, err := tee.Encrypt(a)
 		if err != nil {
 			t.Fatal(err)
 		}

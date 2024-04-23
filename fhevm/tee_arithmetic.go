@@ -9,11 +9,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
-	"github.com/zama-ai/fhevm-go/sgx"
+	"github.com/zama-ai/fhevm-go/tee"
 	"go.opentelemetry.io/otel/trace"
 )
 
-func extract2Operands(op string, environment EVMEnvironment, input []byte, runSpan trace.Span) (*sgx.SgxPlaintext, *sgx.SgxPlaintext, *verifiedCiphertext, *verifiedCiphertext, error) {
+func extract2Operands(op string, environment EVMEnvironment, input []byte, runSpan trace.Span) (*tee.TeePlaintext, *tee.TeePlaintext, *verifiedCiphertext, *verifiedCiphertext, error) {
 	input = input[:minInt(65, len(input))]
 
 	logger := environment.GetLogger()
@@ -29,13 +29,13 @@ func extract2Operands(op string, environment EVMEnvironment, input []byte, runSp
 		return nil, nil, nil, nil, errors.New("operand type mismatch")
 	}
 
-	lp, err := sgx.Decrypt(lhs.ciphertext)
+	lp, err := tee.Decrypt(lhs.ciphertext)
 	if err != nil {
 		logger.Error(fmt.Sprintf("%s failed", op), "err", err)
 		return nil, nil, lhs, rhs, err
 	}
 
-	rp, err := sgx.Decrypt(rhs.ciphertext)
+	rp, err := tee.Decrypt(rhs.ciphertext)
 	if err != nil {
 		logger.Error(fmt.Sprintf("%s failed", op), "err", err)
 		return nil, nil, lhs, rhs, err
@@ -78,9 +78,9 @@ func doArithmeticOperation(op string, environment EVMEnvironment, caller common.
 	if err != nil {
 		return nil, err
 	}
-	sgxPlaintext := sgx.NewSgxPlaintext(resultBz, lhs.fheUintType(), caller)
+	teePlaintext := tee.NewTeePlaintext(resultBz, lhs.fheUintType(), caller)
 
-	resultCt, err := sgx.Encrypt(sgxPlaintext)
+	resultCt, err := tee.Encrypt(teePlaintext)
 	if err != nil {
 		logger.Error(op, "failed", "err", err)
 		return nil, err
@@ -92,20 +92,20 @@ func doArithmeticOperation(op string, environment EVMEnvironment, caller common.
 	return resultHash[:], nil
 }
 
-func sgxAddRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doArithmeticOperation("sgxAddRun", environment, caller, input, runSpan, func(a uint64, b uint64) uint64 {
+func teeAddRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+	return doArithmeticOperation("teeAddRun", environment, caller, input, runSpan, func(a uint64, b uint64) uint64 {
 		return a + b
 	})
 }
 
-func sgxSubRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doArithmeticOperation("sgxSubRun", environment, caller, input, runSpan, func(a uint64, b uint64) uint64 {
+func teeSubRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+	return doArithmeticOperation("teeSubRun", environment, caller, input, runSpan, func(a uint64, b uint64) uint64 {
 		return a - b
 	})
 }
 
-func sgxMulRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doArithmeticOperation("sgxMulRun", environment, caller, input, runSpan, func(a uint64, b uint64) uint64 {
+func teeMulRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+	return doArithmeticOperation("teeMulRun", environment, caller, input, runSpan, func(a uint64, b uint64) uint64 {
 		return a * b
 	})
 }

@@ -245,36 +245,36 @@ var fhelibMethods = []*FheLibMethod{
 		requiredGasFunction: getCiphertextRequiredGas,
 		runFunction:         getCiphertextRun,
 	},
-	// SGX operations
+	// TEE operations
 	{
-		name:                "sgxEncrypt",
+		name:                "teeEncrypt",
 		argTypes:            "(uint256,bytes1)",
-		requiredGasFunction: sgxEncryptRequiredGas,
-		runFunction:         sgxEncryptRun,
+		requiredGasFunction: teeEncryptRequiredGas,
+		runFunction:         teeEncryptRun,
 	},
 	{
-		name:                "sgxDecrypt",
+		name:                "teeDecrypt",
 		argTypes:            "(uint256)",
-		requiredGasFunction: sgxDecryptRequiredGas,
-		runFunction:         sgxDecryptRun,
+		requiredGasFunction: teeDecryptRequiredGas,
+		runFunction:         teeDecryptRun,
 	},
 	{
-		name:                "sgxAdd",
+		name:                "teeAdd",
 		argTypes:            "(uint256,uint256,bytes1)",
-		requiredGasFunction: sgxAddSubRequiredGas,
-		runFunction:         sgxAddRun,
+		requiredGasFunction: teeAddSubRequiredGas,
+		runFunction:         teeAddRun,
 	},
 	{
-		name:                "sgxSub",
+		name:                "teeSub",
 		argTypes:            "(uint256,uint256,bytes1)",
-		requiredGasFunction: sgxAddSubRequiredGas,
-		runFunction:         sgxSubRun,
+		requiredGasFunction: teeAddSubRequiredGas,
+		runFunction:         teeSubRun,
 	},
 	{
-		name:                "sgxMul",
+		name:                "teeMul",
 		argTypes:            "(uint256,uint256,bytes1)",
-		requiredGasFunction: sgxMulRequiredGas,
-		runFunction:         sgxMulRun,
+		requiredGasFunction: teeMulRequiredGas,
+		runFunction:         teeMulRun,
 	},
 }
 

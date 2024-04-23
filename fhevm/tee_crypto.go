@@ -8,16 +8,16 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
-	"github.com/zama-ai/fhevm-go/sgx"
+	"github.com/zama-ai/fhevm-go/tee"
 	"go.opentelemetry.io/otel/trace"
 )
 
-func sgxEncryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+func teeEncryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(33, len(input))]
 
 	logger := environment.GetLogger()
 	if len(input) != 33 {
-		msg := "sgxEncrypt input len must be 33 bytes"
+		msg := "teeEncrypt input len must be 33 bytes"
 		logger.Error(msg, "input", hex.EncodeToString(input), "len", len(input))
 		return nil, errors.New(msg)
 	}
@@ -26,26 +26,26 @@ func sgxEncryptRun(environment EVMEnvironment, caller common.Address, addr commo
 	encryptToType := tfhe.FheUintType(input[32])
 	otelDescribeOperandsFheTypes(runSpan, encryptToType)
 
-	sgxPlaintext := sgx.NewSgxPlaintext(input[0:32], encryptToType, caller)
+	teePlaintext := tee.NewTeePlaintext(input[0:32], encryptToType, caller)
 
-	ct, err := sgx.Encrypt(sgxPlaintext)
+	ct, err := tee.Encrypt(teePlaintext)
 
 	if err != nil {
-		logger.Error("sgxEncrypt failed", "err", err)
+		logger.Error("teeEncrypt failed", "err", err)
 		return nil, err
 	}
 
 	ctHash := ct.GetHash()
 	importCiphertext(environment, &ct)
 	if environment.IsCommitting() {
-		logger.Info("sgxEncrypt success",
+		logger.Info("teeEncrypt success",
 			"ctHash", ctHash.Hex(),
 			"valueToEncrypt", valueToEncrypt.Uint64())
 	}
 	return ctHash.Bytes(), nil
 }
 
-func sgxDecryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+func teeDecryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(32, len(input))]
 
 	logger := environment.GetLogger()
@@ -74,14 +74,14 @@ func sgxDecryptRun(environment EVMEnvironment, caller common.Address, addr commo
 		return bytes.Repeat([]byte{0xFF}, 32), nil
 	}
 
-	result, err := sgx.Decrypt(ct.ciphertext)
+	result, err := tee.Decrypt(ct.ciphertext)
 	if err != nil {
-		logger.Error("sgxDecrypt failed", "err", err)
+		logger.Error("teeDecrypt failed", "err", err)
 		return nil, err
 	}
 	plaintext := result.Value
 
-	logger.Info("sgxDecrypt success", "plaintext", plaintext)
+	logger.Info("teeDecrypt success", "plaintext", plaintext)
 
 	// Always return a 32-byte big-endian integer.
 	ret := make([]byte, 32)
