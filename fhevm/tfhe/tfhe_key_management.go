@@ -97,11 +97,20 @@ func InitGlobalKeysFromFiles(keysDir string) error {
 	if err != nil {
 		return err
 	}
+	// TODO: This is a temporary measure until we remove sync decrypt for FHE operations
+	// ref: https://github.com/Inco-fhevm/fhevm-go/issues/13
+	var cksPath = path.Join(keysDir, "cks")
+	cksBytes, err := os.ReadFile(cksPath)
+	if err != nil {
+		return err
+	}
 
 	sks = C.deserialize_server_key(toDynamicBufferView(sksBytes))
 
 	pksHash = crypto.Keccak256Hash(pksBytes)
 	pks = C.deserialize_compact_public_key(toDynamicBufferView(pksBytes))
+
+	cks = C.deserialize_client_key(toDynamicBufferView(cksBytes))
 
 	initCiphertextSizes()
 
