@@ -68,6 +68,8 @@ type GasCosts struct {
 	// TEE Operations
 	TeeAddSub  map[tfhe.FheUintType]uint64
 	TeeMul     map[tfhe.FheUintType]uint64
+	TeeDiv     map[tfhe.FheUintType]uint64
+	TeeRem     map[tfhe.FheUintType]uint64
 	TeeEncrypt map[tfhe.FheUintType]uint64
 	TeeDecrypt map[tfhe.FheUintType]uint64
 }
@@ -257,6 +259,20 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint16: 50,
 			tfhe.FheUint32: 50,
 			tfhe.FheUint64: 50,
+		},
+		TeeDiv: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  276,
+			tfhe.FheUint8:  450,
+			tfhe.FheUint16: 612,
+			tfhe.FheUint32: 795,
+			tfhe.FheUint64: 1095,
+		},
+		TeeRem: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:  129,
+			tfhe.FheUint8:  228,
+			tfhe.FheUint16: 304,
+			tfhe.FheUint32: 388,
+			tfhe.FheUint64: 574,
 		},
 	}
 }
