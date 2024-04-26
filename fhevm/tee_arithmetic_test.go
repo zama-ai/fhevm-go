@@ -11,128 +11,118 @@ import (
 )
 
 func TestTeeAddRun(t *testing.T) {
-	op := func(lhs, rhs uint64) uint64 {
-		return lhs + rhs
-	}
 	signature := "teeAdd(uint256,uint256,bytes1)"
 
 	testcases := []struct {
-		typ tfhe.FheUintType
-		lhs uint64
-		rhs uint64
+		typ      tfhe.FheUintType
+		lhs      uint64
+		rhs      uint64
+		expected uint64
 	}{
-		{tfhe.FheUint4, 2, 1},
-		{tfhe.FheUint8, 2, 1},
-		{tfhe.FheUint16, 4283, 1337},
-		{tfhe.FheUint32, 1333337, 1337},
-		{tfhe.FheUint64, 13333377777777777, 133377777777},
+		{tfhe.FheUint4, 2, 1, 3},
+		{tfhe.FheUint8, 2, 1, 3},
+		{tfhe.FheUint16, 4283, 1337, 5620},
+		{tfhe.FheUint32, 1333337, 1337, 1334674},
+		{tfhe.FheUint64, 13333377777777777, 133377777777, 13333511155555554},
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeAdd with %s", tc.typ), func(t *testing.T) {
-			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, op, signature)
+			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
 		})
 	}
 }
 
 func TestTeeSubRun(t *testing.T) {
-	op := func(lhs, rhs uint64) uint64 {
-		return lhs - rhs
-	}
 	signature := "teeSub(uint256,uint256,bytes1)"
 
 	testcases := []struct {
-		typ tfhe.FheUintType
-		lhs uint64
-		rhs uint64
+		typ      tfhe.FheUintType
+		lhs      uint64
+		rhs      uint64
+		expected uint64
 	}{
-		{tfhe.FheUint4, 2, 1},
-		{tfhe.FheUint8, 2, 1},
-		{tfhe.FheUint16, 4283, 1337},
-		{tfhe.FheUint32, 1333337, 1337},
-		{tfhe.FheUint64, 13333377777777777, 133377777777},
+		{tfhe.FheUint4, 2, 1, 1},
+		{tfhe.FheUint8, 2, 1, 1},
+		{tfhe.FheUint16, 4283, 1337, 2946},
+		{tfhe.FheUint32, 1333337, 1337, 1332000},
+		{tfhe.FheUint64, 13333377777777777, 133377777777, 13333244400000000},
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeSub with %s", tc.typ), func(t *testing.T) {
-			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, op, signature)
+			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
 		})
 	}
 }
 
 func TestTeeMulRun(t *testing.T) {
-	op := func(lhs, rhs uint64) uint64 {
-		return lhs * rhs
-	}
 	signature := "teeMul(uint256,uint256,bytes1)"
 
 	testcases := []struct {
-		typ tfhe.FheUintType
-		lhs uint64
-		rhs uint64
+		typ      tfhe.FheUintType
+		lhs      uint64
+		rhs      uint64
+		expected uint64
 	}{
-		{tfhe.FheUint4, 2, 3},
-		{tfhe.FheUint8, 2, 3},
-		{tfhe.FheUint16, 169, 5},
-		{tfhe.FheUint32, 137, 17},
-		{tfhe.FheUint64, 137777, 17},
+		{tfhe.FheUint4, 2, 3, 6},
+		{tfhe.FheUint8, 2, 3, 6},
+		{tfhe.FheUint16, 169, 5, 845},
+		{tfhe.FheUint32, 137, 17, 2329},
+		{tfhe.FheUint64, 137777, 17, 2342209},
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeMul with %s", tc.typ), func(t *testing.T) {
-			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, op, signature)
+			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
 		})
 	}
 }
 
 func TestTeeDivRun(t *testing.T) {
-	op := func(lhs, rhs uint64) uint64 {
-		return lhs / rhs
-	}
 	signature := "teeDiv(uint256,uint256,bytes1)"
 
 	testcases := []struct {
-		typ tfhe.FheUintType
-		lhs uint64
-		rhs uint64
+		typ      tfhe.FheUintType
+		lhs      uint64
+		rhs      uint64
+		expected uint64
 	}{
-		{tfhe.FheUint4, 2, 1},
-		{tfhe.FheUint8, 2, 1},
-		{tfhe.FheUint16, 4283, 1337},
-		{tfhe.FheUint32, 1333337, 1337},
-		{tfhe.FheUint64, 13333377777777777, 133377777777},
+		{tfhe.FheUint4, 2, 1, 2},
+		{tfhe.FheUint8, 2, 1, 2},
+		{tfhe.FheUint16, 4283, 1337, 3},
+		{tfhe.FheUint32, 1333337, 1337, 997},
+		{tfhe.FheUint64, 13333377777777777, 133377777777, 99967},
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeDiv with %s", tc.typ), func(t *testing.T) {
-			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, op, signature)
+			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
 		})
 	}
 }
 
 func TestTeeRemRun(t *testing.T) {
-	op := func(lhs, rhs uint64) uint64 {
-		return lhs % rhs
-	}
 	signature := "teeRem(uint256,uint256,bytes1)"
 
 	testcases := []struct {
-		typ tfhe.FheUintType
-		lhs uint64
-		rhs uint64
+		typ      tfhe.FheUintType
+		lhs      uint64
+		rhs      uint64
+		expected uint64
 	}{
-		{tfhe.FheUint4, 2, 1},
-		{tfhe.FheUint8, 2, 1},
-		{tfhe.FheUint16, 4283, 1337},
-		{tfhe.FheUint32, 1333337, 1337},
-		{tfhe.FheUint64, 13333377777777777, 133377777777},
+		{tfhe.FheUint4, 2, 1, 0},
+		{tfhe.FheUint8, 2, 1, 0},
+		{tfhe.FheUint16, 4283, 1337, 272},
+		{tfhe.FheUint32, 1333337, 1337, 348},
+		{tfhe.FheUint64, 13333377777777777, 133377777777, 1466744418},
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeRem with %s", tc.typ), func(t *testing.T) {
-			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, op, signature)
+			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
 		})
 	}
 }
 
 // teeArithmeticHelper is a helper function to test TEE arithmetic operations,
 // which are passed into the last argument as a function.
-func teeArithmeticHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs uint64, op func(lhs, rhs uint64) uint64, signature string) {
+func teeArithmeticHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs, expected uint64, signature string) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
@@ -167,24 +157,7 @@ func teeArithmeticHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs ui
 
 	result := new(big.Int).SetBytes(teePlaintext.Value).Uint64()
 
-	expected := op(lhs, rhs)
 	if result != expected {
 		t.Fatalf("incorrect result, expected=%d, got=%d", expected, result)
 	}
-}
-
-func importTeePlaintextToEVM(environment EVMEnvironment, depth int, value uint64, typ tfhe.FheUintType) (tfhe.TfheCiphertext, error) {
-	valueBz, err := marshalUint(value, typ)
-	if err != nil {
-		return tfhe.TfheCiphertext{}, err
-	}
-	teePlaintext := tee.NewTeePlaintext(valueBz, typ, common.Address{})
-
-	ct, err := tee.Encrypt(teePlaintext)
-	if err != nil {
-		return tfhe.TfheCiphertext{}, err
-	}
-
-	importCiphertextToEVMAtDepth(environment, &ct, depth)
-	return ct, nil
 }
