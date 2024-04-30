@@ -1,10 +1,133 @@
 package fhevm
 
 import (
+	"math/big"
+	"testing"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 	"github.com/zama-ai/fhevm-go/tee"
 )
+
+// teeOperationHelper is a helper function to test TEE operations,
+// which are passed into the last argument as a function.
+func teeOperationHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs, expected uint64, signature string) {
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := common.Address{}
+	readOnly := false
+	lhsCt, err := importTeePlaintextToEVM(environment, depth, lhs, fheUintType)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	rhsCt, err := importTeePlaintextToEVM(environment, depth, rhs, fheUintType)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	input := toLibPrecompileInput(signature, false, lhsCt.GetHash(), rhsCt.GetHash())
+	out, err := FheLibRun(environment, addr, addr, input, readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	res := getVerifiedCiphertextFromEVM(environment, common.BytesToHash(out))
+	if res == nil {
+		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
+	}
+	teePlaintext, err := tee.Decrypt(res.ciphertext)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	if teePlaintext.FheUintType != fheUintType {
+		t.Fatalf("incorrect fheUintType, expected=%s, got=%s", fheUintType, teePlaintext.FheUintType)
+	}
+
+	result := new(big.Int).SetBytes(teePlaintext.Value).Uint64()
+	if result != expected {
+		t.Fatalf("incorrect result, expected=%d, got=%d", expected, result)
+	}
+}
+
+// teeSelectHelper is a helper function to test teeSelect operation,
+// which are passed into the last argument as a function.
+func teeSelectHelper(t *testing.T, fheUintType tfhe.FheUintType, fhs bool, shs, ths, expected uint64, signature string) {
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := common.Address{}
+	readOnly := false
+	fhsCt, err := importTeePlaintextToEVM(environment, depth, fhs, fheUintType)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	shsCt, err := importTeePlaintextToEVM(environment, depth, shs, fheUintType)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	thsCt, err := importTeePlaintextToEVM(environment, depth, ths, fheUintType)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	input := toLibPrecompileInput(signature, false, fhsCt.GetHash(), shsCt.GetHash(), thsCt.GetHash())
+	out, err := FheLibRun(environment, addr, addr, input, readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	res := getVerifiedCiphertextFromEVM(environment, common.BytesToHash(out))
+	if res == nil {
+		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
+	}
+	teePlaintext, err := tee.Decrypt(res.ciphertext)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	result := new(big.Int).SetBytes(teePlaintext.Value).Uint64()
+
+	if result != expected {
+		t.Fatalf("incorrect result, expected=%d, got=%d", expected, result)
+	}
+}
+
+// teeNotNegHelper is a helper function to test TEE operations,
+// which are passed into the last argument as a function.
+func teeNegNotHelper(t *testing.T, fheUintType tfhe.FheUintType, chs, expected uint64, signature string) {
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := common.Address{}
+	readOnly := false
+	chsCt, err := importTeePlaintextToEVM(environment, depth, chs, fheUintType)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	input := toLibPrecompileInput(signature, false, chsCt.GetHash())
+	out, err := FheLibRun(environment, addr, addr, input, readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	res := getVerifiedCiphertextFromEVM(environment, common.BytesToHash(out))
+	if res == nil {
+		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
+	}
+	teePlaintext, err := tee.Decrypt(res.ciphertext)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	if teePlaintext.FheUintType != fheUintType {
+		t.Fatalf("incorrect fheUintType, expected=%s, got=%s", fheUintType, teePlaintext.FheUintType)
+	}
+
+	result := new(big.Int).SetBytes(teePlaintext.Value).Uint64()
+	if result != expected {
+		t.Fatalf("incorrect result, expected=%d, got=%d", expected, result)
+	}
+}
 
 func importTeePlaintextToEVM(environment EVMEnvironment, depth int, value any, typ tfhe.FheUintType) (tfhe.TfheCiphertext, error) {
 	valueBz, err := marshalTfheType(value, typ)

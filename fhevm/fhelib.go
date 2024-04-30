@@ -342,6 +342,60 @@ var fhelibMethods = []*FheLibMethod{
 		requiredGasFunction: teeComparisonRequiredGas,
 		runFunction:         teeSelectRun,
 	},
+	{
+		name:                "teeShl",
+		argTypes:            "(uint256,uint256,bytes1)",
+		requiredGasFunction: teeShiftRequiredGas,
+		runFunction:         teeShlRun,
+	},
+	{
+		name:                "teeShr",
+		argTypes:            "(uint256,uint256,bytes1)",
+		requiredGasFunction: teeShiftRequiredGas,
+		runFunction:         teeShrRun,
+	},
+	{
+		name:                "teeRotl",
+		argTypes:            "(uint256,uint256,bytes1)",
+		requiredGasFunction: teeShiftRequiredGas,
+		runFunction:         teeRotlRun,
+	},
+	{
+		name:                "teeRotr",
+		argTypes:            "(uint256,uint256,bytes1)",
+		requiredGasFunction: teeShiftRequiredGas,
+		runFunction:         teeRotrRun,
+	},
+	{
+		name:                "teeBitAnd",
+		argTypes:            "(uint256,uint256,bytes1)",
+		requiredGasFunction: teeBitwiseOpRequiredGas,
+		runFunction:         teeBitAndRun,
+	},
+	{
+		name:                "teeBitOr",
+		argTypes:            "(uint256,uint256,bytes1)",
+		requiredGasFunction: teeBitwiseOpRequiredGas,
+		runFunction:         teeBitOrRun,
+	},
+	{
+		name:                "teeBitXor",
+		argTypes:            "(uint256,uint256,bytes1)",
+		requiredGasFunction: teeBitwiseOpRequiredGas,
+		runFunction:         teeBitXorRun,
+	},
+	{
+		name:                "teeNeg",
+		argTypes:            "(uint256)",
+		requiredGasFunction: teeNegRequiredGas,
+		runFunction:         teeNegRun,
+	},
+	{
+		name:                "teeNot",
+		argTypes:            "(uint256)",
+		requiredGasFunction: teeNotRequiredGas,
+		runFunction:         teeNotRun,
+	},
 }
 
 func init() {

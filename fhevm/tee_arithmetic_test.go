@@ -2,12 +2,9 @@ package fhevm
 
 import (
 	"fmt"
-	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
-	"github.com/zama-ai/fhevm-go/tee"
 )
 
 func TestTeeAddRun(t *testing.T) {
@@ -27,7 +24,7 @@ func TestTeeAddRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeAdd with %s", tc.typ), func(t *testing.T) {
-			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
 		})
 	}
 }
@@ -49,7 +46,7 @@ func TestTeeSubRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeSub with %s", tc.typ), func(t *testing.T) {
-			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
 		})
 	}
 }
@@ -71,7 +68,7 @@ func TestTeeMulRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeMul with %s", tc.typ), func(t *testing.T) {
-			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
 		})
 	}
 }
@@ -93,7 +90,7 @@ func TestTeeDivRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeDiv with %s", tc.typ), func(t *testing.T) {
-			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
 		})
 	}
 }
@@ -115,49 +112,7 @@ func TestTeeRemRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeRem with %s", tc.typ), func(t *testing.T) {
-			teeArithmeticHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
 		})
-	}
-}
-
-// teeArithmeticHelper is a helper function to test TEE arithmetic operations,
-// which are passed into the last argument as a function.
-func teeArithmeticHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs, expected uint64, signature string) {
-	depth := 1
-	environment := newTestEVMEnvironment()
-	environment.depth = depth
-	addr := common.Address{}
-	readOnly := false
-	lhsCt, err := importTeePlaintextToEVM(environment, depth, lhs, fheUintType)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-	rhsCt, err := importTeePlaintextToEVM(environment, depth, rhs, fheUintType)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	input := toLibPrecompileInput(signature, false, lhsCt.GetHash(), rhsCt.GetHash())
-	out, err := FheLibRun(environment, addr, addr, input, readOnly)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-	res := getVerifiedCiphertextFromEVM(environment, common.BytesToHash(out))
-	if res == nil {
-		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
-	}
-	teePlaintext, err := tee.Decrypt(res.ciphertext)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	if teePlaintext.FheUintType != fheUintType {
-		t.Fatalf("incorrect fheUintType, expected=%s, got=%s", fheUintType, teePlaintext.FheUintType)
-	}
-
-	result := new(big.Int).SetBytes(teePlaintext.Value).Uint64()
-
-	if result != expected {
-		t.Fatalf("incorrect result, expected=%d, got=%d", expected, result)
 	}
 }
