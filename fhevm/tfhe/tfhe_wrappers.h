@@ -471,6 +471,8 @@ void* if_then_else_fhe_uint32(void* condition, void* ct1, void* ct2, void* sks);
 
 void* if_then_else_fhe_uint64(void* condition, void* ct1, void* ct2, void* sks);
 
+void* if_then_else_fhe_uint160(void* condition, void* ct1, void* ct2, void* sks);
+
 int decrypt_fhe_bool(void* cks, void* ct, bool* res);
 
 int decrypt_fhe_uint4(void* cks, void* ct, uint8_t* res);

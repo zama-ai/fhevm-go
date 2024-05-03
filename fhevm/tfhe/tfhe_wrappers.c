@@ -2593,6 +2593,17 @@ void* if_then_else_fhe_uint64(void* condition, void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* if_then_else_fhe_uint160(void* condition, void* ct1, void* ct2, void* sks)
+{
+	FheUint160* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint160_if_then_else(condition, ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 int decrypt_fhe_bool(void* cks, void* ct, bool* res)
 {
 	*res = false;
