@@ -11,7 +11,7 @@ import (
 
 // teeOperationHelper is a helper function to test TEE operations,
 // which are passed into the last argument as a function.
-func teeOperationHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs, expected uint64, signature string) {
+func teeOperationHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs, expected any, signature string) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
@@ -45,14 +45,24 @@ func teeOperationHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs, ex
 	}
 
 	result := new(big.Int).SetBytes(teePlaintext.Value).Uint64()
-	if result != expected {
+
+	var expect uint64
+	switch expected := expected.(type) {
+	case bool:
+		expect = boolToUint64(expected)
+	case uint64:
+		expect = expected
+	default:
+		expect = 0
+	}
+	if result != expect {
 		t.Fatalf("incorrect result, expected=%d, got=%d", expected, result)
 	}
 }
 
 // teeSelectHelper is a helper function to test teeSelect operation,
 // which are passed into the last argument as a function.
-func teeSelectHelper(t *testing.T, fheUintType tfhe.FheUintType, fhs bool, shs, ths, expected uint64, signature string) {
+func teeSelectOperationHelper(t *testing.T, fheUintType tfhe.FheUintType, fhs bool, shs, ths, expected *big.Int, signature string) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
@@ -85,16 +95,16 @@ func teeSelectHelper(t *testing.T, fheUintType tfhe.FheUintType, fhs bool, shs, 
 		t.Fatalf(err.Error())
 	}
 
-	result := new(big.Int).SetBytes(teePlaintext.Value).Uint64()
+	result := new(big.Int).SetBytes(teePlaintext.Value)
 
-	if result != expected {
+	if result.Cmp(expected) != 0 {
 		t.Fatalf("incorrect result, expected=%d, got=%d", expected, result)
 	}
 }
 
 // teeNotNegHelper is a helper function to test TEE operations,
 // which are passed into the last argument as a function.
-func teeNegNotHelper(t *testing.T, fheUintType tfhe.FheUintType, chs, expected uint64, signature string) {
+func teeNegNotOperationHelper(t *testing.T, fheUintType tfhe.FheUintType, chs, expected uint64, signature string) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth

@@ -180,7 +180,7 @@ func TestTeeNegRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeNeg with %s", tc.typ), func(t *testing.T) {
-			teeNegNotHelper(t, tc.typ, tc.chs, tc.expected, signature)
+			teeNegNotOperationHelper(t, tc.typ, tc.chs, tc.expected, signature)
 		})
 	}
 }
@@ -201,7 +201,7 @@ func TestTeeNotRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeNot with %s", tc.typ), func(t *testing.T) {
-			teeNegNotHelper(t, tc.typ, tc.chs, tc.expected, signature)
+			teeNegNotOperationHelper(t, tc.typ, tc.chs, tc.expected, signature)
 		})
 	}
 }

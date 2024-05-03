@@ -9,7 +9,7 @@ import (
 )
 
 func teeShlRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doShiftOperationGeneric(environment, caller, input, runSpan, func(a, b uint64, typ tfhe.FheUintType) (uint64, error) {
+	return doShiftOp(environment, caller, input, runSpan, func(a, b uint64, typ tfhe.FheUintType) (uint64, error) {
 		switch typ {
 		// There isn't bitwise shift operation between ebool. So it doesn't include case 0.
 		case tfhe.FheUint4:
@@ -33,7 +33,7 @@ func teeShlRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 }
 
 func teeShrRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doShiftOperationGeneric(environment, caller, input, runSpan, func(a, b uint64, typ tfhe.FheUintType) (uint64, error) {
+	return doShiftOp(environment, caller, input, runSpan, func(a, b uint64, typ tfhe.FheUintType) (uint64, error) {
 		switch typ {
 		// There isn't bitwise shift operation between ebool. So it doesn't include case 0.
 		case tfhe.FheUint4:
@@ -57,7 +57,7 @@ func teeShrRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 }
 
 func teeRotlRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doShiftOperationGeneric(environment, caller, input, runSpan, func(a, b uint64, typ tfhe.FheUintType) (uint64, error) {
+	return doShiftOp(environment, caller, input, runSpan, func(a, b uint64, typ tfhe.FheUintType) (uint64, error) {
 		// Rotate the bits of 'a' to the right by 'b' positions.
 		// '(a >> b)' shifts bits to the right, discarding bits shifted out.
 		// '(a << (typ - b))' shifts bits to the left by 'typ - b' positions, effectively moving the discarded bits from the right shift to the left end.
@@ -85,7 +85,7 @@ func teeRotlRun(environment EVMEnvironment, caller common.Address, addr common.A
 }
 
 func teeRotrRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doShiftOperationGeneric(environment, caller, input, runSpan, func(a, b uint64, typ tfhe.FheUintType) (uint64, error) {
+	return doShiftOp(environment, caller, input, runSpan, func(a, b uint64, typ tfhe.FheUintType) (uint64, error) {
 		// Rotate the bits of 'a' to the left by 'b' positions.
 		// '(a << b)' shifts bits to the left, moving bits towards the most significant bit (left end) and discarding bits that fall off the left end.
 		// '(a >> (typ - b))' shifts bits to the right by 'typ - b' positions, effectively moving the discarded bits from the left shift to the right end.
@@ -113,31 +113,31 @@ func teeRotrRun(environment EVMEnvironment, caller common.Address, addr common.A
 }
 
 func teeBitAndRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doOperationGeneric(environment, caller, input, runSpan, func(a, b uint64) uint64 {
+	return doOp(environment, caller, input, runSpan, func(a, b uint64) uint64 {
 		return a & b
 	}, "teeBitAnd")
 }
 
 func teeBitOrRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doOperationGeneric(environment, caller, input, runSpan, func(a, b uint64) uint64 {
+	return doOp(environment, caller, input, runSpan, func(a, b uint64) uint64 {
 		return a | b
 	}, "teeBitOr")
 }
 
 func teeBitXorRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doOperationGeneric(environment, caller, input, runSpan, func(a, b uint64) uint64 {
+	return doOp(environment, caller, input, runSpan, func(a, b uint64) uint64 {
 		return a ^ b
 	}, "teeBitXor")
 }
 
 func teeNegRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doNegNotOperationGeneric(environment, caller, input, runSpan, func(a uint64) uint64 {
+	return doNegNotOp(environment, caller, input, runSpan, func(a uint64) uint64 {
 		return ^a + 1
 	}, "teeNeg")
 }
 
 func teeNotRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doNegNotOperationGeneric(environment, caller, input, runSpan, func(a uint64) uint64 {
+	return doNegNotOp(environment, caller, input, runSpan, func(a uint64) uint64 {
 		return ^a
 	}, "teeNot")
 }

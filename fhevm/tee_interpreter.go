@@ -13,14 +13,16 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// doOperationGeneric is a generic function to do TEE operations
-func doOperationGeneric(
+// doOp is a function to do TEE operations
+// We use uint64 because we need to use only types smaller than uint64
+func doOp(
 	environment EVMEnvironment,
 	caller common.Address,
 	input []byte,
 	runSpan trace.Span,
 	operator func(a, b uint64) uint64,
-	op string) ([]byte, error) {
+	op string,
+) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	lp, rp, lhs, rhs, err := extract2Operands(op, environment, input, runSpan)
@@ -36,7 +38,8 @@ func doOperationGeneric(
 
 	// TODO ref: https://github.com/Inco-fhevm/inco-monorepo/issues/6
 	if lp.FheUintType == tfhe.FheUint128 || lp.FheUintType == tfhe.FheUint160 {
-		panic("TODO implement me")
+		// panic("TODO implement me")
+		logger.Error("unsupported FheUintType: %s", lp.FheUintType)
 	}
 
 	// Using math/big here to make code more readable.
@@ -72,14 +75,75 @@ func doOperationGeneric(
 	return resultHash[:], nil
 }
 
-// doShiftOperationGeneric is a generic function to do TEE bit shift operations
-func doShiftOperationGeneric(
+// doEqNeOp is a function to do TEE Eq/Ne operations
+// We use big.Int because we need to use FheUint160 for eaddress
+func doEqNeOp(
+	environment EVMEnvironment,
+	caller common.Address,
+	input []byte,
+	runSpan trace.Span,
+	operator func(a, b *big.Int) bool,
+	op string,
+) ([]byte, error) {
+	logger := environment.GetLogger()
+
+	lp, rp, lhs, rhs, err := extract2Operands(op, environment, input, runSpan)
+	if err != nil {
+		logger.Error(op, "failed", "err", err)
+		return nil, err
+	}
+
+	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+	if !environment.IsCommitting() && !environment.IsEthCall() {
+		return importRandomCiphertext(environment, lhs.fheUintType()), nil
+	}
+
+	// TODO ref: https://github.com/Inco-fhevm/inco-monorepo/issues/6
+	if lp.FheUintType == tfhe.FheUint128 {
+		// panic("TODO implement me")
+		logger.Error("unsupported FheUintType: %s", lp.FheUintType)
+	}
+
+	// Using math/big here to make code more readable.
+	// A more efficient way would be to use binary.BigEndian.UintXX().
+	// However, that would require a switch case. We prefer for now to use
+	// big.Int as a one-liner that can handle variable-length bytes.
+
+	l := big.NewInt(0).SetBytes(lp.Value)
+	r := big.NewInt(0).SetBytes(rp.Value)
+
+	result := operator(l, r)
+
+	resultBz, err := marshalTfheType(result, lp.FheUintType)
+	if err != nil {
+		logger.Error(op, "failed", "err", err)
+		return nil, err
+	}
+
+	teePlaintext := tee.NewTeePlaintext(resultBz, lp.FheUintType, caller)
+
+	resultCt, err := tee.Encrypt(teePlaintext)
+	if err != nil {
+		logger.Error(op, "failed", "err", err)
+		return nil, err
+	}
+	importCiphertext(environment, &resultCt)
+
+	resultHash := resultCt.GetHash()
+	logger.Info(fmt.Sprintf("%s success", op), "lhs", lhs.hash().Hex(), "rhs", rhs.hash().Hex(), "result", resultHash.Hex())
+	return resultHash[:], nil
+}
+
+// doShiftOp is a function to do TEE bit shift operations
+// We use uint64 because we need to use only types smaller than uint64
+func doShiftOp(
 	environment EVMEnvironment,
 	caller common.Address,
 	input []byte,
 	runSpan trace.Span,
 	operator func(a, b uint64, typ tfhe.FheUintType) (uint64, error),
-	op string) ([]byte, error) {
+	op string,
+) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	lp, rp, lhs, rhs, err := extract2Operands(op, environment, input, runSpan)
@@ -95,7 +159,8 @@ func doShiftOperationGeneric(
 
 	// TODO ref: https://github.com/Inco-fhevm/inco-monorepo/issues/6
 	if lp.FheUintType == tfhe.FheUint128 || lp.FheUintType == tfhe.FheUint160 {
-		panic("TODO implement me")
+		// panic("TODO implement me")
+		logger.Error("unsupported FheUintType: %s", lp.FheUintType)
 	}
 
 	// Using math/big here to make code more readable.
@@ -134,14 +199,16 @@ func doShiftOperationGeneric(
 	return resultHash[:], nil
 }
 
-// doShiftOperationGeneric is a generic function to do TEE bit inverse operations
-func doNegNotOperationGeneric(
+// doNegNotOp is a generic function to do TEE bit inverse operations
+// We use uint64 because we need to use only types smaller than uint64
+func doNegNotOp(
 	environment EVMEnvironment,
 	caller common.Address,
 	input []byte,
 	runSpan trace.Span,
 	operator func(a uint64) uint64,
-	op string) ([]byte, error) {
+	op string,
+) ([]byte, error) {
 	logger := environment.GetLogger()
 
 	cp, ct, err := extract1Operands(op, environment, input, runSpan)
@@ -157,7 +224,8 @@ func doNegNotOperationGeneric(
 
 	// TODO ref: https://github.com/Inco-fhevm/inco-monorepo/issues/6
 	if cp.FheUintType == tfhe.FheUint128 || cp.FheUintType == tfhe.FheUint160 {
-		panic("TODO implement me")
+		// panic("TODO implement me")
+		logger.Error("unsupported FheUintType: %s", cp.FheUintType)
 	}
 
 	// Using math/big here to make code more readable.
@@ -309,6 +377,10 @@ func marshalTfheType(value any, typ tfhe.FheUintType) ([]byte, error) {
 			resultBz := make([]byte, 8)
 			binary.BigEndian.PutUint64(resultBz, value)
 			return resultBz, nil
+		case tfhe.FheUint160:
+			resultBz := make([]byte, 8)
+			binary.BigEndian.PutUint64(resultBz, value)
+			return resultBz, nil
 		default:
 			return nil,
 				fmt.Errorf("unsupported FheUintType: %s", typ)
@@ -320,6 +392,9 @@ func marshalTfheType(value any, typ tfhe.FheUintType) ([]byte, error) {
 		} else {
 			resultBz[0] = 0
 		}
+		return resultBz, nil
+	case *big.Int:
+		resultBz := value.Bytes()
 		return resultBz, nil
 	default:
 		return nil,

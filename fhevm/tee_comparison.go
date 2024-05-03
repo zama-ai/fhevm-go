@@ -11,43 +11,51 @@ import (
 )
 
 func teeLeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doOperationGeneric(environment, caller, input, runSpan, func(a, b uint64) uint64 {
+	return doOp(environment, caller, input, runSpan, func(a, b uint64) uint64 {
 		return boolToUint64(a <= b)
 	}, "teeLeRun")
 }
 
 func teeLtRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doOperationGeneric(environment, caller, input, runSpan, func(a, b uint64) uint64 {
+	return doOp(environment, caller, input, runSpan, func(a, b uint64) uint64 {
 		return boolToUint64(a < b)
 	}, "teeLtRun")
 }
 
 func teeEqRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doOperationGeneric(environment, caller, input, runSpan, func(a, b uint64) uint64 {
-		return boolToUint64(a == b)
+	return doEqNeOp(environment, caller, input, runSpan, func(a, b *big.Int) bool {
+		if a.Cmp(b) == 0 {
+			return true
+		} else {
+			return false
+		}
 	}, "teeEqRun")
 }
 
 func teeGeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doOperationGeneric(environment, caller, input, runSpan, func(a, b uint64) uint64 {
+	return doOp(environment, caller, input, runSpan, func(a, b uint64) uint64 {
 		return boolToUint64(a >= b)
 	}, "teeGeRun")
 }
 
 func teeGtRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doOperationGeneric(environment, caller, input, runSpan, func(a, b uint64) uint64 {
+	return doOp(environment, caller, input, runSpan, func(a, b uint64) uint64 {
 		return boolToUint64(a > b)
 	}, "teeGtRun")
 }
 
 func teeNeRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doOperationGeneric(environment, caller, input, runSpan, func(a, b uint64) uint64 {
-		return boolToUint64(a != b)
+	return doEqNeOp(environment, caller, input, runSpan, func(a, b *big.Int) bool {
+		if a.Cmp(b) != 0 {
+			return true
+		} else {
+			return false
+		}
 	}, "teeNeRun")
 }
 
 func teeMinRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doOperationGeneric(environment, caller, input, runSpan, func(a, b uint64) uint64 {
+	return doOp(environment, caller, input, runSpan, func(a, b uint64) uint64 {
 		if a >= b {
 			return b
 		} else {
@@ -57,7 +65,7 @@ func teeMinRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 }
 
 func teeMaxRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	return doOperationGeneric(environment, caller, input, runSpan, func(a, b uint64) uint64 {
+	return doOp(environment, caller, input, runSpan, func(a, b uint64) uint64 {
 		if a >= b {
 			return a
 		} else {
@@ -69,7 +77,7 @@ func teeMaxRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 func teeSelectRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	logger := environment.GetLogger()
 
-	fp, sp, tp, fhs, shs, ths, err := extract3Operands("teeSelect", environment, input, runSpan)
+	p1, p2, _, h1, h2, h3, err := extract3Operands("teeSelect", environment, input, runSpan)
 	if err != nil {
 		logger.Error("teeSelect", "failed", "err", err)
 		return nil, err
@@ -77,12 +85,13 @@ func teeSelectRun(environment EVMEnvironment, caller common.Address, addr common
 
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() && !environment.IsEthCall() {
-		return importRandomCiphertext(environment, sp.FheUintType), nil
+		return importRandomCiphertext(environment, p2.FheUintType), nil
 	}
 
 	// TODO ref: https://github.com/Inco-fhevm/inco-monorepo/issues/6
-	if sp.FheUintType == tfhe.FheUint128 || sp.FheUintType == tfhe.FheUint160 {
-		panic("TODO implement me")
+	if p2.FheUintType == tfhe.FheUint128 {
+		// panic("TODO implement me")
+		logger.Error("unsupported FheUintType: %s", p2.FheUintType)
 	}
 
 	// Using math/big here to make code more readable.
@@ -92,20 +101,20 @@ func teeSelectRun(environment EVMEnvironment, caller common.Address, addr common
 	//
 	// Note that we do arithmetic operations on uint64, then we convert th
 	// result back to the FheUintType.
-	var result uint64
-	s := big.NewInt(0).SetBytes(sp.Value).Uint64()
-	t := big.NewInt(0).SetBytes(tp.Value).Uint64()
-	if fp.Value[0] == 1 {
-		result = s
+	var result big.Int
+	s := big.NewInt(0).SetBytes(p2.Value)
+	t := big.NewInt(0).SetBytes(p2.Value)
+	if p1.Value[0] == 1 {
+		result.Set(s)
 	} else {
-		result = t
+		result.Set(t)
 	}
-
-	resultBz, err := marshalTfheType(result, sp.FheUintType)
+	resultBz, err := marshalTfheType(&result, p2.FheUintType)
 	if err != nil {
 		return nil, err
 	}
-	teePlaintext := tee.NewTeePlaintext(resultBz, sp.FheUintType, caller)
+
+	teePlaintext := tee.NewTeePlaintext(resultBz, p2.FheUintType, caller)
 
 	resultCt, err := tee.Encrypt(teePlaintext)
 	if err != nil {
@@ -115,6 +124,6 @@ func teeSelectRun(environment EVMEnvironment, caller common.Address, addr common
 	importCiphertext(environment, &resultCt)
 
 	resultHash := resultCt.GetHash()
-	logger.Info(fmt.Sprintf("%s success", "teeSelect"), "fhs", fhs.hash().Hex(), "shs", shs.hash().Hex(), "ths", ths.hash().Hex(), "result", resultHash.Hex())
+	logger.Info(fmt.Sprintf("%s success", "teeSelect"), "h1", h1.hash().Hex(), "h2", h2.hash().Hex(), "h3", h3.hash().Hex(), "result", resultHash.Hex())
 	return resultHash[:], nil
 }
