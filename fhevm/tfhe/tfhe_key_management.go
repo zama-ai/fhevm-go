@@ -72,6 +72,7 @@ func initCiphertextSizes() {
 	ExpandedFheCiphertextSize[FheUint16] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint16).Serialize()))
 	ExpandedFheCiphertextSize[FheUint32] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint32).Serialize()))
 	ExpandedFheCiphertextSize[FheUint64] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint64).Serialize()))
+	ExpandedFheCiphertextSize[FheUint160] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint160).Serialize()))
 
 	compactFheCiphertextSize[FheBool] = uint(len(EncryptAndSerializeCompact(0, FheBool)))
 	compactFheCiphertextSize[FheUint4] = uint(len(EncryptAndSerializeCompact(0, FheUint4)))
