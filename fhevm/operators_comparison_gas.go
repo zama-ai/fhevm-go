@@ -16,25 +16,26 @@ func fheLeRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("comparison RequiredGas() can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
 		return 0
 	}
-	var lhs, rhs *verifiedCiphertext
+	var lhs, rhs *tfhe.TfheCiphertext
+	loadGas := uint64(0)
 	if !isScalar {
-		lhs, rhs, err = get2VerifiedOperands(environment, input)
+		lhs, rhs, loadGas, err = load2Ciphertexts(environment, input)
 		if err != nil {
-			logger.Error("comparison RequiredGas() ciphertext inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("comparison RequiredGas() failed to load input ciphertexts", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
-		if lhs.fheUintType() != rhs.fheUintType() {
-			logger.Error("comparison RequiredGas() operand type mismatch", "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+		if lhs.Type() != rhs.Type() {
+			logger.Error("comparison RequiredGas() operand type mismatch", "lhs", lhs.Type(), "rhs", rhs.Type())
 			return 0
 		}
 	} else {
-		lhs, _, err = getScalarOperands(environment, input)
+		lhs, _, loadGas, err = getScalarOperands(environment, input)
 		if err != nil {
-			logger.Error("comparison RequiredGas() scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("comparison RequiredGas() scalar failed to load input ciphertexts", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
 	}
-	return environment.FhevmParams().GasCosts.FheLe[lhs.fheUintType()]
+	return environment.FhevmParams().GasCosts.FheLe[lhs.Type()] + loadGas
 }
 
 func fheLtRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -51,25 +52,26 @@ func fheEqRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("comparison RequiredGas() can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
 		return 0
 	}
-	var lhs, rhs *verifiedCiphertext
+	var lhs, rhs *tfhe.TfheCiphertext
+	loadGas := uint64(0)
 	if !isScalar {
-		lhs, rhs, err = get2VerifiedOperands(environment, input)
+		lhs, rhs, loadGas, err = load2Ciphertexts(environment, input)
 		if err != nil {
-			logger.Error("comparison RequiredGas() ciphertext inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("comparison RequiredGas() failed to load input ciphertexts", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
-		if lhs.fheUintType() != rhs.fheUintType() {
-			logger.Error("comparison RequiredGas() operand type mismatch", "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+		if lhs.Type() != rhs.Type() {
+			logger.Error("comparison RequiredGas() operand type mismatch", "lhs", lhs.Type(), "rhs", rhs.Type())
 			return 0
 		}
 	} else {
-		lhs, _, err = getScalarOperands(environment, input)
+		lhs, _, loadGas, err = getScalarOperands(environment, input)
 		if err != nil {
-			logger.Error("comparison RequiredGas() scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("comparison RequiredGas() scalar failed to load input ciphertexts", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
 	}
-	return environment.FhevmParams().GasCosts.FheEq[lhs.fheUintType()]
+	return environment.FhevmParams().GasCosts.FheEq[lhs.Type()] + loadGas
 }
 
 func fheGeRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -96,25 +98,26 @@ func fheMinRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("fheMin/Max RequiredGas() can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
 		return 0
 	}
-	var lhs, rhs *verifiedCiphertext
+	var lhs, rhs *tfhe.TfheCiphertext
+	loadGas := uint64(0)
 	if !isScalar {
-		lhs, rhs, err = get2VerifiedOperands(environment, input)
+		lhs, rhs, loadGas, err = load2Ciphertexts(environment, input)
 		if err != nil {
-			logger.Error("fheMin/Max RequiredGas() ciphertext inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("fheMin/Max RequiredGas() failed to load input ciphertexts", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
-		if lhs.fheUintType() != rhs.fheUintType() {
-			logger.Error("fheMin/Max RequiredGas() operand type mismatch", "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+		if lhs.Type() != rhs.Type() {
+			logger.Error("fheMin/Max RequiredGas() operand type mismatch", "lhs", lhs.Type(), "rhs", rhs.Type())
 			return 0
 		}
-		return environment.FhevmParams().GasCosts.FheMinMax[lhs.fheUintType()]
+		return environment.FhevmParams().GasCosts.FheMinMax[lhs.Type()]
 	} else {
-		lhs, _, err = getScalarOperands(environment, input)
+		lhs, _, loadGas, err = getScalarOperands(environment, input)
 		if err != nil {
-			logger.Error("fheMin/Max RequiredGas() scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("fheMin/Max RequiredGas() scalar failed to load input ciphertexts", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
-		return environment.FhevmParams().GasCosts.FheScalarMinMax[lhs.fheUintType()]
+		return environment.FhevmParams().GasCosts.FheScalarMinMax[lhs.Type()] + loadGas
 	}
 }
 
@@ -127,20 +130,20 @@ func fheIfThenElseRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	input = input[:minInt(96, len(input))]
 
 	logger := environment.GetLogger()
-	first, second, third, err := get3VerifiedOperands(environment, input)
+	first, second, third, loadGas, err := load3Ciphertexts(environment, input)
 	if err != nil {
-		logger.Error("IfThenElse op RequiredGas() inputs not verified", "err", err, "input", hex.EncodeToString(input))
+		logger.Error("IfThenElse op RequiredGas()failed to load input ciphertexts", "err", err, "input", hex.EncodeToString(input))
 		return 0
 	}
-	if first.fheUintType() != tfhe.FheBool {
-		logger.Error("IfThenElse op RequiredGas() invalid type for condition", "first", first.fheUintType())
+	if first.Type() != tfhe.FheBool {
+		logger.Error("IfThenElse op RequiredGas() invalid type for condition", "first", first.Type())
 		return 0
 	}
-	if second.fheUintType() != third.fheUintType() {
-		logger.Error("IfThenElse op RequiredGas() operand type mismatch", "second", second.fheUintType(), "third", third.fheUintType())
+	if second.Type() != third.Type() {
+		logger.Error("IfThenElse op RequiredGas() operand type mismatch", "second", second.Type(), "third", third.Type())
 		return 0
 	}
-	return environment.FhevmParams().GasCosts.FheIfThenElse[second.fheUintType()]
+	return environment.FhevmParams().GasCosts.FheIfThenElse[second.Type()] + loadGas
 }
 
 func fheArrayEqRequiredGas(environment EVMEnvironment, input []byte) uint64 {

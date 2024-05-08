@@ -26,12 +26,12 @@ func reencryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("reencrypt RequiredGas() input len must be 64 bytes", "input", hex.EncodeToString(input), "len", len(input))
 		return 0
 	}
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	ct, loadGas := loadCiphertext(environment, common.BytesToHash(input[0:32]))
 	if ct == nil {
 		logger.Error("reencrypt RequiredGas() input doesn't point to verified ciphertext", "input", hex.EncodeToString(input))
 		return 0
 	}
-	return environment.FhevmParams().GasCosts.FheReencrypt[ct.fheUintType()]
+	return environment.FhevmParams().GasCosts.FheReencrypt[ct.Type()] + loadGas
 }
 
 func getCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -44,9 +44,10 @@ func getCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		return 0
 	}
 
-	contractAddress := common.BytesToAddress(input[:32])
+	// TODO
+	// contractAddress := common.BytesToAddress(input[:32])
 	handle := common.BytesToHash(input[32:])
-	metadata := getCiphertextMetadataFromProtectedStorage(environment, contractAddress, handle)
+	metadata := loadCiphertextMetadata(environment, handle)
 	if metadata == nil {
 		return GetNonExistentCiphertextGas
 	}
@@ -73,12 +74,12 @@ func decryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("decrypt RequiredGas() input len must be 32 bytes", "input", hex.EncodeToString(input), "len", len(input))
 		return 0
 	}
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input))
+	ct, loadGas := loadCiphertext(environment, common.BytesToHash(input))
 	if ct == nil {
 		logger.Error("decrypt RequiredGas() input doesn't point to verified ciphertext", "input", hex.EncodeToString(input))
 		return 0
 	}
-	return environment.FhevmParams().GasCosts.FheDecrypt[ct.fheUintType()]
+	return environment.FhevmParams().GasCosts.FheDecrypt[ct.Type()] + loadGas
 }
 
 func fhePubKeyRequiredGas(environment EVMEnvironment, input []byte) uint64 {

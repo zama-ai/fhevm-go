@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
+	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 )
 
 type EVMEnvironment interface {
@@ -43,14 +44,14 @@ type EVMEnvironment interface {
 }
 
 type FhevmData struct {
-	// A map from a ciphertext hash to itself and stack depth at which it is verified
-	verifiedCiphertexts map[common.Hash]*verifiedCiphertext
+	// A map from a ciphertext hash to the ciphertext itself.
+	loadedCiphertexts map[common.Hash]*tfhe.TfheCiphertext
 
 	nextCiphertextHashOnGasEst uint256.Int
 }
 
 func NewFhevmData() FhevmData {
 	return FhevmData{
-		verifiedCiphertexts: make(map[common.Hash]*verifiedCiphertext),
+		loadedCiphertexts: make(map[common.Hash]*tfhe.TfheCiphertext),
 	}
 }

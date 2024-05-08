@@ -63,7 +63,7 @@ func applyUpperBound(rand uint64, bitsInRand int, upperBound *uint64) uint64 {
 func generateRandom(environment EVMEnvironment, caller common.Address, resultType tfhe.FheUintType, upperBound *uint64) ([]byte, error) {
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() {
-		return importRandomCiphertext(environment, resultType), nil
+		return insertRandomCiphertext(environment, resultType), nil
 	}
 
 	// Get the RNG nonce.
@@ -131,7 +131,7 @@ func generateRandom(environment EVMEnvironment, caller common.Address, resultTyp
 	randBigInt := big.NewInt(0)
 	randBigInt.SetUint64(randUint)
 	randCt.TrivialEncrypt(*randBigInt, resultType)
-	importCiphertext(environment, randCt)
+	insertCiphertextToMemory(environment, randCt)
 
 	if err != nil {
 		return nil, err

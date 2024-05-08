@@ -55,8 +55,8 @@ type GasCosts struct {
 	FheIfThenElse             map[tfhe.FheUintType]uint64
 	FheVerify                 map[tfhe.FheUintType]uint64
 	FheGetCiphertext          map[tfhe.FheUintType]uint64
-	ProtectedStorageSstoreGas map[tfhe.FheUintType]uint64
-	ProtectedStorageSloadGas  map[tfhe.FheUintType]uint64
+	FheStorageSstoreGas       map[tfhe.FheUintType]uint64
+	FheStorageSloadGas        map[tfhe.FheUintType]uint64
 }
 
 func DefaultGasCosts() GasCosts {
@@ -220,7 +220,7 @@ func DefaultGasCosts() GasCosts {
 		// TODO: The values here are chosen somewhat arbitrarily.
 		// Also, we don't take into account whether a ciphertext existed (either "current" or "original") for the given handle.
 		// Finally, costs are likely to change in the future.
-		ProtectedStorageSstoreGas: map[tfhe.FheUintType]uint64{
+		FheStorageSstoreGas: map[tfhe.FheUintType]uint64{
 			tfhe.FheUint4:   SstoreFheUint4Gas,
 			tfhe.FheUint8:   SstoreFheUint4Gas * 2,
 			tfhe.FheUint16:  SstoreFheUint4Gas * 4,
@@ -229,7 +229,7 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint128: SstoreFheUint4Gas * 32,
 			tfhe.FheUint160: SstoreFheUint4Gas * 40,
 		},
-		ProtectedStorageSloadGas: map[tfhe.FheUintType]uint64{
+		FheStorageSloadGas: map[tfhe.FheUintType]uint64{
 			tfhe.FheUint4:   SloadFheUint4Gas,
 			tfhe.FheUint8:   SloadFheUint4Gas * 2,
 			tfhe.FheUint16:  SloadFheUint4Gas * 4,
