@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
+	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -293,19 +294,22 @@ func toEVMBytes(input []byte) []byte {
 	return ret
 }
 
-func get2VerifiedOperands(environment EVMEnvironment, input []byte) (lhs *verifiedCiphertext, rhs *verifiedCiphertext, err error) {
+func load2Ciphertexts(environment EVMEnvironment, input []byte) (lhs *tfhe.TfheCiphertext, rhs *tfhe.TfheCiphertext, loadGas uint64, err error) {
 	if len(input) != 65 {
-		return nil, nil, errors.New("input needs to contain two 256-bit sized values and 1 8-bit value")
+		return nil, nil, 0, errors.New("input needs to contain two 256-bit sized values and 1 8-bit value")
 	}
-	lhs = getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	loadGasLhs := uint64(0)
+	loadGasRhs := uint64(0)
+	lhs, loadGasLhs = loadCiphertext(environment, common.BytesToHash(input[0:32]))
 	if lhs == nil {
-		return nil, nil, errors.New("unverified ciphertext handle")
+		return nil, nil, 0, errors.New("unverified ciphertext handle")
 	}
-	rhs = getVerifiedCiphertext(environment, common.BytesToHash(input[32:64]))
+	rhs, loadGasRhs = loadCiphertext(environment, common.BytesToHash(input[32:64]))
 	if rhs == nil {
-		return nil, nil, errors.New("unverified ciphertext handle")
+		return nil, nil, 0, errors.New("unverified ciphertext handle")
 	}
 	err = nil
+	loadGas = loadGasLhs + loadGasRhs
 	return
 }
 
@@ -317,33 +321,37 @@ func isScalarOp(input []byte) (bool, error) {
 	return isScalar, nil
 }
 
-func get3VerifiedOperands(environment EVMEnvironment, input []byte) (first *verifiedCiphertext, second *verifiedCiphertext, third *verifiedCiphertext, err error) {
+func load3Ciphertexts(environment EVMEnvironment, input []byte) (first *tfhe.TfheCiphertext, second *tfhe.TfheCiphertext, third *tfhe.TfheCiphertext, loadGas uint64, err error) {
 	if len(input) != 96 {
-		return nil, nil, nil, errors.New("input needs to contain three 256-bit sized values")
+		return nil, nil, nil, 0, errors.New("input needs to contain three 256-bit sized values")
 	}
-	first = getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	loadGasFirst := uint64(0)
+	loadGasSecond := uint64(0)
+	loadGasThird := uint64(0)
+	first, loadGasFirst = loadCiphertext(environment, common.BytesToHash(input[0:32]))
 	if first == nil {
-		return nil, nil, nil, errors.New("unverified ciphertext handle")
+		return nil, nil, nil, 0, errors.New("unverified ciphertext handle")
 	}
-	second = getVerifiedCiphertext(environment, common.BytesToHash(input[32:64]))
+	second, loadGasSecond = loadCiphertext(environment, common.BytesToHash(input[32:64]))
 	if second == nil {
-		return nil, nil, nil, errors.New("unverified ciphertext handle")
+		return nil, nil, nil, 0, errors.New("unverified ciphertext handle")
 	}
-	third = getVerifiedCiphertext(environment, common.BytesToHash(input[64:96]))
+	third, loadGasThird = loadCiphertext(environment, common.BytesToHash(input[64:96]))
 	if third == nil {
-		return nil, nil, nil, errors.New("unverified ciphertext handle")
+		return nil, nil, nil, 0, errors.New("unverified ciphertext handle")
 	}
 	err = nil
+	loadGas = loadGasFirst + loadGasSecond + loadGasThird
 	return
 }
 
-func getScalarOperands(environment EVMEnvironment, input []byte) (lhs *verifiedCiphertext, rhs *big.Int, err error) {
+func getScalarOperands(environment EVMEnvironment, input []byte) (lhs *tfhe.TfheCiphertext, rhs *big.Int, loadGas uint64, err error) {
 	if len(input) != 65 {
-		return nil, nil, errors.New("input needs to contain two 256-bit sized values and 1 8-bit value")
+		return nil, nil, 0, errors.New("input needs to contain two 256-bit sized values and 1 8-bit value")
 	}
-	lhs = getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	lhs, loadGas = loadCiphertext(environment, common.BytesToHash(input[0:32]))
 	if lhs == nil {
-		return nil, nil, errors.New("unverified ciphertext handle")
+		return nil, nil, 0, errors.New("failed to load ciphertext")
 	}
 	rhs = &big.Int{}
 	rhs.SetBytes(input[32:64])

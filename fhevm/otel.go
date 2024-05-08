@@ -18,15 +18,14 @@ type operand interface {
 }
 
 type plainOperand big.Int
-type encryptedOperand verifiedCiphertext
+type encryptedOperand tfhe.TfheCiphertext
 
 func (plainOperand) typeName() string {
 	return "plainScalar"
 }
 
 func (op encryptedOperand) typeName() string {
-	ct := verifiedCiphertext(op)
-	return ct.fheUintType().String()
+	return op.FheUintType.String()
 }
 
 func otelDescribeOperands(span trace.Span, operands ...operand) {

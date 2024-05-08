@@ -60,7 +60,7 @@ func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr
 
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() && !environment.IsEthCall() {
-		return importRandomCiphertext(environment, ctType), nil
+		return insertRandomCiphertext(environment, ctType), nil
 	}
 
 	ct := new(tfhe.TfheCiphertext)
@@ -73,7 +73,7 @@ func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr
 		return nil, err
 	}
 	ctHash := ct.GetHash()
-	importCiphertext(environment, ct)
+	insertCiphertextToMemory(environment, ct)
 	if environment.IsCommitting() {
 		logger.Info("verifyCiphertext success",
 			"ctHash", ctHash.Hex(),
@@ -97,12 +97,13 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 		logger.Error(msg, "input", hex.EncodeToString(input), "len", len(input))
 		return nil, errors.New(msg)
 	}
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	handle := common.BytesToHash(input[0:32])
+	ct, _ := loadCiphertext(environment, handle)
 	if ct != nil {
-		otelDescribeOperandsFheTypes(runSpan, ct.fheUintType())
+		otelDescribeOperandsFheTypes(runSpan, ct.Type())
 
 		var fheType kms.FheType
-		switch ct.fheUintType() {
+		switch ct.Type() {
 		case tfhe.FheBool:
 			fheType = kms.FheType_Bool
 		case tfhe.FheUint4:
@@ -129,7 +130,7 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 
 		reencryptionRequest := &kms.ReencryptionRequest{
 			FheType:    fheType,
-			Ciphertext: ct.serialization(),
+			Ciphertext: ct.Serialize(),
 			Request:    pubKey, // TODO: change according to the structure of `Request`
 			Proof:      proof,
 		}
@@ -162,7 +163,7 @@ func reencryptRun(environment EVMEnvironment, caller common.Address, addr common
 		outputBytes = append(outputBytes, reencryptedValue...)
 		return padArrayTo32Multiple(outputBytes), nil
 	}
-	msg := "reencrypt unverified ciphertext handle"
+	msg := "reencrypt could not load ciphertext handle"
 	logger.Error(msg, "input", hex.EncodeToString(input))
 	return nil, errors.New(msg)
 }
@@ -182,13 +183,13 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 		logger.Error(msg, "input", hex.EncodeToString(input), "len", len(input))
 		return nil, errors.New(msg)
 	}
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input))
+	ct, _ := loadCiphertext(environment, common.BytesToHash(input))
 	if ct == nil {
 		msg := "decrypt unverified handle"
 		logger.Error(msg, "input", hex.EncodeToString(input))
 		return nil, errors.New(msg)
 	}
-	otelDescribeOperandsFheTypes(runSpan, ct.fheUintType())
+	otelDescribeOperandsFheTypes(runSpan, ct.Type())
 
 	// If we are doing gas estimation, skip decryption and make sure we return the maximum possible value.
 	// We need that, because non-zero bytes cost more than zero bytes in some contexts (e.g. SSTORE or memory operations).
@@ -196,7 +197,7 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 		return bytes.Repeat([]byte{0xFF}, 32), nil
 	}
 
-	plaintext, err := decryptValue(environment, ct.ciphertext)
+	plaintext, err := decryptValue(environment, ct)
 	if err != nil {
 		logger.Error("decrypt failed", "err", err)
 		return nil, err
@@ -225,15 +226,16 @@ func getCiphertextRun(environment EVMEnvironment, caller common.Address, addr co
 		return nil, errors.New(msg)
 	}
 
-	contractAddress := common.BytesToAddress(input[:32])
+	// TODO
+	// contractAddress := common.BytesToAddress(input[:32])
 	handle := common.BytesToHash(input[32:])
 
-	ciphertext := getCiphertextFromProtectedStoage(environment, contractAddress, handle)
+	ciphertext, _ := loadCiphertext(environment, handle)
 	if ciphertext == nil {
 		return make([]byte, 0), nil
 	}
-	otelDescribeOperandsFheTypes(runSpan, ciphertext.metadata.fheUintType)
-	return ciphertext.bytes, nil
+	otelDescribeOperandsFheTypes(runSpan, ciphertext.FheUintType)
+	return ciphertext.Serialize(), nil
 }
 
 func decryptValue(environment EVMEnvironment, ct *tfhe.TfheCiphertext) (*big.Int, error) {
@@ -307,7 +309,7 @@ func castRun(environment EVMEnvironment, caller common.Address, addr common.Addr
 		return nil, errors.New(msg)
 	}
 
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	ct, _ := loadCiphertext(environment, common.BytesToHash(input[0:32]))
 	if ct == nil {
 		logger.Error("cast input not verified")
 		return nil, errors.New("unverified ciphertext handle")
@@ -319,14 +321,14 @@ func castRun(environment EVMEnvironment, caller common.Address, addr common.Addr
 	}
 	castToType := tfhe.FheUintType(input[32])
 
-	otelDescribeOperandsFheTypes(runSpan, ct.fheUintType(), castToType)
+	otelDescribeOperandsFheTypes(runSpan, ct.Type(), castToType)
 
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() && !environment.IsEthCall() {
-		return importRandomCiphertext(environment, castToType), nil
+		return insertRandomCiphertext(environment, castToType), nil
 	}
 
-	res, err := ct.ciphertext.CastTo(castToType)
+	res, err := ct.CastTo(castToType)
 	if err != nil {
 		msg := "cast Run() error casting ciphertext to"
 		logger.Error(msg, "type", castToType)
@@ -335,7 +337,7 @@ func castRun(environment EVMEnvironment, caller common.Address, addr common.Addr
 
 	resHash := res.GetHash()
 
-	importCiphertext(environment, res)
+	insertCiphertextToMemory(environment, res)
 	if environment.IsCommitting() {
 		logger.Info("cast success",
 			"ctHash", resHash.Hex(),
@@ -390,7 +392,7 @@ func trivialEncryptRun(environment EVMEnvironment, caller common.Address, addr c
 	ct := new(tfhe.TfheCiphertext).TrivialEncrypt(valueToEncrypt, encryptToType)
 
 	ctHash := ct.GetHash()
-	importCiphertext(environment, ct)
+	insertCiphertextToMemory(environment, ct)
 	if environment.IsCommitting() {
 		logger.Info("trivialEncrypt success",
 			"ctHash", ctHash.Hex(),

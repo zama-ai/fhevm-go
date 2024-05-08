@@ -20,56 +20,56 @@ func fheShlRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 
 	if !isScalar {
-		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		lhs, rhs, _, err := load2Ciphertexts(environment, input)
 		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
-			logger.Error("fheShl inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("fheShl failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
 		}
-		if lhs.fheUintType() != rhs.fheUintType() {
+		if lhs.Type() != rhs.Type() {
 			msg := "fheShl operand type mismatch"
-			logger.Error(msg, "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+			logger.Error(msg, "lhs", lhs.Type(), "rhs", rhs.Type())
 			return nil, errors.New(msg)
 		}
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, lhs.fheUintType()), nil
+			return insertRandomCiphertext(environment, lhs.Type()), nil
 		}
 
-		result, err := lhs.ciphertext.Shl(rhs.ciphertext)
+		result, err := lhs.Shl(rhs)
 		if err != nil {
 			logger.Error("fheShl failed", "err", err)
 			return nil, err
 		}
-		importCiphertext(environment, result)
+		insertCiphertextToMemory(environment, result)
 
 		resultHash := result.GetHash()
-		logger.Info("fheShl success", "lhs", lhs.hash().Hex(), "rhs", rhs.hash().Hex(), "result", resultHash.Hex())
+		logger.Info("fheShl success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.GetHash().Hex(), "result", resultHash.Hex())
 		return resultHash[:], nil
 
 	} else {
-		lhs, rhs, err := getScalarOperands(environment, input)
+		lhs, rhs, _, err := getScalarOperands(environment, input)
 		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
-			logger.Error("fheShl scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("fheShl scalar failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
 		}
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, lhs.fheUintType()), nil
+			return insertRandomCiphertext(environment, lhs.Type()), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarShl(rhs)
+		result, err := lhs.ScalarShl(rhs)
 		if err != nil {
 			logger.Error("fheShl failed", "err", err)
 			return nil, err
 		}
-		importCiphertext(environment, result)
+		insertCiphertextToMemory(environment, result)
 
 		resultHash := result.GetHash()
-		logger.Info("fheShl scalar success", "lhs", lhs.hash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
+		logger.Info("fheShl scalar success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
 		return resultHash[:], nil
 	}
 }
@@ -86,60 +86,59 @@ func fheShrRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 	}
 
 	if !isScalar {
-		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		lhs, rhs, _, err := load2Ciphertexts(environment, input)
 		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
-			logger.Error("fheShr inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("fheShr failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
 		}
-		if lhs.fheUintType() != rhs.fheUintType() {
+		if lhs.Type() != rhs.Type() {
 			msg := "fheShr operand type mismatch"
-			logger.Error(msg, "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+			logger.Error(msg, "lhs", lhs.Type(), "rhs", rhs.Type())
 			return nil, errors.New(msg)
 		}
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, lhs.fheUintType()), nil
+			return insertRandomCiphertext(environment, lhs.Type()), nil
 		}
 
-		result, err := lhs.ciphertext.Shr(rhs.ciphertext)
+		result, err := lhs.Shr(rhs)
 		if err != nil {
 			logger.Error("fheShr failed", "err", err)
 			return nil, err
 		}
-		importCiphertext(environment, result)
+		insertCiphertextToMemory(environment, result)
 
 		resultHash := result.GetHash()
-		logger.Info("fheShr success", "lhs", lhs.hash().Hex(), "rhs", rhs.hash().Hex(), "result", resultHash.Hex())
+		logger.Info("fheShr success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.GetHash().Hex(), "result", resultHash.Hex())
 		return resultHash[:], nil
 
 	} else {
-		lhs, rhs, err := getScalarOperands(environment, input)
+		lhs, rhs, _, err := getScalarOperands(environment, input)
 		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
-			logger.Error("fheShr scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("fheShr scalar failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
 		}
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, lhs.fheUintType()), nil
+			return insertRandomCiphertext(environment, lhs.Type()), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarShr(rhs)
+		result, err := lhs.ScalarShr(rhs)
 		if err != nil {
 			logger.Error("fheShr failed", "err", err)
 			return nil, err
 		}
-		importCiphertext(environment, result)
+		insertCiphertextToMemory(environment, result)
 
 		resultHash := result.GetHash()
-		logger.Info("fheShr scalar success", "lhs", lhs.hash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
+		logger.Info("fheShr scalar success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
 		return resultHash[:], nil
 	}
 }
-
 
 func fheRotlRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(65, len(input))]
@@ -153,56 +152,56 @@ func fheRotlRun(environment EVMEnvironment, caller common.Address, addr common.A
 	}
 
 	if !isScalar {
-		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		lhs, rhs, _, err := load2Ciphertexts(environment, input)
 		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
-			logger.Error("fheShl inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("fheShl failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
 		}
-		if lhs.fheUintType() != rhs.fheUintType() {
+		if lhs.Type() != rhs.Type() {
 			msg := "fheShl operand type mismatch"
-			logger.Error(msg, "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+			logger.Error(msg, "lhs", lhs.Type(), "rhs", rhs.Type())
 			return nil, errors.New(msg)
 		}
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, lhs.fheUintType()), nil
+			return insertRandomCiphertext(environment, lhs.Type()), nil
 		}
 
-		result, err := lhs.ciphertext.Rotl(rhs.ciphertext)
+		result, err := lhs.Rotl(rhs)
 		if err != nil {
 			logger.Error("fheRotl failed", "err", err)
 			return nil, err
 		}
-		importCiphertext(environment, result)
+		insertCiphertextToMemory(environment, result)
 
 		resultHash := result.GetHash()
-		logger.Info("fheRotl success", "lhs", lhs.hash().Hex(), "rhs", rhs.hash().Hex(), "result", resultHash.Hex())
+		logger.Info("fheRotl success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.GetHash().Hex(), "result", resultHash.Hex())
 		return resultHash[:], nil
 
 	} else {
-		lhs, rhs, err := getScalarOperands(environment, input)
+		lhs, rhs, _, err := getScalarOperands(environment, input)
 		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
-			logger.Error("fheRotl scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("fheRotl scalar failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
 		}
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, lhs.fheUintType()), nil
+			return insertRandomCiphertext(environment, lhs.Type()), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarRotl(rhs)
+		result, err := lhs.ScalarRotl(rhs)
 		if err != nil {
 			logger.Error("fheRotl failed", "err", err)
 			return nil, err
 		}
-		importCiphertext(environment, result)
+		insertCiphertextToMemory(environment, result)
 
 		resultHash := result.GetHash()
-		logger.Info("fheRotl scalar success", "lhs", lhs.hash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
+		logger.Info("fheRotl scalar success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
 		return resultHash[:], nil
 	}
 }
@@ -219,56 +218,56 @@ func fheRotrRun(environment EVMEnvironment, caller common.Address, addr common.A
 	}
 
 	if !isScalar {
-		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		lhs, rhs, _, err := load2Ciphertexts(environment, input)
 		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
-			logger.Error("fheRotr inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("fheRotr failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
 		}
-		if lhs.fheUintType() != rhs.fheUintType() {
+		if lhs.Type() != rhs.Type() {
 			msg := "fheRotr operand type mismatch"
-			logger.Error(msg, "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+			logger.Error(msg, "lhs", lhs.Type(), "rhs", rhs.Type())
 			return nil, errors.New(msg)
 		}
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, lhs.fheUintType()), nil
+			return insertRandomCiphertext(environment, lhs.Type()), nil
 		}
 
-		result, err := lhs.ciphertext.Rotr(rhs.ciphertext)
+		result, err := lhs.Rotr(rhs)
 		if err != nil {
 			logger.Error("fheRotr failed", "err", err)
 			return nil, err
 		}
-		importCiphertext(environment, result)
+		insertCiphertextToMemory(environment, result)
 
 		resultHash := result.GetHash()
-		logger.Info("fheRotr success", "lhs", lhs.hash().Hex(), "rhs", rhs.hash().Hex(), "result", resultHash.Hex())
+		logger.Info("fheRotr success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.GetHash().Hex(), "result", resultHash.Hex())
 		return resultHash[:], nil
 
 	} else {
-		lhs, rhs, err := getScalarOperands(environment, input)
+		lhs, rhs, _, err := getScalarOperands(environment, input)
 		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
-			logger.Error("fheRotr scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("fheRotr scalar failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
 		}
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
-			return importRandomCiphertext(environment, lhs.fheUintType()), nil
+			return insertRandomCiphertext(environment, lhs.Type()), nil
 		}
 
-		result, err := lhs.ciphertext.ScalarRotr(rhs)
+		result, err := lhs.ScalarRotr(rhs)
 		if err != nil {
 			logger.Error("fheRotr failed", "err", err)
 			return nil, err
 		}
-		importCiphertext(environment, result)
+		insertCiphertextToMemory(environment, result)
 
 		resultHash := result.GetHash()
-		logger.Info("fheRotr scalar success", "lhs", lhs.hash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
+		logger.Info("fheRotr scalar success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
 		return resultHash[:], nil
 	}
 }
@@ -285,28 +284,28 @@ func fheNegRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	}
 
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	ct, _ := loadCiphertext(environment, common.BytesToHash(input[0:32]))
 	if ct == nil {
-		msg := "fheNeg input not verified"
+		msg := "fheNeg failed to load input"
 		logger.Error(msg, msg, "input", hex.EncodeToString(input))
 		return nil, errors.New(msg)
 	}
-	otelDescribeOperandsFheTypes(runSpan, ct.fheUintType())
+	otelDescribeOperandsFheTypes(runSpan, ct.Type())
 
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() && !environment.IsEthCall() {
-		return importRandomCiphertext(environment, ct.fheUintType()), nil
+		return insertRandomCiphertext(environment, ct.Type()), nil
 	}
 
-	result, err := ct.ciphertext.Neg()
+	result, err := ct.Neg()
 	if err != nil {
 		logger.Error("fheNeg failed", "err", err)
 		return nil, err
 	}
-	importCiphertext(environment, result)
+	insertCiphertextToMemory(environment, result)
 
 	resultHash := result.GetHash()
-	logger.Info("fheNeg success", "ct", ct.hash().Hex(), "result", resultHash.Hex())
+	logger.Info("fheNeg success", "ct", ct.GetHash().Hex(), "result", resultHash.Hex())
 	return resultHash[:], nil
 }
 
@@ -322,28 +321,28 @@ func fheNotRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	}
 
-	ct := getVerifiedCiphertext(environment, common.BytesToHash(input[0:32]))
+	ct, _ := loadCiphertext(environment, common.BytesToHash(input[0:32]))
 	if ct == nil {
-		msg := "fheNot input not verified"
+		msg := "fheNot failed to load input"
 		logger.Error(msg, msg, "input", hex.EncodeToString(input))
 		return nil, errors.New(msg)
 	}
-	otelDescribeOperandsFheTypes(runSpan, ct.fheUintType())
+	otelDescribeOperandsFheTypes(runSpan, ct.Type())
 
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() && !environment.IsEthCall() {
-		return importRandomCiphertext(environment, ct.fheUintType()), nil
+		return insertRandomCiphertext(environment, ct.Type()), nil
 	}
 
-	result, err := ct.ciphertext.Not()
+	result, err := ct.Not()
 	if err != nil {
 		logger.Error("fheNot failed", "err", err)
 		return nil, err
 	}
-	importCiphertext(environment, result)
+	insertCiphertextToMemory(environment, result)
 
 	resultHash := result.GetHash()
-	logger.Info("fheNot success", "ct", ct.hash().Hex(), "result", resultHash.Hex())
+	logger.Info("fheNot success", "ct", ct.GetHash().Hex(), "result", resultHash.Hex())
 	return resultHash[:], nil
 }
 
@@ -364,33 +363,33 @@ func fheBitAndRun(environment EVMEnvironment, caller common.Address, addr common
 		return nil, errors.New(msg)
 	}
 
-	lhs, rhs, err := get2VerifiedOperands(environment, input)
+	lhs, rhs, _, err := load2Ciphertexts(environment, input)
 	otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 	if err != nil {
-		logger.Error("fheBitAnd inputs not verified", "err", err)
+		logger.Error("fheBitAnd failed to load inputs", "err", err)
 		return nil, err
 	}
 
-	if lhs.fheUintType() != rhs.fheUintType() {
+	if lhs.Type() != rhs.Type() {
 		msg := "fheBitAnd operand type mismatch"
-		logger.Error(msg, "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+		logger.Error(msg, "lhs", lhs.Type(), "rhs", rhs.Type())
 		return nil, errors.New(msg)
 	}
 
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() && !environment.IsEthCall() {
-		return importRandomCiphertext(environment, lhs.fheUintType()), nil
+		return insertRandomCiphertext(environment, lhs.Type()), nil
 	}
 
-	result, err := lhs.ciphertext.Bitand(rhs.ciphertext)
+	result, err := lhs.Bitand(rhs)
 	if err != nil {
 		logger.Error("fheBitAnd failed", "err", err)
 		return nil, err
 	}
-	importCiphertext(environment, result)
+	insertCiphertextToMemory(environment, result)
 
 	resultHash := result.GetHash()
-	logger.Info("fheBitAnd success", "lhs", lhs.hash().Hex(), "rhs", rhs.hash().Hex(), "result", resultHash.Hex())
+	logger.Info("fheBitAnd success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.GetHash().Hex(), "result", resultHash.Hex())
 	return resultHash[:], nil
 }
 
@@ -411,33 +410,33 @@ func fheBitOrRun(environment EVMEnvironment, caller common.Address, addr common.
 		return nil, errors.New(msg)
 	}
 
-	lhs, rhs, err := get2VerifiedOperands(environment, input)
+	lhs, rhs, _, err := load2Ciphertexts(environment, input)
 	otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 	if err != nil {
-		logger.Error("fheBitOr inputs not verified", "err", err)
+		logger.Error("fheBitOr failed to load inputs", "err", err)
 		return nil, err
 	}
 
-	if lhs.fheUintType() != rhs.fheUintType() {
+	if lhs.Type() != rhs.Type() {
 		msg := "fheBitOr operand type mismatch"
-		logger.Error(msg, "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+		logger.Error(msg, "lhs", lhs.Type(), "rhs", rhs.Type())
 		return nil, errors.New(msg)
 	}
 
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() && !environment.IsEthCall() {
-		return importRandomCiphertext(environment, lhs.fheUintType()), nil
+		return insertRandomCiphertext(environment, lhs.Type()), nil
 	}
 
-	result, err := lhs.ciphertext.Bitor(rhs.ciphertext)
+	result, err := lhs.Bitor(rhs)
 	if err != nil {
 		logger.Error("fheBitOr failed", "err", err)
 		return nil, err
 	}
-	importCiphertext(environment, result)
+	insertCiphertextToMemory(environment, result)
 
 	resultHash := result.GetHash()
-	logger.Info("fheBitOr success", "lhs", lhs.hash().Hex(), "rhs", rhs.hash().Hex(), "result", resultHash.Hex())
+	logger.Info("fheBitOr success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.GetHash().Hex(), "result", resultHash.Hex())
 	return resultHash[:], nil
 }
 
@@ -458,32 +457,32 @@ func fheBitXorRun(environment EVMEnvironment, caller common.Address, addr common
 		return nil, errors.New(msg)
 	}
 
-	lhs, rhs, err := get2VerifiedOperands(environment, input)
+	lhs, rhs, _, err := load2Ciphertexts(environment, input)
 	otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 	if err != nil {
-		logger.Error("fheBitXor inputs not verified", "err", err)
+		logger.Error("fheBitXor failed to load inputs", "err", err)
 		return nil, err
 	}
 
-	if lhs.fheUintType() != rhs.fheUintType() {
+	if lhs.Type() != rhs.Type() {
 		msg := "fheBitXor operand type mismatch"
-		logger.Error(msg, "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+		logger.Error(msg, "lhs", lhs.Type(), "rhs", rhs.Type())
 		return nil, errors.New(msg)
 	}
 
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() && !environment.IsEthCall() {
-		return importRandomCiphertext(environment, lhs.fheUintType()), nil
+		return insertRandomCiphertext(environment, lhs.Type()), nil
 	}
 
-	result, err := lhs.ciphertext.Bitxor(rhs.ciphertext)
+	result, err := lhs.Bitxor(rhs)
 	if err != nil {
 		logger.Error("fheBitXor failed", "err", err)
 		return nil, err
 	}
-	importCiphertext(environment, result)
+	insertCiphertextToMemory(environment, result)
 
 	resultHash := result.GetHash()
-	logger.Info("fheBitXor success", "lhs", lhs.hash().Hex(), "rhs", rhs.hash().Hex(), "result", resultHash.Hex())
+	logger.Info("fheBitXor success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.GetHash().Hex(), "result", resultHash.Hex())
 	return resultHash[:], nil
 }

@@ -1,6 +1,10 @@
 package fhevm
 
-import "encoding/hex"
+import (
+	"encoding/hex"
+
+	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
+)
 
 func fheAddSubRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	input = input[:minInt(65, len(input))]
@@ -11,26 +15,27 @@ func fheAddSubRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("fheAdd/Sub RequiredGas() can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
 		return 0
 	}
-	var lhs, rhs *verifiedCiphertext
+	loadGas := uint64(0)
+	var lhs, rhs *tfhe.TfheCiphertext
 	if !isScalar {
-		lhs, rhs, err = get2VerifiedOperands(environment, input)
+		lhs, rhs, loadGas, err = load2Ciphertexts(environment, input)
 		if err != nil {
-			logger.Error("fheAdd/Sub RequiredGas() ciphertext inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("fheAdd/Sub RequiredGas() ciphertext failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
-		if lhs.fheUintType() != rhs.fheUintType() {
-			logger.Error("fheAdd/Sub RequiredGas() operand type mismatch", "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+		if lhs.Type() != rhs.Type() {
+			logger.Error("fheAdd/Sub RequiredGas() operand type mismatch", "lhs", lhs.Type(), "rhs", rhs.Type())
 			return 0
 		}
 	} else {
-		lhs, _, err = getScalarOperands(environment, input)
+		lhs, _, loadGas, err = getScalarOperands(environment, input)
 		if err != nil {
-			logger.Error("fheAdd/Sub RequiredGas() scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("fheAdd/Sub RequiredGas() scalar failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
 	}
 
-	return environment.FhevmParams().GasCosts.FheAddSub[lhs.fheUintType()]
+	return environment.FhevmParams().GasCosts.FheAddSub[lhs.Type()] + loadGas
 }
 
 func fheMulRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -42,25 +47,26 @@ func fheMulRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("fheMul RequiredGas() can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
 		return 0
 	}
-	var lhs, rhs *verifiedCiphertext
+	loadGas := uint64(0)
+	var lhs, rhs *tfhe.TfheCiphertext
 	if !isScalar {
-		lhs, rhs, err = get2VerifiedOperands(environment, input)
+		lhs, rhs, loadGas, err = load2Ciphertexts(environment, input)
 		if err != nil {
-			logger.Error("fheMul RequiredGas() ciphertext inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("fheMul RequiredGas() ciphertext failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
-		if lhs.fheUintType() != rhs.fheUintType() {
-			logger.Error("fheMul RequiredGas() operand type mismatch", "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+		if lhs.Type() != rhs.Type() {
+			logger.Error("fheMul RequiredGas() operand type mismatch", "lhs", lhs.Type(), "rhs", rhs.Type())
 			return 0
 		}
-		return environment.FhevmParams().GasCosts.FheMul[lhs.fheUintType()]
+		return environment.FhevmParams().GasCosts.FheMul[lhs.Type()]
 	} else {
-		lhs, _, err = getScalarOperands(environment, input)
+		lhs, _, loadGas, err = getScalarOperands(environment, input)
 		if err != nil {
-			logger.Error("fheMul RequiredGas() scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("fheMul RequiredGas() scalar failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
-		return environment.FhevmParams().GasCosts.FheScalarMul[lhs.fheUintType()]
+		return environment.FhevmParams().GasCosts.FheScalarMul[lhs.Type()] + loadGas
 	}
 }
 
@@ -73,17 +79,18 @@ func fheDivRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("fheDiv RequiredGas() cannot detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
 		return 0
 	}
-	var lhs *verifiedCiphertext
+	loadGas := uint64(0)
+	var lhs *tfhe.TfheCiphertext
 	if !isScalar {
 		logger.Error("fheDiv RequiredGas() only scalar in division is supported, two ciphertexts received", "input", hex.EncodeToString(input))
 		return 0
 	} else {
-		lhs, _, err = getScalarOperands(environment, input)
+		lhs, _, loadGas, err = getScalarOperands(environment, input)
 		if err != nil {
-			logger.Error("fheDiv RequiredGas() scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("fheDiv RequiredGas() scalar failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
-		return environment.FhevmParams().GasCosts.FheScalarDiv[lhs.fheUintType()]
+		return environment.FhevmParams().GasCosts.FheScalarDiv[lhs.Type()] + loadGas
 	}
 }
 
@@ -96,16 +103,17 @@ func fheRemRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("fheRem RequiredGas() cannot detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
 		return 0
 	}
-	var lhs *verifiedCiphertext
+	var lhs *tfhe.TfheCiphertext
+	loadGas := uint64(0)
 	if !isScalar {
 		logger.Error("fheRem RequiredGas() only scalar in division is supported, two ciphertexts received", "input", hex.EncodeToString(input))
 		return 0
 	} else {
-		lhs, _, err = getScalarOperands(environment, input)
+		lhs, _, loadGas, err = getScalarOperands(environment, input)
 		if err != nil {
-			logger.Error("fheRem RequiredGas() scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			logger.Error("fheRem RequiredGas() scalar failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return 0
 		}
-		return environment.FhevmParams().GasCosts.FheScalarRem[lhs.fheUintType()]
+		return environment.FhevmParams().GasCosts.FheScalarRem[lhs.Type()] + loadGas
 	}
 }
