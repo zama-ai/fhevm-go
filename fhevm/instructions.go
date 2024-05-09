@@ -38,6 +38,16 @@ func getVerifiedCiphertextFromEVM(environment EVMEnvironment, ciphertextHash com
 	return nil
 }
 
+// Returns the type of the verified ciphertext for `ciphertextHash` or nil if it doesn't exist or not verified at current depth.
+func GetTypeOfVerifiedCiphertext(env EVMEnvironment, ciphertextHash common.Hash) *tfhe.FheUintType {
+	ct := getVerifiedCiphertextFromEVM(env, ciphertextHash)
+	if ct == nil {
+		return nil
+	}
+	t := ct.ciphertext.Type()
+	return &t
+}
+
 func verifyIfCiphertextHandle(handle common.Hash, env EVMEnvironment, contractAddress common.Address) error {
 	ct, ok := env.FhevmData().verifiedCiphertexts[handle]
 	if ok {

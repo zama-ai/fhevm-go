@@ -56,6 +56,16 @@ type ciphertextData struct {
 	bytes    []byte
 }
 
+// Returns the type of the persisted ciphertext for `handle` in protected storage or nil if `handle`doesn't point to a persisted ciphertext.
+func GetTypeOfPersistedCiphertext(env EVMEnvironment, contractAddress common.Address, handle common.Hash) *tfhe.FheUintType {
+	metadata := getCiphertextMetadataFromProtectedStorage(env, contractAddress, handle)
+	if metadata == nil {
+		return nil
+	}
+	t := metadata.fheUintType
+	return &t
+}
+
 func getCiphertextMetadataKey(handle common.Hash) common.Hash {
 	return crypto.Keccak256Hash(handle.Bytes())
 }
