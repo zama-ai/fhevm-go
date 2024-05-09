@@ -65,13 +65,3 @@ func (vc *verifiedCiphertext) serialization() []byte {
 func (vc *verifiedCiphertext) hash() common.Hash {
 	return vc.ciphertext.GetHash()
 }
-
-type PrivilegedMemory struct {
-	// A map from a ciphertext hash to itself and stack depths at which it is verified
-	VerifiedCiphertexts map[common.Hash]*verifiedCiphertext
-}
-
-var PrivilegedMempory *PrivilegedMemory = &PrivilegedMemory{
-	make(map[common.Hash]*verifiedCiphertext),
-}
-
