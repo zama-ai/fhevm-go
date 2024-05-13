@@ -45,7 +45,7 @@ type EVMEnvironment interface {
 type FhevmData struct {
 	// A map from a ciphertext hash to itself and stack depth at which it is verified
 	verifiedCiphertexts map[common.Hash]*verifiedCiphertext
-
+	verifiedInputs map[common.Hash]*verifiedInputs
 	nextCiphertextHashOnGasEst uint256.Int
 }
 

@@ -51,6 +51,11 @@ type verifiedCiphertext struct {
 	ciphertext     *tfhe.TfheCiphertext
 }
 
+type verifiedInputs struct {
+	verifiedDepths *depthSet
+	inputs     *tfhe.TfheInputs
+}
+
 // Returns the type of the verified ciphertext
 func (vc *verifiedCiphertext) fheUintType() tfhe.FheUintType {
 	return vc.ciphertext.FheUintType

@@ -239,6 +239,18 @@ var fhelibMethods = []*FheLibMethod{
 		runFunction:         verifyCiphertextRun,
 	},
 	{
+		name:                "getVerifiedInputs",
+		argTypes:            "(bytes)",
+		requiredGasFunction: verifyCiphertextRequiredGas,
+		runFunction:         getVerifiedInputsRun,
+	},
+	{
+		name:                "nextCiphertextFromInputs",
+		argTypes:            "(bytes)",
+		requiredGasFunction: verifyCiphertextRequiredGas,
+		runFunction:         nextCiphertextFromInputsRun,
+	},
+	{
 		name:                "getCiphertext",
 		argTypes:            "(address,uint256)",
 		requiredGasFunction: getCiphertextRequiredGas,
@@ -251,7 +263,6 @@ func init() {
 	for _, method := range fhelibMethods {
 		signatureToFheLibMethod[method.Signature()] = method
 	}
-
 }
 
 func minInt(a int, b int) int {

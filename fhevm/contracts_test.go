@@ -157,22 +157,8 @@ func prepareInputForVerifyCiphertext(input []byte) []byte {
 	return append(append(padding, size...), input...)
 }
 
-func VerifyCiphertext(t *testing.T, fheUintType tfhe.FheUintType) {
-	var value uint64
-	switch fheUintType {
-	case tfhe.FheBool:
-		value = 1
-	case tfhe.FheUint4:
-		value = 4
-	case tfhe.FheUint8:
-		value = 234
-	case tfhe.FheUint16:
-		value = 4283
-	case tfhe.FheUint32:
-		value = 1333337
-	case tfhe.FheUint64:
-		value = 13333377777777777
-	}
+func GetVerifiedInputs(t *testing.T, fheUintType tfhe.FheUintType) {
+	values := []big.Int{*new(big.Int).SetUint64(1337), *new(big.Int).SetUint64(28372728929922)}
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth

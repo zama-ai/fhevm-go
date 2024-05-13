@@ -55,11 +55,15 @@ void* deserialize_fhe_uint64(DynamicBufferView in);
 
 void* deserialize_compact_fhe_uint64(DynamicBufferView in);
 
+int serialize_fhe_compact_list_uint160(void *ct, DynamicBuffer* out);
+
 int serialize_fhe_uint160(void *ct, DynamicBuffer* out);
 
 void* deserialize_fhe_uint160(DynamicBufferView in);
 
 void* deserialize_compact_fhe_uint160(DynamicBufferView in);
+
+void* deserialize_compact_list(DynamicBufferView in);
 
 void destroy_fhe_bool(void* ct);
 
@@ -74,6 +78,8 @@ void destroy_fhe_uint32(void* ct);
 void destroy_fhe_uint64(void* ct);
 
 void destroy_fhe_uint160(void* ct);
+
+void destroy_compact_fhe_uint160_list(void* ct);
 
 void* add_fhe_uint4(void* ct1, void* ct2, void* sks);
 

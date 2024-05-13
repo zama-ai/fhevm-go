@@ -17,6 +17,69 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+func GetTrivialEncrypt0(t FheType) {
+		ct := new(tfhe.TfheCiphertext).TrivialEncrypt(*big.NewInt(0), t)
+		ctHash := ct.GetHash()
+		importCiphertext(environment, ct)
+		return ct
+}
+
+func getVerifiedInputsRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+	logger := environment.GetLogger()
+	// first 32 bytes of the payload is offset, then 32 bytes are size of byte array
+	if len(input) <= 68 {
+		err := errors.New("getVerifiedInputs(bytes) must contain at least 68 bytes for selector, byte offset and size")
+		logger.Error("fheLib precompile error", "err", err, "input", hex.EncodeToString(input))
+		inputs := new(tfhe.TfheInputs).Empty()
+		importInputs(environment, inputs)
+		return nil, nil
+	}
+	bytesPaddingSize := 32
+	bytesSizeSlotSize := 32
+	// read only last 4 bytes of padded number for byte array size
+	sizeStart := bytesPaddingSize + bytesSizeSlotSize - 4
+	sizeEnd := sizeStart + 
+	bytesSize := binary.BigEndian.Uint32(input[sizeStart:sizeEnd])
+	bytesStart := bytesPaddingSize + bytesSizeSlotSize
+	bytesEnd := bytesStart + int(bytesSize)
+	input = input[bytesStart:minInt(bytesEnd, len(input))]
+
+	if len(input) <= 1 {
+		msg := "getVerifiedInputs Run() input needs to contain a ciphertext and one byte for its type"
+		logger.Error(msg, "len", len(input))
+		inputs := new(tfhe.TfheInputs).Empty()
+		return importInputs(environment, inputs).GetHash().Bytes()
+	}
+
+	inputsBytes := input[:len(input)-1]
+	ctType := tfhe.FheUint160
+
+	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+	if !environment.IsCommitting() && !environment.IsEthCall() {
+		inputs := new(tfhe.TfheInputs).Empty()
+		return importInputs(environment, inputs).GetHash().Bytes()
+	}
+
+	inputs := new(tfhe.TfheInputs)
+	err := inputs.DeserializeCompact(inputsBytes, ctType)
+	if err != nil {
+		logger.Error("getVerifiedInputs failed to deserialize input ciphertext",
+			"err", err,
+			"len", len(ctBytes),
+			"ctBytes64", hex.EncodeToString(ctBytes[:minInt(len(ctBytes), 64)]))
+		inputs := new(tfhe.TfheInputs).Empty()
+		return importInputs(environment, inputs).GetHash().Bytes()
+	}
+	inputsHash := inputs.GetHash()
+	importInputs(environment, inputs)
+	if environment.IsCommitting() {
+		logger.Info("getVerifiedInputs success",
+			"inputsHash", inputsHash.Hex(),
+			"inputsBytes64", hex.EncodeToString(inputsBytes[:minInt(len(inputsBytes), 64)]))
+	}
+	return inputsHash.Bytes(), nil
+}
+
 func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	logger := environment.GetLogger()
 	// first 32 bytes of the payload is offset, then 32 bytes are size of byte array
@@ -29,7 +92,7 @@ func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr
 	bytesSizeSlotSize := 32
 	// read only last 4 bytes of padded number for byte array size
 	sizeStart := bytesPaddingSize + bytesSizeSlotSize - 4
-	sizeEnd := sizeStart + 4
+	sizeEnd := sizeStart + 
 	bytesSize := binary.BigEndian.Uint32(input[sizeStart:sizeEnd])
 	bytesStart := bytesPaddingSize + bytesSizeSlotSize
 	bytesEnd := bytesStart + int(bytesSize)

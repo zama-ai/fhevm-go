@@ -351,6 +351,10 @@ void* deserialize_compact_fhe_uint64(DynamicBufferView in) {
 	return ct;
 }
 
+int serialize_fhe_compact_list_uint160(void *ct, DynamicBuffer* out) {
+	// proven_compact_fhe_uint160_list_serialize
+	return compact_fhe_uint160_list_serialize(ct, out);
+}
 
 int serialize_fhe_uint160(void *ct, DynamicBuffer* out) {
 	return fhe_uint160_serialize(ct, out);
@@ -391,6 +395,26 @@ void* deserialize_compact_fhe_uint160(DynamicBufferView in) {
 	return ct;
 }
 
+void* deserialize_compact_list(DynamicBufferView in) {
+	CompactFheUint160List* list = NULL;
+
+	int r = compact_fhe_uint160_list_deserialize(in, &list);
+	if(r != 0) {
+		return NULL;
+	}
+	size_t len = 0;
+	r = compact_fhe_uint160_list_len(list, &len);
+
+	FheUint160 **cts = malloc(len * sizeof(FheUint160*));
+	compact_fhe_uint160_list_expand(list, &cts[0], len);
+	if(r != 0) {
+		cts = NULL;
+	}
+	r = compact_fhe_uint160_list_destroy(list);
+	assert(r == 0);
+	return cts, len;
+}
+
 void destroy_fhe_bool(void* ct) {
 	const int r = fhe_bool_destroy(ct);
 	assert(r == 0);
@@ -423,6 +447,11 @@ void destroy_fhe_uint64(void* ct) {
 
 void destroy_fhe_uint160(void* ct) {
 	const int r = fhe_uint160_destroy(ct);
+	assert(r == 0);
+}
+
+void destroy_compact_fhe_uint160_list(void* ct) {
+	const int r = compact_fhe_uint160_list_destroy(ct);
 	assert(r == 0);
 }
 

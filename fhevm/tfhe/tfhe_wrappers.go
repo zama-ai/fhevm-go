@@ -55,6 +55,18 @@ func serialize(ptr unsafe.Pointer, t FheUintType) ([]byte, error) {
 	return ser, nil
 }
 
+func serializeCompactList(ptr unsafe.Pointer, t FheUintType) ([]byte, error) {
+	out := &C.DynamicBuffer{}
+	ret = C.serialize_fhe_compact_list_uint160(ptr, out)
+	if ret != 0 {
+		return nil, errors.New("serialize: failed to serialize a ciphertext")
+	}
+	ser := C.GoBytes(unsafe.Pointer(out.pointer), C.int(out.length))
+	C.destroy_dynamic_buffer(out)
+	return ser, nil
+}
+
+
 func SerializePublicKey() ([]byte, error) {
 	if pks == nil {
 		return nil, errors.New("serialize: no public key available")

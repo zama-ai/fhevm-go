@@ -74,6 +74,42 @@ func importCiphertextToEVMAtDepth(environment EVMEnvironment, ct *tfhe.TfheCiphe
 	}
 }
 
+func importInputs(environment EVMEnvironment, inputs *tfhe.TfheInputs) *verifiedInputs {
+	depth := environment.GetDepth()
+
+	existing, ok := environment.FhevmData().verifiedInputs[inputs.GetHash()]
+	if ok {
+		existing.verifiedDepths.add(depth)
+		return existing
+	} else {
+		verifiedDepths := newDepthSet()
+		verifiedDepths.add(depth)
+		new := &verifiedInputs{
+			verifiedDepths,
+			inputs,
+		}
+		environment.FhevmData().verifiedInputs[inputs.GetHash()] = new
+		return new
+	}
+}
+
+func importCiphertextToEVMAtDepth(environment EVMEnvironment, ct *tfhe.TfheCiphertext, depth int) *verifiedCiphertext {
+	existing, ok := environment.FhevmData().verifiedCiphertexts[ct.GetHash()]
+	if ok {
+		existing.verifiedDepths.add(depth)
+		return existing
+	} else {
+		verifiedDepths := newDepthSet()
+		verifiedDepths.add(depth)
+		new := &verifiedCiphertext{
+			verifiedDepths,
+			ct,
+		}
+		environment.FhevmData().verifiedCiphertexts[ct.GetHash()] = new
+		return new
+	}
+}
+
 func importCiphertextToEVM(environment EVMEnvironment, ct *tfhe.TfheCiphertext) *verifiedCiphertext {
 	return importCiphertextToEVMAtDepth(environment, ct, environment.GetDepth())
 }
