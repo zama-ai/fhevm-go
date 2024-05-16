@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -212,7 +213,7 @@ func decryptRun(environment EVMEnvironment, caller common.Address, addr common.A
 }
 
 func getCiphertextRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
-	input = input[:minInt(64, len(input))]
+	input = input[:minInt(32, len(input))]
 
 	logger := environment.GetLogger()
 	if !environment.IsEthCall() {
@@ -220,19 +221,18 @@ func getCiphertextRun(environment EVMEnvironment, caller common.Address, addr co
 		logger.Error(msg)
 		return nil, errors.New(msg)
 	}
-	if len(input) != 64 {
-		msg := "getCiphertext input len must be 64 bytes"
+	if len(input) != 32 {
+		msg := "getCiphertext input len must be 32 bytes"
 		logger.Error(msg, "input", hex.EncodeToString(input), "len", len(input))
 		return nil, errors.New(msg)
 	}
 
-	// TODO
-	// contractAddress := common.BytesToAddress(input[:32])
-	handle := common.BytesToHash(input[32:])
-
+	handle := common.BytesToHash(input)
 	ciphertext, _ := loadCiphertext(environment, handle)
 	if ciphertext == nil {
-		return make([]byte, 0), nil
+		msg := fmt.Sprintf("getCiphertext couldn't find handle %s", handle.Hex())
+		logger.Error(msg)
+		return make([]byte, 0), errors.New(msg)
 	}
 	otelDescribeOperandsFheTypes(runSpan, ciphertext.FheUintType)
 	return ciphertext.Serialize(), nil
