@@ -247,10 +247,17 @@ var fhelibMethods = []*FheLibMethod{
 	},
 	{
 		name:                "getCiphertext",
-		argTypes:            "(address,uint256)",
+		argTypes:            "(uint256)",
 		requiredGasFunction: getCiphertextRequiredGas,
 		runFunction:         getCiphertextRun,
 	},
+}
+
+func isSafeFromAnyCaller(method string) bool {
+	if method == "fhePubKey" || method == "getCiphertext" {
+		return true
+	}
+	return false
 }
 
 func init() {

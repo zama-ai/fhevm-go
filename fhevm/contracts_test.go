@@ -277,7 +277,7 @@ func VerifyCiphertext(t *testing.T, fheUintType tfhe.FheUintType) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	compact := tfhe.EncryptAndSerializeCompact(value, fheUintType)
 	input := prepareInputForVerifyCiphertext(append(compact, byte(fheUintType)))
@@ -315,7 +315,7 @@ func VerifyCiphertextBadType(t *testing.T, actualType tfhe.FheUintType, metadata
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	compact := tfhe.EncryptAndSerializeCompact(value, actualType)
 	input := prepareInputForVerifyCiphertext(append(compact, byte(metadataType)))
@@ -347,7 +347,7 @@ func TrivialEncrypt(t *testing.T, fheUintType tfhe.FheUintType) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	valueBytes := make([]byte, 32)
 	input := append(value.FillBytes(valueBytes), byte(fheUintType))
@@ -390,7 +390,7 @@ func FheLibAdd(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -438,7 +438,7 @@ func FheLibSub(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -486,7 +486,7 @@ func FheLibMul(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -533,7 +533,7 @@ func FheLibLe(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -602,7 +602,7 @@ func FheLibLt(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -670,7 +670,7 @@ func FheLibEq(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -718,7 +718,7 @@ func FheLibGe(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -785,7 +785,7 @@ func FheLibGt(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -853,7 +853,7 @@ func FheLibShl(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -901,7 +901,7 @@ func FheLibShr(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -949,7 +949,7 @@ func FheLibRotl(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -997,7 +997,7 @@ func FheLibRotr(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -1044,7 +1044,7 @@ func FheLibNe(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -1093,7 +1093,7 @@ func FheLibMin(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -1160,7 +1160,7 @@ func FheLibMax(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -1227,7 +1227,7 @@ func FheLibNeg(t *testing.T, fheUintType tfhe.FheUintType) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	ptHash := loadCiphertextInTestMemory(environment, pt, depth, fheUintType).GetHash()
 
@@ -1273,7 +1273,7 @@ func FheLibNot(t *testing.T, fheUintType tfhe.FheUintType) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	ptHash := loadCiphertextInTestMemory(environment, pt, depth, fheUintType).GetHash()
 
@@ -1317,7 +1317,7 @@ func FheLibDiv(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -1371,7 +1371,7 @@ func FheLibRem(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -1428,7 +1428,7 @@ func FheLibBitAnd(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -1485,7 +1485,7 @@ func FheLibBitOr(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -1542,7 +1542,7 @@ func FheLibBitXor(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -1577,7 +1577,7 @@ func FheLibRand(t *testing.T, fheUintType tfhe.FheUintType) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	hashRes := crypto.Keccak256([]byte(signature))
 	signatureBytes := hashRes[0:4]
@@ -1631,7 +1631,7 @@ func FheLibRandBounded(t *testing.T, fheUintType tfhe.FheUintType, upperBound64 
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	hashRes := crypto.Keccak256([]byte(signature))
 	signatureBytes := hashRes[0:4]
@@ -1686,7 +1686,7 @@ func FheLibIfThenElse(t *testing.T, fheUintType tfhe.FheUintType, condition uint
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	firstHash := loadCiphertextInTestMemory(environment, condition, depth, tfhe.FheBool).GetHash()
 	secondHash := loadCiphertextInTestMemory(environment, second, depth, fheUintType).GetHash()
@@ -1727,7 +1727,7 @@ func LibTrivialEncrypt(t *testing.T, fheUintType tfhe.FheUintType) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	valueBytes := make([]byte, 32)
 	input := make([]byte, 0)
@@ -1768,7 +1768,7 @@ func LibDecrypt(t *testing.T, fheUintType tfhe.FheUintType) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	input := make([]byte, 0)
 	hash := loadCiphertextInTestMemory(environment, value, depth, fheUintType).GetHash()
@@ -1794,7 +1794,7 @@ func TestLibVerifyCiphertextInvalidType(t *testing.T) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	invalidType := tfhe.FheUintType(255)
 	input := make([]byte, 0)
@@ -1824,7 +1824,7 @@ func TestLibVerifyCiphertextInvalidType(t *testing.T) {
 // 	toEncrypt := 7
 // 	fheUintType := tfhe.FheUint8
 // 	encCiphertext := loadCiphertextInTestMemory(environment, uint64(toEncrypt), depth, fheUintType).getHash()
-// 	addr := common.Address{}
+// 	addr := tfheExecutorContractAddress
 // 	readOnly := false
 // 	input := make([]byte, 0)
 // 	input = append(input, signatureBytes...)
@@ -1848,7 +1848,7 @@ func TestLibCast(t *testing.T) {
 	toEncrypt := 7
 	fheUintType := tfhe.FheUint8
 	encCiphertext := loadCiphertextInTestMemory(environment, uint64(toEncrypt), depth, fheUintType).GetHash()
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	input := make([]byte, 0)
 	input = append(input, signatureBytes...)
@@ -1883,7 +1883,7 @@ func FheAdd(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -1930,7 +1930,7 @@ func FheSub(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -1977,7 +1977,7 @@ func FheMul(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -2024,7 +2024,7 @@ func FheDiv(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -2077,7 +2077,7 @@ func FheRem(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -2133,7 +2133,7 @@ func FheBitAnd(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -2186,7 +2186,7 @@ func FheBitOr(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -2239,7 +2239,7 @@ func FheBitXor(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -2292,7 +2292,7 @@ func FheShl(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -2339,7 +2339,7 @@ func FheShr(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -2385,7 +2385,7 @@ func FheEq(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -2432,7 +2432,7 @@ func FheNe(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -2479,7 +2479,7 @@ func FheGe(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -2545,7 +2545,7 @@ func FheGt(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -2611,7 +2611,7 @@ func FheLe(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -2679,7 +2679,7 @@ func FheLt(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -2747,7 +2747,7 @@ func FheMin(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -2813,7 +2813,7 @@ func FheMax(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
 	var rhsHash common.Hash
@@ -2879,7 +2879,7 @@ func FheNeg(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	ptHash := loadCiphertextInTestMemory(environment, pt, depth, fheUintType).GetHash()
 
@@ -2922,7 +2922,7 @@ func FheNot(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	ptHash := loadCiphertextInTestMemory(environment, pt, depth, fheUintType).GetHash()
 
@@ -2964,7 +2964,7 @@ func FheIfThenElse(t *testing.T, fheUintType tfhe.FheUintType, condition uint64)
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	conditionHash := loadCiphertextInTestMemory(environment, condition, depth, tfhe.FheBool).GetHash()
 	lhsHash := loadCiphertextInTestMemory(environment, lhs, depth, fheUintType).GetHash()
@@ -3004,7 +3004,7 @@ func Decrypt(t *testing.T, fheUintType tfhe.FheUintType) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	hash := loadCiphertextInTestMemory(environment, value, depth, fheUintType).GetHash()
 	out, err := decryptRunWithoutKms(environment, addr, addr, hash.Bytes(), readOnly)
@@ -3024,7 +3024,7 @@ func FheRand(t *testing.T, fheUintType tfhe.FheUintType) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	out, err := fheRandRun(environment, addr, addr, []byte{byte(fheUintType)}, readOnly, nil)
 	if err != nil {
@@ -3596,7 +3596,7 @@ func TestVerifyCiphertextInvalidType(t *testing.T) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	invalidType := tfhe.FheUintType(255)
 	compact := tfhe.EncryptAndSerializeCompact(0, tfhe.FheUint64)
@@ -3617,7 +3617,7 @@ func TestTrivialEncryptInvalidType(t *testing.T) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	invalidType := tfhe.FheUintType(255)
 	input := make([]byte, 32)
@@ -3629,7 +3629,7 @@ func TestCastInvalidType(t *testing.T) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	invalidType := tfhe.FheUintType(255)
 	hash := loadCiphertextInTestMemory(environment, 1, depth, tfhe.FheUint8).GetHash()
@@ -3646,7 +3646,7 @@ func TestVerifyCiphertextInvalidSize(t *testing.T) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	ctType := tfhe.FheUint32
 	compact := tfhe.EncryptAndSerializeCompact(0, ctType)
@@ -3736,7 +3736,7 @@ func TestVerifyCiphertextBadCiphertext(t *testing.T) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	input := prepareInputForVerifyCiphertext(make([]byte, 10))
 	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
@@ -4701,7 +4701,7 @@ func TestFheRandInvalidInput(t *testing.T) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	_, err := fheRandRun(environment, addr, addr, []byte{}, readOnly, nil)
 	if err == nil {
@@ -4716,7 +4716,7 @@ func TestFheRandInvalidType(t *testing.T) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	_, err := fheRandRun(environment, addr, addr, []byte{byte(254)}, readOnly, nil)
 	if err == nil {
@@ -4731,7 +4731,7 @@ func TestFheRandBoundedInvalidType(t *testing.T) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	input := make([]byte, 0)
 	upperBound := uint256.NewInt(8).Bytes32()
@@ -4750,7 +4750,7 @@ func FheRandBoundedInvalidBound(t *testing.T, fheUintType tfhe.FheUintType, boun
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	input := make([]byte, 0)
 	upperBound := bound.Bytes32()
@@ -4810,7 +4810,7 @@ func TestFheRandEthCall(t *testing.T) {
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
 	environment.ethCall = true
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := true
 	_, err := fheRandRun(environment, addr, addr, []byte{byte(tfhe.FheUint8)}, readOnly, nil)
 	if err == nil {
@@ -4826,7 +4826,7 @@ func TestFheRandBoundedEthCall(t *testing.T) {
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
 	environment.ethCall = true
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := true
 	input := make([]byte, 0)
 	upperBound := uint256.NewInt(4).Bytes32()
@@ -4867,7 +4867,7 @@ func TestDecryptInTransactionDisabled(t *testing.T) {
 	environment.commit = true
 	environment.ethCall = false
 	environment.fhevmParams.DisableDecryptionsInTransaction = true
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	readOnly := false
 	hash := loadCiphertextInTestMemory(environment, 1, depth, tfhe.FheUint8).GetHash()
 	// Call decrypt and expect it to fail due to disabling of decryptions during commit
@@ -4881,22 +4881,89 @@ func TestDecryptInTransactionDisabled(t *testing.T) {
 
 func TestFheLibGetCiphertextInvalidInputSize(t *testing.T) {
 	environment := newTestEVMEnvironment()
-	addr := common.Address{}
+	addr := tfheExecutorContractAddress
 	environment.ethCall = true
 	readOnly := true
 	input := make([]byte, 0)
-	zeroPadding := make([]byte, 12)
-	signature := crypto.Keccak256([]byte("getCiphertext(address,uint256)"))[0:4]
+	signature := crypto.Keccak256([]byte("getCiphertext(uint256)"))[0:4]
 	input = append(input, signature...)
-	input = append(input, zeroPadding...)
-	// missing input data...
+	input = append(input, make([]byte, 17)...)
 	_, err := FheLibRun(environment, addr, addr, input, readOnly)
 	if err == nil {
 		t.Fatalf("getCiphertext expected failure on bad input size")
 	}
 }
 
-// TODO GetCiphertext
+func TestFheLibGetCiphertextNonExistentHandle(t *testing.T) {
+	environment := newTestEVMEnvironment()
+	addr := tfheExecutorContractAddress
+	environment.ethCall = true
+	readOnly := true
+	value := big.NewInt(42)
+	ct := new(tfhe.TfheCiphertext).TrivialEncrypt(*value, tfhe.FheUint32)
+	persistCiphertext(environment, ct)
+	// Change the handle so that it won't exist.
+	handle := ct.GetHash().Bytes()
+	handle[2]++
+	input := make([]byte, 0)
+	signature := crypto.Keccak256([]byte("getCiphertext(uint256)"))[0:4]
+	input = append(input, signature...)
+	input = append(input, handle...)
+	_, err := FheLibRun(environment, addr, addr, input, readOnly)
+	if err == nil {
+		t.Fatalf("getCiphertext expected failure on non-existent handle")
+	}
+}
+
+func FheLibGetCiphertext(t *testing.T, fheUintType tfhe.FheUintType) {
+	environment := newTestEVMEnvironment()
+	addr := tfheExecutorContractAddress
+	environment.ethCall = true
+	readOnly := true
+	value := big.NewInt(1)
+	ct := new(tfhe.TfheCiphertext).TrivialEncrypt(*value, fheUintType)
+	persistCiphertext(environment, ct)
+	originalSer := ct.Serialize()
+	input := make([]byte, 0)
+	signature := crypto.Keccak256([]byte("getCiphertext(uint256)"))[0:4]
+	input = append(input, signature...)
+	input = append(input, ct.GetHash().Bytes()...)
+	resultSer, err := FheLibRun(environment, addr, addr, input, readOnly)
+	if err != nil {
+		t.Fatalf("getCiphertext failed with %s", err.Error())
+	}
+	if !bytes.Equal(resultSer, originalSer) {
+		t.Fatalf("getCiphertext returned invalid serialization")
+	}
+}
+
+func TestFheLibGetCiphertextBool(t *testing.T) {
+	FheLibGetCiphertext(t, tfhe.FheBool)
+}
+
+func TestFheLibGetCiphertext4(t *testing.T) {
+	FheLibGetCiphertext(t, tfhe.FheUint4)
+}
+
+func TestFheLibGetCiphertext8(t *testing.T) {
+	FheLibGetCiphertext(t, tfhe.FheUint8)
+}
+
+func TestFheLibGetCiphertext16(t *testing.T) {
+	FheLibGetCiphertext(t, tfhe.FheUint16)
+}
+
+func TestFheLibGetCiphertext32(t *testing.T) {
+	FheLibGetCiphertext(t, tfhe.FheUint32)
+}
+
+func TestFheLibGetCiphertext64(t *testing.T) {
+	FheLibGetCiphertext(t, tfhe.FheUint64)
+}
+
+func TestFheLibGetCiphertext160(t *testing.T) {
+	FheLibGetCiphertext(t, tfhe.FheUint160)
+}
 
 func TestFheArrayEq4(t *testing.T) {
 	FheArrayEq(t, tfhe.FheUint4)

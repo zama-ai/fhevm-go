@@ -35,18 +35,16 @@ func reencryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 }
 
 func getCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint64 {
-	input = input[:minInt(64, len(input))]
+	input = input[:minInt(32, len(input))]
 
 	logger := environment.GetLogger()
-	if len(input) != 64 {
-		logger.Error("getCiphertext RequiredGas() input len must be 64 bytes",
+	if len(input) != 32 {
+		logger.Error("getCiphertext RequiredGas() input len must be 32 bytes",
 			"input", hex.EncodeToString(input), "len", len(input))
 		return 0
 	}
 
-	// TODO
-	// contractAddress := common.BytesToAddress(input[:32])
-	handle := common.BytesToHash(input[32:])
+	handle := common.BytesToHash(input)
 	metadata := loadCiphertextMetadata(environment, handle)
 	if metadata == nil {
 		return GetNonExistentCiphertextGas
