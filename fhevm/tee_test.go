@@ -11,7 +11,7 @@ import (
 
 // teeOperationHelper is a helper function to test TEE operations,
 // which are passed into the last argument as a function.
-func teeOperationHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs, expected any, signature string) {
+func teeOperationHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs, expected any, signature string, isScalar bool) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
@@ -21,12 +21,19 @@ func teeOperationHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs, ex
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	rhsCt, err := importTeePlaintextToEVM(environment, depth, rhs, fheUintType)
-	if err != nil {
-		t.Fatalf(err.Error())
+
+	var input []byte
+	if !isScalar {
+		rhsCt, err := importTeePlaintextToEVM(environment, depth, rhs, fheUintType)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		input = toLibPrecompileInput(signature, false, lhsCt.GetHash(), rhsCt.GetHash())
+	} else {
+		valueBz, _ := marshalTfheType(rhs, fheUintType)
+		input = toLibPrecompileInput(signature, true, lhsCt.GetHash(), common.BytesToHash(valueBz))
 	}
 
-	input := toLibPrecompileInput(signature, false, lhsCt.GetHash(), rhsCt.GetHash())
 	out, err := FheLibRun(environment, addr, addr, input, readOnly)
 	if err != nil {
 		t.Fatalf(err.Error())

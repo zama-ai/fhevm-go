@@ -24,7 +24,9 @@ func TestTeeAddRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeAdd with %s", tc.typ), func(t *testing.T) {
-			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, false)
+			// scalar operations
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, true)
 		})
 	}
 }
@@ -46,7 +48,9 @@ func TestTeeSubRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeSub with %s", tc.typ), func(t *testing.T) {
-			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, false)
+			// scalar operations
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, true)
 		})
 	}
 }
@@ -68,7 +72,9 @@ func TestTeeMulRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeMul with %s", tc.typ), func(t *testing.T) {
-			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, false)
+			// scalar operations
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, true)
 		})
 	}
 }
@@ -90,7 +96,9 @@ func TestTeeDivRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeDiv with %s", tc.typ), func(t *testing.T) {
-			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, false)
+			// scalar operations
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, true)
 		})
 	}
 }
@@ -112,7 +120,9 @@ func TestTeeRemRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeRem with %s", tc.typ), func(t *testing.T) {
-			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, false)
+			// scalar operations
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, true)
 		})
 	}
 }

@@ -25,7 +25,9 @@ func TestTeeLeRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeLe with %s", tc.typ), func(t *testing.T) {
-			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, false)
+			// scalar operations
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, true)
 		})
 	}
 }
@@ -47,7 +49,9 @@ func TestTeeLtRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeLt with %s", tc.typ), func(t *testing.T) {
-			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, false)
+			// scalar operations
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, true)
 		})
 	}
 }
@@ -73,7 +77,9 @@ func TestTeeEqRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeEq with %s", tc.typ), func(t *testing.T) {
-			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, false)
+			// scalar operations
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, true)
 		})
 	}
 }
@@ -95,7 +101,9 @@ func TestTeeGeRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeGe with %s", tc.typ), func(t *testing.T) {
-			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, false)
+			// scalar operations
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, true)
 		})
 	}
 }
@@ -117,7 +125,9 @@ func TestTeeGtRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeGt with %s", tc.typ), func(t *testing.T) {
-			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, false)
+			// scalar operations
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, true)
 		})
 	}
 }
@@ -143,7 +153,9 @@ func TestTeeNeRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeNe with %s", tc.typ), func(t *testing.T) {
-			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, false)
+			// scalar operations
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, true)
 		})
 	}
 }
@@ -165,7 +177,9 @@ func TestTeeMinRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeMin with %s", tc.typ), func(t *testing.T) {
-			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, false)
+			// scalar operations
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, true)
 		})
 	}
 }
@@ -187,7 +201,9 @@ func TestTeeMaxRun(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(fmt.Sprintf("teeMax with %s", tc.typ), func(t *testing.T) {
-			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature)
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, false)
+			// scalar operations
+			teeOperationHelper(t, tc.typ, tc.lhs, tc.rhs, tc.expected, signature, true)
 		})
 	}
 }
