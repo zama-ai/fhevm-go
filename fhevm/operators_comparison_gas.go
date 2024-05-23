@@ -2,6 +2,7 @@ package fhevm
 
 import (
 	"encoding/hex"
+	"fmt"
 
 	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 )
@@ -140,4 +141,68 @@ func fheIfThenElseRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		return 0
 	}
 	return environment.FhevmParams().GasCosts.FheIfThenElse[second.fheUintType()]
+}
+
+func fheArrayEqRequiredGas(environment EVMEnvironment, input []byte) uint64 {
+	logger := environment.GetLogger()
+
+	unpacked, err := arrayEqMethod.Inputs.UnpackValues(input)
+	if err != nil {
+		msg := "fheArrayEqRun RequiredGas() failed to unpack input"
+		logger.Error(msg, "err", err)
+		return 0
+	}
+
+	if len(unpacked) != 2 {
+		err := fmt.Errorf("fheArrayEqRun RequiredGas() unexpected unpacked len: %d", len(unpacked))
+		logger.Error(err.Error())
+		return 0
+	}
+
+	lhs, err := getVerifiedCiphertexts(environment, unpacked[0])
+	if err != nil {
+		msg := "fheArrayEqRun RequiredGas() failed to get lhs to verified ciphertexts"
+		logger.Error(msg, "err", err)
+		return 0
+	}
+
+	rhs, err := getVerifiedCiphertexts(environment, unpacked[1])
+	if err != nil {
+		msg := "fheArrayEqRun RequiredGas() failed to get rhs to verified ciphertexts"
+		logger.Error(msg, "err", err)
+		return 0
+	}
+
+	if len(lhs) != len(rhs) || (len(lhs) == 0 && len(rhs) == 0) {
+		return environment.FhevmParams().GasCosts.FheTrivialEncrypt[tfhe.FheBool]
+	}
+
+	numElements := len(lhs)
+	elementType := lhs[0].Type()
+	// TODO: tie to supported types in tfhe.TfheCiphertext.EqArray()
+	if elementType != tfhe.FheUint4 && elementType != tfhe.FheUint8 && elementType != tfhe.FheUint16 && elementType != tfhe.FheUint32 && elementType != tfhe.FheUint64 {
+		return 0
+	}
+	for i := range lhs {
+		if lhs[i].Type() != elementType || rhs[i].Type() != elementType {
+			return 0
+		}
+	}
+
+	numBits := elementType.NumBits() * uint(numElements)
+	if numBits <= 4 {
+		return environment.FhevmParams().GasCosts.FheEq[tfhe.FheUint4]
+	} else if numBits <= 8 {
+		return environment.FhevmParams().GasCosts.FheEq[tfhe.FheUint8]
+	} else if numBits <= 16 {
+		return environment.FhevmParams().GasCosts.FheEq[tfhe.FheUint16]
+	} else if numBits <= 32 {
+		return environment.FhevmParams().GasCosts.FheEq[tfhe.FheUint32]
+	} else if numBits <= 64 {
+		return environment.FhevmParams().GasCosts.FheEq[tfhe.FheUint64]
+	} else if numBits <= 160 {
+		return environment.FhevmParams().GasCosts.FheEq[tfhe.FheUint160]
+	} else {
+		return (environment.FhevmParams().GasCosts.FheEq[tfhe.FheUint160] + environment.FhevmParams().GasCosts.FheArrayEqBigArrayFactor) * (uint64(numBits) / 160)
+	}
 }

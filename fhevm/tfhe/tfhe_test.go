@@ -1576,6 +1576,164 @@ func TfheCast(t *testing.T, fheUintTypeFrom FheUintType, fheUintTypeTo FheUintTy
 	}
 }
 
+func TfheEqArrayEqual(t *testing.T, fheUintType FheUintType) {
+	lhs := make([]*TfheCiphertext, 0)
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(4), fheUintType))
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(7), fheUintType))
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(10), fheUintType))
+
+	rhs := make([]*TfheCiphertext, 0)
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(4), fheUintType))
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(7), fheUintType))
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(10), fheUintType))
+
+	result, err := EqArray(lhs, rhs)
+	if err != nil {
+		t.Fatalf("EqArray failed: %v", err)
+	}
+	decrypted, err := result.Decrypt()
+	if err != nil {
+		t.Fatalf("EqArray decrypt failed: %v", err)
+	}
+	if !decrypted.IsUint64() || decrypted.Uint64() != 1 {
+		t.Fatalf("EqArray expected result of 1, got: %s", decrypted.String())
+	}
+}
+
+func TfheEqArrayCompareToSelf(t *testing.T, fheUintType FheUintType) {
+	lhs := make([]*TfheCiphertext, 0)
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(4), fheUintType))
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(7), fheUintType))
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(10), fheUintType))
+	rhs := lhs
+
+	result, err := EqArray(lhs, rhs)
+	if err != nil {
+		t.Fatalf("EqArray failed: %v", err)
+	}
+	decrypted, err := result.Decrypt()
+	if err != nil {
+		t.Fatalf("EqArray decrypt failed: %v", err)
+	}
+	if !decrypted.IsUint64() || decrypted.Uint64() != 1 {
+		t.Fatalf("EqArray expected result of 1, got: %s", decrypted.String())
+	}
+}
+
+func TfheEqArrayNotEqualSameLen(t *testing.T, fheUintType FheUintType) {
+	lhs := make([]*TfheCiphertext, 0)
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(4), fheUintType))
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(7), fheUintType))
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(10), fheUintType))
+
+	rhs := make([]*TfheCiphertext, 0)
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(4), fheUintType))
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(6), fheUintType))
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(10), fheUintType))
+
+	result, err := EqArray(lhs, rhs)
+	if err != nil {
+		t.Fatalf("EqArray failed: %v", err)
+	}
+	decrypted, err := result.Decrypt()
+	if err != nil {
+		t.Fatalf("EqArray decrypt failed: %v", err)
+	}
+	if !decrypted.IsUint64() || decrypted.Uint64() != 0 {
+		t.Fatalf("EqArray expected result of 0, got: %s", decrypted.String())
+	}
+}
+
+func TfheEqArrayNotEqualDifferentLen(t *testing.T, fheUintType FheUintType) {
+	lhs := make([]*TfheCiphertext, 0)
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(4), fheUintType))
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(7), fheUintType))
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(10), fheUintType))
+
+	rhs := make([]*TfheCiphertext, 0)
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(4), fheUintType))
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(6), fheUintType))
+
+	result, err := EqArray(lhs, rhs)
+	if err != nil {
+		t.Fatalf("EqArray failed: %v", err)
+	}
+	decrypted, err := result.Decrypt()
+	if err != nil {
+		t.Fatalf("EqArray decrypt failed: %v", err)
+	}
+	if !decrypted.IsUint64() || decrypted.Uint64() != 0 {
+		t.Fatalf("EqArray expected result of 0, got: %s", decrypted.String())
+	}
+}
+
+func TestTfheEqArrayEqualBothEmpty(t *testing.T) {
+	lhs := make([]*TfheCiphertext, 0)
+	rhs := make([]*TfheCiphertext, 0)
+	result, err := EqArray(lhs, rhs)
+	if err != nil {
+		t.Fatalf("EqArray failed: %v", err)
+	}
+	decrypted, err := result.Decrypt()
+	if err != nil {
+		t.Fatalf("EqArray decrypt failed: %v", err)
+	}
+	if !decrypted.IsUint64() || decrypted.Uint64() != 1 {
+		t.Fatalf("EqArray expected result of 1, got: %s", decrypted.String())
+	}
+}
+
+func TestTfheEqArrayDifferentTypesInLhs(t *testing.T) {
+	lhs := make([]*TfheCiphertext, 0)
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(4), FheUint32))
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(7), FheUint32))
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(10), FheUint64))
+
+	rhs := make([]*TfheCiphertext, 0)
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(4), FheUint32))
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(6), FheUint32))
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(10), FheUint32))
+
+	_, err := EqArray(lhs, rhs)
+	if err == nil {
+		t.Fatalf("EqArray expected error")
+	}
+}
+
+func TestTfheEqArrayDifferentTypesInRhs(t *testing.T) {
+	lhs := make([]*TfheCiphertext, 0)
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(4), FheUint32))
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(7), FheUint32))
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(10), FheUint32))
+
+	rhs := make([]*TfheCiphertext, 0)
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(4), FheUint32))
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(6), FheUint16))
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(10), FheUint32))
+
+	_, err := EqArray(lhs, rhs)
+	if err == nil {
+		t.Fatalf("EqArray expected error")
+	}
+}
+
+func TestTfheEqArrayUnsupportedType(t *testing.T) {
+	lhs := make([]*TfheCiphertext, 0)
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(4), FheBool))
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(7), FheBool))
+	lhs = append(lhs, new(TfheCiphertext).Encrypt(*big.NewInt(10), FheBool))
+
+	rhs := make([]*TfheCiphertext, 0)
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(4), FheBool))
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(6), FheBool))
+	rhs = append(rhs, new(TfheCiphertext).Encrypt(*big.NewInt(10), FheBool))
+
+	_, err := EqArray(lhs, rhs)
+	if err == nil {
+		t.Fatalf("EqArray expected error")
+	}
+}
+
 func TestTfheEncryptDecryptBool(t *testing.T) {
 	TfheEncryptDecrypt(t, FheBool)
 }
@@ -2622,4 +2780,84 @@ func TestTfhe64Cast16(t *testing.T) {
 
 func TestTfhe64Cast32(t *testing.T) {
 	TfheCast(t, FheUint64, FheUint32)
+}
+
+func TestTfheEqArrayEqual4(t *testing.T) {
+	TfheEqArrayEqual(t, FheUint4)
+}
+
+func TestTfheEqArrayEqual8(t *testing.T) {
+	TfheEqArrayEqual(t, FheUint8)
+}
+
+func TestTfheEqArrayEqual16(t *testing.T) {
+	TfheEqArrayEqual(t, FheUint16)
+}
+
+func TestTfheEqArrayEqual32(t *testing.T) {
+	TfheEqArrayEqual(t, FheUint32)
+}
+
+func TestTfheEqArrayEqual64(t *testing.T) {
+	TfheEqArrayEqual(t, FheUint64)
+}
+
+func TestTfheEqArrayCompareToSelf4(t *testing.T) {
+	TfheEqArrayCompareToSelf(t, FheUint4)
+}
+
+func TestTfheEqArrayCompareToSelf8(t *testing.T) {
+	TfheEqArrayCompareToSelf(t, FheUint8)
+}
+
+func TestTfheEqArrayCompareToSelf16(t *testing.T) {
+	TfheEqArrayCompareToSelf(t, FheUint16)
+}
+
+func TestTfheEqArrayCompareToSelf32(t *testing.T) {
+	TfheEqArrayCompareToSelf(t, FheUint32)
+}
+
+func TestTfheEqArrayCompareToSelf64(t *testing.T) {
+	TfheEqArrayCompareToSelf(t, FheUint64)
+}
+
+func TestTfheEqArrayNotEqualSameLen4(t *testing.T) {
+	TfheEqArrayNotEqualSameLen(t, FheUint4)
+}
+
+func TestTfheEqArrayNotEqualSameLen8(t *testing.T) {
+	TfheEqArrayNotEqualSameLen(t, FheUint8)
+}
+
+func TestTfheEqArrayNotEqualSameLen16(t *testing.T) {
+	TfheEqArrayNotEqualSameLen(t, FheUint16)
+}
+
+func TestTfheEqArrayNotEqualSameLen32(t *testing.T) {
+	TfheEqArrayNotEqualSameLen(t, FheUint32)
+}
+
+func TestTfheEqArrayNotEqualSameLen64(t *testing.T) {
+	TfheEqArrayNotEqualSameLen(t, FheUint64)
+}
+
+func TestTfheEqArrayNotEqualDifferentLen4(t *testing.T) {
+	TfheEqArrayNotEqualSameLen(t, FheUint4)
+}
+
+func TestTfheEqArrayNotEqualDifferentLen8(t *testing.T) {
+	TfheEqArrayNotEqualSameLen(t, FheUint8)
+}
+
+func TestTfheEqArrayNotEqualDifferentLen16(t *testing.T) {
+	TfheEqArrayNotEqualSameLen(t, FheUint16)
+}
+
+func TestTfheEqArrayNotEqualDifferentLen32(t *testing.T) {
+	TfheEqArrayNotEqualSameLen(t, FheUint32)
+}
+
+func TestTfheEqArrayNotEqualDifferentLen64(t *testing.T) {
+	TfheEqArrayNotEqualSameLen(t, FheUint64)
 }

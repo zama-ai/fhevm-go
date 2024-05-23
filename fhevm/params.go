@@ -43,6 +43,7 @@ type GasCosts struct {
 	FheShift                  map[tfhe.FheUintType]uint64
 	FheScalarShift            map[tfhe.FheUintType]uint64
 	FheEq                     map[tfhe.FheUintType]uint64
+	FheArrayEqBigArrayFactor  uint64 // TODO: either rename or come up with a better solution
 	FheLe                     map[tfhe.FheUintType]uint64
 	FheMinMax                 map[tfhe.FheUintType]uint64
 	FheScalarMinMax           map[tfhe.FheUintType]uint64
@@ -60,6 +61,8 @@ type GasCosts struct {
 
 func DefaultGasCosts() GasCosts {
 	return GasCosts{
+		FheCast:   200,
+		FhePubKey: 50,
 		FheAddSub: map[tfhe.FheUintType]uint64{
 			tfhe.FheUint4:  55000 + AdjustFHEGas,
 			tfhe.FheUint8:  84000 + AdjustFHEGas,
@@ -132,6 +135,7 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint64:  76000 + AdjustFHEGas,
 			tfhe.FheUint160: 80000 + AdjustFHEGas,
 		},
+		FheArrayEqBigArrayFactor: 1000,
 		FheLe: map[tfhe.FheUintType]uint64{
 			tfhe.FheUint4:  60000 + AdjustFHEGas,
 			tfhe.FheUint8:  72000 + AdjustFHEGas,
