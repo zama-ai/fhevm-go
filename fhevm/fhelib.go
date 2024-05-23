@@ -209,6 +209,12 @@ var fhelibMethods = []*FheLibMethod{
 		runFunction:         fheIfThenElseRun,
 	},
 	{
+		name:                "fheArrayEq",
+		argTypes:            "(uint256[],uint256[])",
+		requiredGasFunction: fheArrayEqRequiredGas,
+		runFunction:         fheArrayEqRun,
+	},
+	{
 		name:                "fhePubKey",
 		argTypes:            "(bytes1)",
 		requiredGasFunction: fhePubKeyRequiredGas,
