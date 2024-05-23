@@ -570,3 +570,82 @@ func fheIfThenElseRun(environment EVMEnvironment, caller common.Address, addr co
 	logger.Info("fheIfThenElse success", "first", first.hash().Hex(), "second", second.hash().Hex(), "third", third.hash().Hex(), "result", resultHash.Hex())
 	return resultHash[:], nil
 }
+
+func fheArrayEqRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+	arrayLen := newInt(input[:32]).Uint64()
+
+	if (len(input) < 32 + arrayLen * 32) {
+		// error
+	}
+	larray := []
+	for i = 32; i < arrayLen; i += 32 {
+		push(larray, input[i:i+32])
+	}
+	larray := arrayLen * 32
+	input = input[32:minInt(65, len(input))]
+	logger := environment.GetLogger()
+	if ((len(input) - 1) % 32 > 0) {
+		logger.Error("fheEq can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
+	}
+
+	isScalar := (input[len(input) - 1] == 1)
+	
+	if err != nil {
+		logger.Error("fheEq can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
+		return nil, err
+	}
+
+	if !isScalar {
+		lhs, rhs, err := get2VerifiedOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
+		if err != nil {
+			logger.Error("fheEq inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return nil, err
+		}
+		if lhs.fheUintType() != rhs.fheUintType() {
+			msg := "fheEq operand type mismatch"
+			logger.Error(msg, "lhs", lhs.fheUintType(), "rhs", rhs.fheUintType())
+			return nil, errors.New(msg)
+		}
+
+		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+		if !environment.IsCommitting() && !environment.IsEthCall() {
+			return importRandomCiphertext(environment, tfhe.FheBool), nil
+		}
+
+		result, err := lhs.ciphertext.Eq(rhs.ciphertext)
+		if err != nil {
+			logger.Error("fheEq failed", "err", err)
+			return nil, err
+		}
+		importCiphertext(environment, result)
+
+		resultHash := result.GetHash()
+		logger.Info("fheEq success", "lhs", lhs.hash().Hex(), "rhs", rhs.hash().Hex(), "result", resultHash.Hex())
+		return resultHash[:], nil
+
+	} else {
+		lhs, rhs, err := getScalarOperands(environment, input)
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
+		if err != nil {
+			logger.Error("fheEq scalar inputs not verified", "err", err, "input", hex.EncodeToString(input))
+			return nil, err
+		}
+
+		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+		if !environment.IsCommitting() && !environment.IsEthCall() {
+			return importRandomCiphertext(environment, tfhe.FheBool), nil
+		}
+
+		result, err := lhs.ciphertext.ScalarEq(rhs)
+		if err != nil {
+			logger.Error("fheEq failed", "err", err)
+			return nil, err
+		}
+		importCiphertext(environment, result)
+
+		resultHash := result.GetHash()
+		logger.Info("fheEq scalar success", "lhs", lhs.hash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
+		return resultHash[:], nil
+	}
+}

@@ -295,6 +295,16 @@ void* scalar_eq_fhe_uint64(void* ct, uint64_t pt, void* sks);
 
 void* scalar_eq_fhe_uint160(void* ct, struct U256 pt, void* sks);
 
+void* eq_fhe_array_uint4(void* ct1, void* ct2, void* sks);
+
+void* eq_fhe_array_uint8(void* ct1, void* ct2, void* sks);
+
+void* eq_fhe_array_uint16(void* ct1, void* ct2, void* sks);
+
+void* eq_fhe_array_uint32(void* ct1, void* ct2, void* sks);
+
+void* eq_fhe_array_uint64(void* ct1, void* ct2, void* sks);
+
 void* ne_fhe_uint4(void* ct1, void* ct2, void* sks);
 
 void* ne_fhe_uint8(void* ct1, void* ct2, void* sks);

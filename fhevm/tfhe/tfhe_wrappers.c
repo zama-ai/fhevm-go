@@ -1636,6 +1636,61 @@ void* scalar_eq_fhe_uint160(void* ct, struct U256 pt, void* sks)
 	return result;
 }
 
+void* eq_fhe_array_uint4(void* ct1, void* ct2, void* sks)
+{
+	FheBool* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint4_array_eq(ct1, len(ct1), ct2, len(ct2), &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* eq_fhe_array_uint8(void* ct1, void* ct2, void* sks)
+{
+	FheBool* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint8_array_eq(ct1, len(ct1), ct2, len(ct2), &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* eq_fhe_array_uint16(void* ct1, void* ct2, void* sks)
+{
+	FheBool* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint16_array_eq(ct1, len(ct1), ct2, len(ct2), &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* eq_fhe_array_uint32(void* ct1, void* ct2, void* sks)
+{
+	FheBool* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint32_array_eq(ct1, len(ct1), ct2, len(ct2), &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* eq_fhe_array_uint64(void* ct1, void* ct2, void* sks)
+{
+	FheBool* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint64_array_eq(ct1, len(ct1), ct2, len(ct2), &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* ne_fhe_uint4(void* ct1, void* ct2, void* sks)
 {
 	FheBool* result = NULL;
