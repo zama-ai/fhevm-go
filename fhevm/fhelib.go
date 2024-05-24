@@ -396,6 +396,12 @@ var fhelibMethods = []*FheLibMethod{
 		requiredGasFunction: teeNotRequiredGas,
 		runFunction:         teeNotRun,
 	},
+	{
+		name:                "teeCast",
+		argTypes:            "(uint256,bytes1)",
+		requiredGasFunction: teeCastRequiredGas,
+		runFunction:         teeCastRun,
+	},
 }
 
 func init() {

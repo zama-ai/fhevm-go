@@ -77,6 +77,7 @@ type GasCosts struct {
 	TeeNot        map[tfhe.FheUintType]uint64
 	TeeNeg        map[tfhe.FheUintType]uint64
 	TeeBitwiseOp  map[tfhe.FheUintType]uint64
+	TeeCast       uint64
 }
 
 func DefaultGasCosts() GasCosts {

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 	"github.com/zama-ai/fhevm-go/tee"
 )
@@ -160,4 +161,57 @@ func importTeePlaintextToEVM(environment EVMEnvironment, depth int, value any, t
 
 	importCiphertextToEVMAtDepth(environment, &ct, depth)
 	return ct, nil
+}
+
+// teeCastHelper is a helper function to test TEE operations,
+// which are passed into the last argument as a function.
+func teeCastHelper(t *testing.T, inputType tfhe.FheUintType, outputType tfhe.FheUintType, in, expected any, signature string) {
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := common.Address{}
+	readOnly := false
+	inCt, err := importTeePlaintextToEVM(environment, depth, in, inputType)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	hashRes := crypto.Keccak256([]byte(signature))
+	signatureBytes := hashRes[0:4]
+	input := make([]byte, 0)
+	input = append(input, signatureBytes...)
+	input = append(input, inCt.GetHash().Bytes()...)
+	input = append(input, byte(outputType))
+	out, err := FheLibRun(environment, addr, addr, input, readOnly)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	res := getVerifiedCiphertextFromEVM(environment, common.BytesToHash(out))
+	if res == nil {
+		t.Fatalf("output ciphertext is not found in verifiedCiphertexts")
+	}
+
+	teePlaintext, err := tee.Decrypt(res.ciphertext)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	if teePlaintext.FheUintType != outputType {
+		t.Fatalf("incorrect fheUintType, expected=%s, got=%s", outputType, teePlaintext.FheUintType)
+	}
+
+	result := new(big.Int).SetBytes(teePlaintext.Value).Uint64()
+
+	var expect uint64
+	switch expected := expected.(type) {
+	case bool:
+		expect = boolToUint64(expected)
+	case uint64:
+		expect = expected
+	default:
+		expect = 0
+	}
+	if result != expect {
+		t.Fatalf("incorrect result, expected=%d, got=%d", expected, result)
+	}
 }
