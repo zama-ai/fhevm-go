@@ -88,7 +88,7 @@ func TestTeeRotrRun(t *testing.T) {
 		rhs      uint64
 		expected uint64
 	}{
-		{tfhe.FheUint4, 2, 1, 17},
+		{tfhe.FheUint4, 2, 1, 1},
 		{tfhe.FheUint8, 4, 2, 1},
 		{tfhe.FheUint16, 4283, 3, 25111},
 		{tfhe.FheUint32, 1333337, 10, 373294358},
@@ -186,7 +186,7 @@ func TestTeeNegRun(t *testing.T) {
 		chs      uint64
 		expected uint64
 	}{
-		{tfhe.FheUint4, 2, 254},
+		{tfhe.FheUint4, 2, 14},
 		{tfhe.FheUint8, 2, 254},
 		{tfhe.FheUint16, 4283, 61253},
 		{tfhe.FheUint32, 1333337, 4293633959},
@@ -207,7 +207,7 @@ func TestTeeNotRun(t *testing.T) {
 		chs      uint64
 		expected uint64
 	}{
-		{tfhe.FheUint4, 2, 253},
+		{tfhe.FheUint4, 2, 13},
 		{tfhe.FheUint8, 2, 253},
 		{tfhe.FheUint16, 4283, 61252},
 		{tfhe.FheUint32, 1333337, 4293633958},

@@ -14,7 +14,7 @@ func teeShlRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		// There isn't bitwise shift operation between ebool. So it doesn't include case 0.
 		case tfhe.FheUint4:
 			a1, b1 := uint8(a), uint8(b)%4
-			return uint64(a1 << b1), nil
+			return uint64(a1<<b1) & 0x0F, nil
 		case tfhe.FheUint8:
 			a1, b1 := uint8(a), uint8(b)%8
 			return uint64(a1 << b1), nil
@@ -66,7 +66,7 @@ func teeRotlRun(environment EVMEnvironment, caller common.Address, addr common.A
 		// There isn't bitwise shift operation between ebool. So it doesn't include case 0.
 		case tfhe.FheUint4:
 			a1, b1 := uint8(a), uint8(b)%4
-			return uint64((a1 << b1) | (a1 >> (uint8(4) - b1))), nil
+			return uint64((a1<<b1)|(a1>>(uint8(4)-b1))) & 0x0F, nil
 		case tfhe.FheUint8:
 			a1, b1 := uint8(a), uint8(b)%8
 			return uint64((a1 << b1) | (a1 >> (uint8(8) - b1))), nil
@@ -94,7 +94,7 @@ func teeRotrRun(environment EVMEnvironment, caller common.Address, addr common.A
 		// There isn't bitwise shift operation between ebool. So it doesn't include case 0.
 		case tfhe.FheUint4:
 			a1, b1 := uint8(a), uint8(b)%4
-			return uint64((a1 >> b1) | (a1 << (uint8(4) - b1))), nil
+			return uint64((a1>>b1)|(a1<<(uint8(4)-b1))) & 0x0F, nil
 		case tfhe.FheUint8:
 			a1, b1 := uint8(a), uint8(b)%8
 			return uint64((a1 >> b1) | (a1 << (uint8(8) - b1))), nil
