@@ -31,7 +31,10 @@ func teeOperationHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs, ex
 		}
 		input = toLibPrecompileInput(signature, false, lhsCt.GetHash(), rhsCt.GetHash())
 	} else {
-		valueBz, _ := marshalTfheType(rhs, fheUintType)
+		valueBz, err := marshalTfheType(rhs, fheUintType)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
 		input = toLibPrecompileInput(signature, true, lhsCt.GetHash(), common.BytesToHash(valueBz))
 	}
 
