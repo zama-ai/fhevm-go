@@ -6,6 +6,7 @@ package tfhe
 import "C"
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"unsafe"
 
@@ -46,7 +47,30 @@ func (t FheUintType) String() string {
 	case FheUint160:
 		return "fheUint160"
 	default:
-		return "unknownFheUintType"
+		return "unknown FheUintType"
+	}
+}
+
+func (t FheUintType) NumBits() uint {
+	switch t {
+	case FheBool:
+		return 1
+	case FheUint4:
+		return 4
+	case FheUint8:
+		return 8
+	case FheUint16:
+		return 16
+	case FheUint32:
+		return 32
+	case FheUint64:
+		return 64
+	case FheUint128:
+		return 128
+	case FheUint160:
+		return 160
+	default:
+		panic("unknown FheUintType")
 	}
 }
 
@@ -87,54 +111,63 @@ func boolUnaryNotSupportedOp(lhs unsafe.Pointer) (unsafe.Pointer, error) {
 	return nil, errors.New("Bool is not supported")
 }
 
-// Deserializes a TFHE ciphertext.
-func (ct *TfheCiphertext) Deserialize(in []byte, t FheUintType) error {
+// Deserializes `in` and returns a C pointer to the ciphertext.
+// Expects that the caller will destroy the returned ciphertext via destroyCiphertext().
+func Deserialize(in []byte, t FheUintType) unsafe.Pointer {
 	switch t {
 	case FheBool:
-		ptr := C.deserialize_fhe_bool(toDynamicBufferView((in)))
-		if ptr == nil {
-			return errors.New("FheBool ciphertext deserialization failed")
-		}
+		return C.deserialize_fhe_bool(toDynamicBufferView(in))
+	case FheUint4:
+		return C.deserialize_fhe_uint4(toDynamicBufferView(in))
+	case FheUint8:
+		return C.deserialize_fhe_uint8(toDynamicBufferView(in))
+	case FheUint16:
+		return C.deserialize_fhe_uint16(toDynamicBufferView(in))
+	case FheUint32:
+		return C.deserialize_fhe_uint32(toDynamicBufferView(in))
+	case FheUint64:
+		return C.deserialize_fhe_uint64(toDynamicBufferView(in))
+	case FheUint160:
+		return C.deserialize_fhe_uint160(toDynamicBufferView(in))
+	default:
+		panic("Deserialize: unexpected ciphertext type")
+	}
+}
+
+// Destroys the ciphertext that is pointed to by `ptr`.
+func destroyCiphertext(ptr unsafe.Pointer, t FheUintType) {
+	switch t {
+	case FheBool:
 		C.destroy_fhe_bool(ptr)
 	case FheUint4:
-		ptr := C.deserialize_fhe_uint4(toDynamicBufferView((in)))
-		if ptr == nil {
-			return errors.New("FheUint4 ciphertext deserialization failed")
-		}
 		C.destroy_fhe_uint4(ptr)
 	case FheUint8:
-		ptr := C.deserialize_fhe_uint8(toDynamicBufferView((in)))
-		if ptr == nil {
-			return errors.New("FheUint8 ciphertext deserialization failed")
-		}
 		C.destroy_fhe_uint8(ptr)
 	case FheUint16:
-		ptr := C.deserialize_fhe_uint16(toDynamicBufferView((in)))
-		if ptr == nil {
-			return errors.New("FheUint16 ciphertext deserialization failed")
-		}
 		C.destroy_fhe_uint16(ptr)
 	case FheUint32:
-		ptr := C.deserialize_fhe_uint32(toDynamicBufferView((in)))
-		if ptr == nil {
-			return errors.New("FheUint32 ciphertext deserialization failed")
-		}
 		C.destroy_fhe_uint32(ptr)
 	case FheUint64:
-		ptr := C.deserialize_fhe_uint64(toDynamicBufferView((in)))
-		if ptr == nil {
-			return errors.New("FheUint64 ciphertext deserialization failed")
-		}
 		C.destroy_fhe_uint64(ptr)
 	case FheUint160:
-		ptr := C.deserialize_fhe_uint160(toDynamicBufferView((in)))
-		if ptr == nil {
-			return errors.New("FheUint160 ciphertext deserialization failed")
-		}
 		C.destroy_fhe_uint160(ptr)
 	default:
-		panic("deserialize: unexpected ciphertext type")
+		panic("destroyCiphertext: unexpected ciphertext type")
 	}
+}
+
+// Expects that the caller will destroy the pointer via destroyCiphertext().
+func (ct *TfheCiphertext) DeserializeToPtr() unsafe.Pointer {
+	return Deserialize(ct.Serialize(), ct.FheUintType)
+}
+
+// Deserializes a TFHE ciphertext.
+func (ct *TfheCiphertext) Deserialize(in []byte, t FheUintType) error {
+	ptr := Deserialize(in, t)
+	if ptr == nil {
+		return fmt.Errorf("%s ciphertext deserialization failed", t.String())
+	}
+	destroyCiphertext(ptr, t)
 	ct.FheUintType = t
 	ct.Serialization = in
 	ct.computeHash()
@@ -2561,4 +2594,89 @@ func (ct *TfheCiphertext) GetHash() common.Hash {
 	}
 	ct.computeHash()
 	return *ct.Hash
+}
+
+// Caller is responsible for freeing the returned pointers.
+func arrayToCiphertextPointerArray(arr []*TfheCiphertext, expectedType FheUintType) []unsafe.Pointer {
+	ret := make([]unsafe.Pointer, 0, len(arr))
+	for _, ct := range arr {
+		if ct.Type() != expectedType {
+			return ret
+		}
+		ptr := ct.DeserializeToPtr()
+		if ptr == nil {
+			return ret
+		}
+		ret = append(ret, ptr)
+	}
+	return ret
+}
+
+func destroyCiphertextPointerArray(arr []unsafe.Pointer, t FheUintType) {
+	for _, p := range arr {
+		destroyCiphertext(p, t)
+	}
+}
+
+func EqArray(lhs []*TfheCiphertext, rhs []*TfheCiphertext) (*TfheCiphertext, error) {
+	result := new(TfheCiphertext)
+	if len(lhs) == 0 && len(rhs) == 0 {
+		// If both lhs and rhs are empty, return a trivial encryption of true.
+		result.TrivialEncrypt(*big.NewInt(1), FheBool)
+	} else if len(lhs) != len(rhs) {
+		// If lengths are different, return a trivial encryption of false.
+		result.TrivialEncrypt(*big.NewInt(0), FheBool)
+	} else {
+		// Make sure types are the same.
+		lhsType := lhs[0].Type()
+		rhsType := rhs[0].Type()
+		if lhsType != rhsType {
+			msg := fmt.Sprintf("EqArray: lhs type %d is different from rhs type %d", lhsType, rhsType)
+			return nil, errors.New(msg)
+		}
+		numOfElements := len(lhs)
+		elementsType := lhsType
+
+		// Convert to C pointers.
+		lhsPtrs := arrayToCiphertextPointerArray(lhs, elementsType)
+		defer destroyCiphertextPointerArray(lhsPtrs, elementsType)
+		rhsPtrs := arrayToCiphertextPointerArray(rhs, elementsType)
+		defer destroyCiphertextPointerArray(rhsPtrs, elementsType)
+
+		// Make sure all are of the same type.
+		if len(lhsPtrs) != numOfElements || len(rhsPtrs) != numOfElements {
+			return nil, errors.New("EqArray: elements are of different types")
+		}
+
+		// Do the FHE computation.
+		var resultPtr unsafe.Pointer
+		switch elementsType {
+		case FheUint4:
+			resultPtr = C.eq_fhe_array_uint4(unsafe.Pointer(&lhsPtrs[0]), (C.size_t)(numOfElements), unsafe.Pointer(&rhsPtrs[0]), (C.size_t)(numOfElements), sks)
+		case FheUint8:
+			resultPtr = C.eq_fhe_array_uint8(unsafe.Pointer(&lhsPtrs[0]), (C.size_t)(numOfElements), unsafe.Pointer(&rhsPtrs[0]), (C.size_t)(numOfElements), sks)
+		case FheUint16:
+			resultPtr = C.eq_fhe_array_uint16(unsafe.Pointer(&lhsPtrs[0]), (C.size_t)(numOfElements), unsafe.Pointer(&rhsPtrs[0]), (C.size_t)(numOfElements), sks)
+		case FheUint32:
+			resultPtr = C.eq_fhe_array_uint32(unsafe.Pointer(&lhsPtrs[0]), (C.size_t)(numOfElements), unsafe.Pointer(&rhsPtrs[0]), (C.size_t)(numOfElements), sks)
+		case FheUint64:
+			resultPtr = C.eq_fhe_array_uint64(unsafe.Pointer(&lhsPtrs[0]), (C.size_t)(numOfElements), unsafe.Pointer(&rhsPtrs[0]), (C.size_t)(numOfElements), sks)
+		default:
+			return nil, fmt.Errorf("EqArray: unsupported ciphertext type %d", elementsType)
+		}
+		if resultPtr == nil {
+			return nil, errors.New("EqArray: FHE computation failed")
+		}
+		defer C.destroy_fhe_bool(resultPtr)
+		ser := &C.DynamicBuffer{}
+		ret := C.serialize_fhe_bool(resultPtr, ser)
+		if ret != 0 {
+			return nil, errors.New("EqArray: bool serialization failed")
+		}
+		defer C.destroy_dynamic_buffer(ser)
+		result.Serialization = C.GoBytes(unsafe.Pointer(ser.pointer), C.int(ser.length))
+		result.FheUintType = FheBool
+		result.computeHash()
+	}
+	return result, nil
 }

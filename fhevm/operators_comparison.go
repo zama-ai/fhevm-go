@@ -3,7 +3,11 @@ package fhevm
 import (
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"math/big"
+	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 	"go.opentelemetry.io/otel/trace"
@@ -568,5 +572,110 @@ func fheIfThenElseRun(environment EVMEnvironment, caller common.Address, addr co
 
 	resultHash := result.GetHash()
 	logger.Info("fheIfThenElse success", "first", first.hash().Hex(), "second", second.hash().Hex(), "third", third.hash().Hex(), "result", resultHash.Hex())
+	return resultHash[:], nil
+}
+
+// TODO: implement as part of fhelibMethods.
+const fheArrayEqAbiJson = `
+	[
+		{
+			"name": "fheArrayEq",
+			"type": "function",
+			"inputs": [
+				{
+					"name": "lhs",
+					"type": "uint256[]"
+				},
+				{
+					"name": "rhs",
+					"type": "uint256[]"
+				}
+			],
+			"outputs": [
+				{
+					"name": "",
+					"type": "uint256"
+				}
+			]
+		}
+	]
+`
+
+var arrayEqMethod abi.Method
+
+func init() {
+	reader := strings.NewReader(fheArrayEqAbiJson)
+	arrayEqAbi, err := abi.JSON(reader)
+	if err != nil {
+		panic(err)
+	}
+
+	var ok bool
+	arrayEqMethod, ok = arrayEqAbi.Methods["fheArrayEq"]
+	if !ok {
+		panic("couldn't find the fheArrayEq method")
+	}
+}
+
+func getVerifiedCiphertexts(environment EVMEnvironment, unpacked interface{}) ([]*tfhe.TfheCiphertext, error) {
+	big, ok := unpacked.([]*big.Int)
+	if !ok {
+		return nil, fmt.Errorf("fheArrayEq failed to cast to []*big.Int")
+	}
+	ret := make([]*tfhe.TfheCiphertext, 0, len(big))
+	for _, b := range big {
+		ct := getVerifiedCiphertext(environment, common.BigToHash(b))
+		if ct == nil {
+			return nil, fmt.Errorf("fheArrayEq unverified ciphertext")
+		}
+		ret = append(ret, ct.ciphertext)
+	}
+	return ret, nil
+}
+
+func fheArrayEqRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+	logger := environment.GetLogger()
+
+	unpacked, err := arrayEqMethod.Inputs.UnpackValues(input)
+	if err != nil {
+		msg := "fheArrayEqRun failed to unpack input"
+		logger.Error(msg, "err", err)
+		return nil, err
+	}
+
+	if len(unpacked) != 2 {
+		err := fmt.Errorf("fheArrayEqRun unexpected unpacked len: %d", len(unpacked))
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	lhs, err := getVerifiedCiphertexts(environment, unpacked[0])
+	if err != nil {
+		msg := "fheArrayEqRun failed to get lhs to verified ciphertexts"
+		logger.Error(msg, "err", err)
+		return nil, err
+	}
+
+	rhs, err := getVerifiedCiphertexts(environment, unpacked[1])
+	if err != nil {
+		msg := "fheArrayEqRun failed to get rhs to verified ciphertexts"
+		logger.Error(msg, "err", err)
+		return nil, err
+	}
+
+	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+	if !environment.IsCommitting() && !environment.IsEthCall() {
+		return importRandomCiphertext(environment, tfhe.FheBool), nil
+	}
+
+	result, err := tfhe.EqArray(lhs, rhs)
+	if err != nil {
+		msg := "fheArrayEqRun failed to execute"
+		logger.Error(msg, "err", err)
+		return nil, err
+	}
+	importCiphertext(environment, result)
+	resultHash := result.GetHash()
+	logger.Info("fheArrayEqRun success", "result", resultHash.Hex())
 	return resultHash[:], nil
 }

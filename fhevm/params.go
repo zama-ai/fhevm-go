@@ -13,19 +13,10 @@ const ColdSloadCostEIP2929 uint64 = 2100
 
 const GetNonExistentCiphertextGas uint64 = 1000
 
-var (
-	// TODO: The values here are chosen somewhat arbitrarily (at least the 8 bit ones). Also, we don't
-	// take into account whether a ciphertext existed (either "current" or "original") for the given handle.
-	// Finally, costs are likely to change in the future.
-	FheUint8ProtectedStorageSstoreGas  uint64 = EvmNetSstoreInitGas + 2000
-	FheUint16ProtectedStorageSstoreGas uint64 = FheUint8ProtectedStorageSstoreGas * 2
-	FheUint32ProtectedStorageSstoreGas uint64 = FheUint16ProtectedStorageSstoreGas * 2
-
-	// TODO: We don't take whether the slot is cold or warm into consideration.
-	FheUint8ProtectedStorageSloadGas  uint64 = ColdSloadCostEIP2929 + 200
-	FheUint16ProtectedStorageSloadGas uint64 = FheUint8ProtectedStorageSloadGas * 2
-	FheUint32ProtectedStorageSloadGas uint64 = FheUint16ProtectedStorageSloadGas * 2
-)
+// Base costs of fhEVM SSTORE and SLOAD operations.
+// TODO: We don't take whether the slot is cold or warm into consideration.
+const SstoreFheUint4Gas = EvmNetSstoreInitGas + 1000
+const SloadFheUint4Gas = ColdSloadCostEIP2929 + 100
 
 func DefaultFhevmParams() FhevmParams {
 	return FhevmParams{
@@ -40,33 +31,38 @@ type FhevmParams struct {
 }
 
 type GasCosts struct {
-	FheCast             uint64
-	FhePubKey           uint64
-	FheAddSub           map[tfhe.FheUintType]uint64
-	FheDecrypt          map[tfhe.FheUintType]uint64
-	FheBitwiseOp        map[tfhe.FheUintType]uint64
-	FheMul              map[tfhe.FheUintType]uint64
-	FheScalarMul        map[tfhe.FheUintType]uint64
-	FheScalarDiv        map[tfhe.FheUintType]uint64
-	FheScalarRem        map[tfhe.FheUintType]uint64
-	FheShift            map[tfhe.FheUintType]uint64
-	FheScalarShift      map[tfhe.FheUintType]uint64
-	FheEq               map[tfhe.FheUintType]uint64
-	FheLe               map[tfhe.FheUintType]uint64
-	FheMinMax           map[tfhe.FheUintType]uint64
-	FheScalarMinMax     map[tfhe.FheUintType]uint64
-	FheNot              map[tfhe.FheUintType]uint64
-	FheNeg              map[tfhe.FheUintType]uint64
-	FheReencrypt        map[tfhe.FheUintType]uint64
-	FheTrivialEncrypt   map[tfhe.FheUintType]uint64
-	FheRand             map[tfhe.FheUintType]uint64
-	FheIfThenElse       map[tfhe.FheUintType]uint64
-	FheVerify           map[tfhe.FheUintType]uint64
-	FheGetCiphertext    map[tfhe.FheUintType]uint64
+	FheCast                   uint64
+	FhePubKey                 uint64
+	FheAddSub                 map[tfhe.FheUintType]uint64
+	FheDecrypt                map[tfhe.FheUintType]uint64
+	FheBitwiseOp              map[tfhe.FheUintType]uint64
+	FheMul                    map[tfhe.FheUintType]uint64
+	FheScalarMul              map[tfhe.FheUintType]uint64
+	FheScalarDiv              map[tfhe.FheUintType]uint64
+	FheScalarRem              map[tfhe.FheUintType]uint64
+	FheShift                  map[tfhe.FheUintType]uint64
+	FheScalarShift            map[tfhe.FheUintType]uint64
+	FheEq                     map[tfhe.FheUintType]uint64
+	FheArrayEqBigArrayFactor  uint64 // TODO: either rename or come up with a better solution
+	FheLe                     map[tfhe.FheUintType]uint64
+	FheMinMax                 map[tfhe.FheUintType]uint64
+	FheScalarMinMax           map[tfhe.FheUintType]uint64
+	FheNot                    map[tfhe.FheUintType]uint64
+	FheNeg                    map[tfhe.FheUintType]uint64
+	FheReencrypt              map[tfhe.FheUintType]uint64
+	FheTrivialEncrypt         map[tfhe.FheUintType]uint64
+	FheRand                   map[tfhe.FheUintType]uint64
+	FheIfThenElse             map[tfhe.FheUintType]uint64
+	FheVerify                 map[tfhe.FheUintType]uint64
+	FheGetCiphertext          map[tfhe.FheUintType]uint64
+	ProtectedStorageSstoreGas map[tfhe.FheUintType]uint64
+	ProtectedStorageSloadGas  map[tfhe.FheUintType]uint64
 }
 
 func DefaultGasCosts() GasCosts {
 	return GasCosts{
+		FheCast:   200,
+		FhePubKey: 50,
 		FheAddSub: map[tfhe.FheUintType]uint64{
 			tfhe.FheUint4:  55000 + AdjustFHEGas,
 			tfhe.FheUint8:  84000 + AdjustFHEGas,
@@ -132,13 +128,14 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint64: 28000 + AdjustFHEGas,
 		},
 		FheEq: map[tfhe.FheUintType]uint64{
-			tfhe.FheUint4:  41000 + AdjustFHEGas,
-			tfhe.FheUint8:  43000 + AdjustFHEGas,
-			tfhe.FheUint16: 44000 + AdjustFHEGas,
-			tfhe.FheUint32: 72000 + AdjustFHEGas,
-			tfhe.FheUint64: 76000 + AdjustFHEGas,
+			tfhe.FheUint4:   41000 + AdjustFHEGas,
+			tfhe.FheUint8:   43000 + AdjustFHEGas,
+			tfhe.FheUint16:  44000 + AdjustFHEGas,
+			tfhe.FheUint32:  72000 + AdjustFHEGas,
+			tfhe.FheUint64:  76000 + AdjustFHEGas,
 			tfhe.FheUint160: 80000 + AdjustFHEGas,
 		},
+		FheArrayEqBigArrayFactor: 1000,
 		FheLe: map[tfhe.FheUintType]uint64{
 			tfhe.FheUint4:  60000 + AdjustFHEGas,
 			tfhe.FheUint8:  72000 + AdjustFHEGas,
@@ -219,6 +216,27 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint16: 14000,
 			tfhe.FheUint32: 18000,
 			tfhe.FheUint64: 28000,
+		},
+		// TODO: The values here are chosen somewhat arbitrarily.
+		// Also, we don't take into account whether a ciphertext existed (either "current" or "original") for the given handle.
+		// Finally, costs are likely to change in the future.
+		ProtectedStorageSstoreGas: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:   SstoreFheUint4Gas,
+			tfhe.FheUint8:   SstoreFheUint4Gas * 2,
+			tfhe.FheUint16:  SstoreFheUint4Gas * 4,
+			tfhe.FheUint32:  SstoreFheUint4Gas * 8,
+			tfhe.FheUint64:  SstoreFheUint4Gas * 16,
+			tfhe.FheUint128: SstoreFheUint4Gas * 32,
+			tfhe.FheUint160: SstoreFheUint4Gas * 40,
+		},
+		ProtectedStorageSloadGas: map[tfhe.FheUintType]uint64{
+			tfhe.FheUint4:   SloadFheUint4Gas,
+			tfhe.FheUint8:   SloadFheUint4Gas * 2,
+			tfhe.FheUint16:  SloadFheUint4Gas * 4,
+			tfhe.FheUint32:  SloadFheUint4Gas * 8,
+			tfhe.FheUint64:  SloadFheUint4Gas * 16,
+			tfhe.FheUint128: SloadFheUint4Gas * 32,
+			tfhe.FheUint160: SloadFheUint4Gas * 40,
 		},
 	}
 }
