@@ -22,11 +22,11 @@ func teeCastTo(ciphertext *tfhe.TfheCiphertext, castToType tfhe.FheUintType) (*t
 
 	value := big.NewInt(0).SetBytes(result.Value).Uint64()
 
-	resultBz, err := marshalTfheType(value, castToType)
-
+	resultBz, err := tee.MarshalTfheType(value, castToType)
 	if err != nil {
 		return nil, errors.New("marshalling failed")
 	}
+
 	teePlaintext := tee.NewTeePlaintext(resultBz, castToType, common.Address{})
 
 	resultCt, err := tee.Encrypt(teePlaintext)

@@ -1,7 +1,6 @@
 package fhevm
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -55,7 +54,7 @@ func doOp(
 	result := operator(l, r)
 
 	var resultBz []byte
-	resultBz, err = marshalTfheType(result, lp.FheUintType)
+	resultBz, err = tee.MarshalTfheType(result, lp.FheUintType)
 	if err != nil {
 		logger.Error(op, "failed", "err", err)
 		return nil, err
@@ -118,7 +117,7 @@ func doEqNeOp(
 
 	result := operator(l, r)
 
-	resultBz, err := marshalTfheType(result, lp.FheUintType)
+	resultBz, err := tee.MarshalTfheType(result, lp.FheUintType)
 	if err != nil {
 		logger.Error(op, "failed", "err", err)
 		return nil, err
@@ -187,7 +186,7 @@ func doShiftOp(
 		return nil, err
 	}
 	var resultBz []byte
-	resultBz, err = marshalTfheType(result, lp.FheUintType)
+	resultBz, err = tee.MarshalTfheType(result, lp.FheUintType)
 	if err != nil {
 		logger.Error(op, "failed", "err", err)
 		return nil, err
@@ -252,7 +251,7 @@ func doNegNotOp(
 	result := operator(c)
 
 	var resultBz []byte
-	resultBz, err = marshalTfheType(result, cp.FheUintType)
+	resultBz, err = tee.MarshalTfheType(result, cp.FheUintType)
 	if err != nil {
 		logger.Error(op, "failed", "err", err)
 		return nil, err
@@ -386,58 +385,6 @@ func extract3Operands(op string, environment EVMEnvironment, input []byte, runSp
 	}
 
 	return &fp, &sp, &tp, fhs, shs, ths, nil
-}
-
-// marshalTfheType converts a any to a byte slice
-func marshalTfheType(value any, typ tfhe.FheUintType) ([]byte, error) {
-	switch value := any(value).(type) {
-	case uint64:
-		switch typ {
-		case tfhe.FheBool:
-			resultBz := make([]byte, 1)
-			resultBz[0] = byte(value)
-			return resultBz, nil
-		case tfhe.FheUint4:
-			value = value & 0x0f
-			return []byte{byte(value)}, nil
-		case tfhe.FheUint8:
-			resultBz := []byte{byte(value)}
-			return resultBz, nil
-		case tfhe.FheUint16:
-			resultBz := make([]byte, 2)
-			binary.BigEndian.PutUint16(resultBz, uint16(value))
-			return resultBz, nil
-		case tfhe.FheUint32:
-			resultBz := make([]byte, 4)
-			binary.BigEndian.PutUint32(resultBz, uint32(value))
-			return resultBz, nil
-		case tfhe.FheUint64:
-			resultBz := make([]byte, 8)
-			binary.BigEndian.PutUint64(resultBz, value)
-			return resultBz, nil
-		case tfhe.FheUint160:
-			resultBz := make([]byte, 8)
-			binary.BigEndian.PutUint64(resultBz, value)
-			return resultBz, nil
-		default:
-			return nil,
-				fmt.Errorf("unsupported FheUintType: %s", typ)
-		}
-	case bool:
-		resultBz := make([]byte, 1)
-		if value {
-			resultBz[0] = 1
-		} else {
-			resultBz[0] = 0
-		}
-		return resultBz, nil
-	case *big.Int:
-		resultBz := value.Bytes()
-		return resultBz, nil
-	default:
-		return nil,
-			fmt.Errorf("unsupported value type: %s", value)
-	}
 }
 
 func boolToUint64(b bool) uint64 {

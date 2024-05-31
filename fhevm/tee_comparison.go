@@ -109,7 +109,7 @@ func teeSelectRun(environment EVMEnvironment, caller common.Address, addr common
 	} else {
 		result.Set(t)
 	}
-	resultBz, err := marshalTfheType(&result, p2.FheUintType)
+	resultBz, err := tee.MarshalTfheType(&result, p2.FheUintType)
 	if err != nil {
 		return nil, err
 	}

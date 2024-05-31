@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -23,6 +24,7 @@ func init() {
 		panic(err)
 	}
 	key = ecies.ImportECDSA(ecdsaKey)
+	initCiphertextSizes()
 }
 
 type TeePlaintext struct {
@@ -117,4 +119,89 @@ func Decrypt(ct *tfhe.TfheCiphertext) (TeePlaintext, error) {
 	}
 
 	return plaintext, nil
+}
+
+func GetTeeCiphertextSize(t tfhe.FheUintType) (size uint, found bool) {
+	size, found = teeCiphertextSize[t]
+	return
+}
+
+// Compact TFHE ciphertext sizes by type, in bytes.
+var teeCiphertextSize map[tfhe.FheUintType]uint
+
+func initCiphertextSizes() {
+	teeCiphertextSize = make(map[tfhe.FheUintType]uint)
+
+	teeCiphertextSize[tfhe.FheBool] = uint(len(TeeEncryptAndSerialize(0, tfhe.FheBool)))
+	teeCiphertextSize[tfhe.FheUint4] = uint(len(TeeEncryptAndSerialize(0, tfhe.FheUint4)))
+	teeCiphertextSize[tfhe.FheUint8] = uint(len(TeeEncryptAndSerialize(0, tfhe.FheUint8)))
+	teeCiphertextSize[tfhe.FheUint16] = uint(len(TeeEncryptAndSerialize(0, tfhe.FheUint16)))
+	teeCiphertextSize[tfhe.FheUint32] = uint(len(TeeEncryptAndSerialize(0, tfhe.FheUint32)))
+	teeCiphertextSize[tfhe.FheUint64] = uint(len(TeeEncryptAndSerialize(0, tfhe.FheUint64)))
+	teeCiphertextSize[tfhe.FheUint160] = uint(len(TeeEncryptAndSerialize(0, tfhe.FheUint160)))
+}
+
+func TeeEncryptAndSerialize(value uint64, fheUintType tfhe.FheUintType) []byte {
+	resultBz, err := MarshalTfheType(value, fheUintType)
+	if err != nil {
+		panic(err)
+	}
+
+	ciphertext, err := Encrypt(NewTeePlaintext(resultBz, fheUintType, common.Address{}))
+	if err != nil {
+		panic(err)
+	}
+
+	return ciphertext.Serialization
+}
+
+// MarshalTfheType converts a any to a byte slice
+func MarshalTfheType(value any, typ tfhe.FheUintType) ([]byte, error) {
+	switch value := any(value).(type) {
+	case uint64:
+		switch typ {
+		case tfhe.FheBool:
+			resultBz := make([]byte, 1)
+			resultBz[0] = byte(value)
+			return resultBz, nil
+		case tfhe.FheUint4:
+			return []byte{byte(value)}, nil
+		case tfhe.FheUint8:
+			resultBz := []byte{byte(value)}
+			return resultBz, nil
+		case tfhe.FheUint16:
+			resultBz := make([]byte, 2)
+			binary.BigEndian.PutUint16(resultBz, uint16(value))
+			return resultBz, nil
+		case tfhe.FheUint32:
+			resultBz := make([]byte, 4)
+			binary.BigEndian.PutUint32(resultBz, uint32(value))
+			return resultBz, nil
+		case tfhe.FheUint64:
+			resultBz := make([]byte, 8)
+			binary.BigEndian.PutUint64(resultBz, value)
+			return resultBz, nil
+		case tfhe.FheUint160:
+			resultBz := make([]byte, 8)
+			binary.BigEndian.PutUint64(resultBz, value)
+			return resultBz, nil
+		default:
+			return nil,
+				fmt.Errorf("unsupported FheUintType: %s", typ)
+		}
+	case bool:
+		resultBz := make([]byte, 1)
+		if value {
+			resultBz[0] = 1
+		} else {
+			resultBz[0] = 0
+		}
+		return resultBz, nil
+	case *big.Int:
+		resultBz := value.Bytes()
+		return resultBz, nil
+	default:
+		return nil,
+			fmt.Errorf("unsupported value type: %s", value)
+	}
 }

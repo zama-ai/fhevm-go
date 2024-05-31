@@ -31,7 +31,7 @@ func teeOperationHelper(t *testing.T, fheUintType tfhe.FheUintType, lhs, rhs, ex
 		}
 		input = toLibPrecompileInput(signature, false, lhsCt.GetHash(), rhsCt.GetHash())
 	} else {
-		valueBz, err := marshalTfheType(rhs, fheUintType)
+		valueBz, err := tee.MarshalTfheType(rhs, fheUintType)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -151,7 +151,7 @@ func teeNegNotOperationHelper(t *testing.T, fheUintType tfhe.FheUintType, chs, e
 }
 
 func importTeePlaintextToEVM(environment EVMEnvironment, depth int, value any, typ tfhe.FheUintType) (tfhe.TfheCiphertext, error) {
-	valueBz, err := marshalTfheType(value, typ)
+	valueBz, err := tee.MarshalTfheType(value, typ)
 	if err != nil {
 		return tfhe.TfheCiphertext{}, err
 	}

@@ -2,6 +2,7 @@ package fhevm
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"math/big"
@@ -87,4 +88,76 @@ func teeDecryptRun(environment EVMEnvironment, caller common.Address, addr commo
 	ret := make([]byte, 32)
 	copy(ret[32-len(plaintext):], plaintext)
 	return ret, nil
+}
+
+func teeVerifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
+	logger := environment.GetLogger()
+	// first 32 bytes of the payload is offset, then 32 bytes are size of byte array
+	if len(input) <= 68 {
+		err := errors.New("verifyCiphertext(bytes) must contain at least 68 bytes for selector, byte offset and size")
+		logger.Error("fheLib precompile error", "err", err, "input", hex.EncodeToString(input))
+		return nil, err
+	}
+	bytesPaddingSize := 32
+	bytesSizeSlotSize := 32
+	// read only last 4 bytes of padded number for byte array size
+	sizeStart := bytesPaddingSize + bytesSizeSlotSize - 4
+	sizeEnd := sizeStart + 4
+	bytesSize := binary.BigEndian.Uint32(input[sizeStart:sizeEnd])
+	bytesStart := bytesPaddingSize + bytesSizeSlotSize
+	bytesEnd := bytesStart + int(bytesSize)
+	input = input[bytesStart:minInt(bytesEnd, len(input))]
+
+	if len(input) <= 1 {
+		msg := "verifyCiphertext Run() input needs to contain a ciphertext and one byte for its type"
+		logger.Error(msg, "len", len(input))
+		return nil, errors.New(msg)
+	}
+
+	ctBytes := input[:len(input)-1]
+	ctTypeByte := input[len(input)-1]
+	if !tfhe.IsValidFheType(ctTypeByte) {
+		msg := "verifyCiphertext Run() ciphertext type is invalid"
+		logger.Error(msg, "type", ctTypeByte)
+		return nil, errors.New(msg)
+	}
+	ctType := tfhe.FheUintType(ctTypeByte)
+	otelDescribeOperandsFheTypes(runSpan, ctType)
+
+	expectedSize, found := tee.GetTeeCiphertextSize(ctType)
+	if !found || expectedSize != uint(len(ctBytes)) {
+		msg := "verifyCiphertext Run() compact ciphertext size is invalid"
+		logger.Error(msg, "type", ctTypeByte, "size", len(ctBytes), "expectedSize", expectedSize)
+		return nil, errors.New(msg)
+	}
+
+	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
+	if !environment.IsCommitting() && !environment.IsEthCall() {
+		return importRandomCiphertext(environment, ctType), nil
+	}
+
+	ct := new(tfhe.TfheCiphertext)
+	ct.Serialization = ctBytes
+	ct.FheUintType = ctType
+
+	plaintext, err := tee.Decrypt(ct)
+	if err != nil {
+		msg := "verifyCiphertext Run() compact ciphertext is invalid"
+		return nil, errors.New(msg)
+	}
+
+	if plaintext.FheUintType != ctType {
+		msg := "verifyCiphertext Run() compact type mismatch"
+		logger.Error(msg, "type", plaintext.FheUintType, "expectedType", ctType)
+		return nil, errors.New(msg)
+	}
+
+	ctHash := ct.GetHash()
+	importCiphertext(environment, ct)
+	if environment.IsCommitting() {
+		logger.Info("verifyCiphertext success",
+			"ctHash", ctHash.Hex(),
+			"ctBytes64", hex.EncodeToString(ctBytes[:minInt(len(ctBytes), 64)]))
+	}
+	return ctHash.Bytes(), nil
 }

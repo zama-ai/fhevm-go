@@ -402,6 +402,12 @@ var fhelibMethods = []*FheLibMethod{
 		requiredGasFunction: teeCastRequiredGas,
 		runFunction:         teeCastRun,
 	},
+	{
+		name:                "teeVerifyCiphertext",
+		argTypes:            "(bytes)",
+		requiredGasFunction: teeVerifyCiphertextRequiredGas,
+		runFunction:         teeVerifyCiphertextRun,
+	},
 }
 
 func init() {

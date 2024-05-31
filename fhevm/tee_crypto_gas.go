@@ -34,3 +34,21 @@ func teeDecryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	}
 	return environment.FhevmParams().GasCosts.TeeDecrypt[ct.fheUintType()]
 }
+
+func teeVerifyCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint64 {
+	logger := environment.GetLogger()
+
+	if len(input) <= 68 {
+		logger.Error("verifyCiphertext(bytes) must contain at least 68 bytes for selector, byte offset and size")
+		return 0
+	}
+	ctTypeByte := input[len(input)-1]
+	if !tfhe.IsValidFheType(ctTypeByte) {
+		msg := "verifyCiphertext Run() ciphertext type is invalid"
+		logger.Error(msg, "type", ctTypeByte)
+		return 0
+	}
+
+	ctType := tfhe.FheUintType(ctTypeByte)
+	return environment.FhevmParams().GasCosts.TeeVerifyCiphertext[ctType]
+}
