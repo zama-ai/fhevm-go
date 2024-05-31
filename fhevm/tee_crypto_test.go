@@ -16,7 +16,7 @@ func TestTeeDecryptRun(t *testing.T) {
 			typ      tfhe.FheUintType
 			expected uint64
 		}{
-			{tfhe.FheUint4, uint64(rapid.Uint8().Draw(t, "expected"))},
+			{tfhe.FheUint4, uint64(rapid.Uint8Range(0, 15).Draw(t, "expected"))},
 			{tfhe.FheUint8, uint64(rapid.Uint8().Draw(t, "expected"))},
 			{tfhe.FheUint16, uint64(rapid.Uint16().Draw(t, "expected"))},
 			{tfhe.FheUint32, uint64(rapid.Uint32().Draw(t, "expected"))},
