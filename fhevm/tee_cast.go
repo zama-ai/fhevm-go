@@ -2,6 +2,7 @@ package fhevm
 
 import (
 	"errors"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
@@ -19,14 +20,8 @@ func teeCastTo(ciphertext *tfhe.TfheCiphertext, castToType tfhe.FheUintType) (*t
 		return nil, errors.New("decryption failed")
 	}
 
-	value, err := unmarshalTfheType(result.Value, result.FheUintType)
-	if err != nil {
-		return nil, errors.New("unmarshalling failed")
-	}
+	value := big.NewInt(0).SetBytes(result.Value).Uint64()
 
-	if castToType == tfhe.FheUint4 {
-		value = value % 16
-	}
 	resultBz, err := marshalTfheType(value, castToType)
 
 	if err != nil {
