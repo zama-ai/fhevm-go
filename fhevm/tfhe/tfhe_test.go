@@ -25,6 +25,30 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestBigIntToCU256(t *testing.T) {
+	i := big.NewInt(0)
+	b := make([]byte, 32)
+	b[0] = 42
+	b[31] = 43
+	i.SetBytes(b)
+	_, err := bigIntToU256(i)
+	if err != nil {
+		t.Fatalf("bigIntToU256 must have succeeded")
+	}
+}
+
+func TestBigIntToCU256BigInput(t *testing.T) {
+	i := big.NewInt(0)
+	b := make([]byte, 33)
+	b[0] = 42
+	b[32] = 43
+	i.SetBytes(b)
+	_, err := bigIntToU256(i)
+	if err == nil {
+		t.Fatalf("bigIntToU256 must have failed on big input")
+	}
+}
+
 func TfheEncryptDecrypt(t *testing.T, fheUintType FheUintType) {
 	var val big.Int
 	switch fheUintType {

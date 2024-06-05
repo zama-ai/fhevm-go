@@ -104,23 +104,19 @@ func EncryptAndSerializeCompact(value uint64, fheUintType FheUintType) []byte {
 	return ser
 }
 
-// bigIntToU256 uses u256_from_big_endian_bytes to convert big.Int to U256
+// Convert a big.Int `value` to C.U256.
+// Note: If `value` is bigger than 32 bytes an error is returned.
 func bigIntToU256(value *big.Int) (*C.U256, error) {
-	// Convert big.Int to 32-byte big-endian slice
-	bytes := value.Bytes()
-	if len(bytes) > 32 {
-		return nil, fmt.Errorf("big.Int too large for U256")
+	if len(value.Bytes()) > 32 {
+		return nil, fmt.Errorf("big.Int value is more than 32 bytes")
 	}
-	paddedBytes := make([]byte, 32-len(bytes)) // Padding
-	paddedBytes = append(paddedBytes, bytes...)
-
+	bytes := make([]byte, 32)
+	value.FillBytes(bytes)
 	var result C.U256
-
-	_, err := C.u256_from_big_endian_bytes((*C.uint8_t)(unsafe.Pointer(&paddedBytes[0])), C.size_t(32), &result)
+	_, err := C.u256_from_big_endian_bytes((*C.uint8_t)(unsafe.Pointer(&bytes[0])), C.size_t(32), &result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert big.Int to U256: %v", err)
 	}
-
 	return &result, nil
 }
 
