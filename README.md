@@ -83,4 +83,5 @@ The library helps EVM maintainers to extend their EVM with the power of FHE. If 
 
 ## License
 
+
 This software is distributed under the BSD-3-Clause-Clear license. If you have any questions, please contact us at hello@zama.ai.
