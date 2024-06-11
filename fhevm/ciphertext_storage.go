@@ -75,7 +75,7 @@ func loadCiphertext(env EVMEnvironment, handle common.Hash) (ct *tfhe.TfheCipher
 
 	metadataInt := newInt(env.GetState(ciphertextStorage, handle).Bytes())
 	if metadataInt.IsZero() {
-		return nil, 0
+		return nil, ColdSloadCostEIP2929
 	}
 	metadata := newCiphertextMetadata(metadataInt.Bytes32())
 	ctBytes := make([]byte, 0)
@@ -93,7 +93,7 @@ func loadCiphertext(env EVMEnvironment, handle common.Hash) (ct *tfhe.TfheCipher
 	err := ct.Deserialize(ctBytes, metadata.fheUintType)
 	if err != nil {
 		logger.Error("failed to deserialize ciphertext from storage", "err", err)
-		return nil, 0
+		return nil, ColdSloadCostEIP2929 + DeserializeCiphertextGas
 	}
 	env.FhevmData().loadedCiphertexts[handle] = ct
 	return ct, env.FhevmParams().GasCosts.FheStorageSloadGas[ct.Type()]

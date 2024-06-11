@@ -3474,23 +3474,6 @@ func FheArrayEqNoRhs(t *testing.T, fheUintType tfhe.FheUintType) {
 	}
 }
 
-func FheArrayEqNoRhsGas(t *testing.T, fheUintType tfhe.FheUintType) {
-	depth := 1
-	environment := newTestEVMEnvironment()
-	environment.depth = depth
-
-	lhs := make([]*big.Int, 3)
-	lhs[0] = loadCiphertextInTestMemory(environment, 1, depth, fheUintType).GetHash().Big()
-	lhs[1] = loadCiphertextInTestMemory(environment, 2, depth, fheUintType).GetHash().Big()
-	lhs[2] = loadCiphertextInTestMemory(environment, 3, depth, fheUintType).GetHash().Big()
-	input, _ := arrayEqMethod.Inputs.Pack(lhs)
-
-	gas := fheArrayEqRequiredGas(environment, input)
-	if gas != 0 {
-		t.Fatalf("fheArrayEq expected 0 gas value")
-	}
-}
-
 func TestFheArrayEqUnverifiedCtInLhs(t *testing.T) {
 	depth := 1
 	environment := newTestEVMEnvironment()
@@ -3516,28 +3499,6 @@ func TestFheArrayEqUnverifiedCtInLhs(t *testing.T) {
 
 	if len(environment.FhevmData().loadedCiphertexts) != 6 {
 		t.Fatalf("fheArrayEq expected 6 verified ciphertext")
-	}
-}
-
-func TestFheArrayEqUnverifiedCtInLhsGas(t *testing.T) {
-	depth := 1
-	environment := newTestEVMEnvironment()
-	environment.depth = depth
-
-	lhs := make([]*big.Int, 3)
-	lhs[0] = loadCiphertextInTestMemory(environment, 1, depth, tfhe.FheUint32).GetHash().Big()
-	lhs[0].Add(lhs[0], big.NewInt(1))
-	lhs[1] = loadCiphertextInTestMemory(environment, 2, depth, tfhe.FheUint32).GetHash().Big()
-	lhs[2] = loadCiphertextInTestMemory(environment, 3, depth, tfhe.FheUint32).GetHash().Big()
-	rhs := make([]*big.Int, 3)
-	rhs[0] = loadCiphertextInTestMemory(environment, 1, depth, tfhe.FheUint32).GetHash().Big()
-	rhs[1] = loadCiphertextInTestMemory(environment, 2, depth, tfhe.FheUint32).GetHash().Big()
-	rhs[2] = loadCiphertextInTestMemory(environment, 3, depth, tfhe.FheUint32).GetHash().Big()
-	input, _ := arrayEqMethod.Inputs.Pack(lhs, rhs)
-
-	gas := fheArrayEqRequiredGas(environment, input)
-	if gas != 0 {
-		t.Fatalf("fheArrayEq expected 0 gas value")
 	}
 }
 
@@ -3567,28 +3528,6 @@ func TestFheArrayEqUnverifiedCtInRhs(t *testing.T) {
 
 	if len(environment.FhevmData().loadedCiphertexts) != 6 {
 		t.Fatalf("fheArrayEq expected 6 verified ciphertext")
-	}
-}
-
-func TestFheArrayEqUnverifiedCtInRhsGas(t *testing.T) {
-	depth := 1
-	environment := newTestEVMEnvironment()
-	environment.depth = depth
-
-	lhs := make([]*big.Int, 3)
-	lhs[0] = loadCiphertextInTestMemory(environment, 1, depth, tfhe.FheUint32).GetHash().Big()
-	lhs[1] = loadCiphertextInTestMemory(environment, 2, depth, tfhe.FheUint32).GetHash().Big()
-	lhs[2] = loadCiphertextInTestMemory(environment, 3, depth, tfhe.FheUint32).GetHash().Big()
-	rhs := make([]*big.Int, 3)
-	rhs[0] = loadCiphertextInTestMemory(environment, 1, depth, tfhe.FheUint32).GetHash().Big()
-	rhs[1] = loadCiphertextInTestMemory(environment, 2, depth, tfhe.FheUint32).GetHash().Big()
-	rhs[1].Add(lhs[0], big.NewInt(1))
-	rhs[2] = loadCiphertextInTestMemory(environment, 3, depth, tfhe.FheUint32).GetHash().Big()
-	input, _ := arrayEqMethod.Inputs.Pack(lhs, rhs)
-
-	gas := fheArrayEqRequiredGas(environment, input)
-	if gas != 0 {
-		t.Fatalf("fheArrayEq expected 0 gas value")
 	}
 }
 
@@ -5163,24 +5102,4 @@ func TesFheArrayEqNoRhs32(t *testing.T) {
 
 func TestFheArrayEqNoRhs64(t *testing.T) {
 	FheArrayEqNoRhs(t, tfhe.FheUint64)
-}
-
-func TestFheArrayEqNoRhsGas4(t *testing.T) {
-	FheArrayEqNoRhsGas(t, tfhe.FheUint4)
-}
-
-func TestFheArrayEqNoRhsGas8(t *testing.T) {
-	FheArrayEqNoRhsGas(t, tfhe.FheUint8)
-}
-
-func TestFheArrayEqNoRhsGas16(t *testing.T) {
-	FheArrayEqNoRhsGas(t, tfhe.FheUint16)
-}
-
-func TesFheArrayEqNoRhsGas32(t *testing.T) {
-	FheArrayEqNoRhsGas(t, tfhe.FheUint32)
-}
-
-func TestFheArrayEqNoRhsGas64(t *testing.T) {
-	FheArrayEqNoRhsGas(t, tfhe.FheUint64)
 }

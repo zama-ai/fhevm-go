@@ -29,7 +29,7 @@ func reencryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	ct, loadGas := loadCiphertext(environment, common.BytesToHash(input[0:32]))
 	if ct == nil {
 		logger.Error("reencrypt RequiredGas() input doesn't point to verified ciphertext", "input", hex.EncodeToString(input))
-		return 0
+		return loadGas
 	}
 	return environment.FhevmParams().GasCosts.FheReencrypt[ct.Type()] + loadGas
 }
@@ -55,13 +55,20 @@ func getCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 func castRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	input = input[:minInt(33, len(input))]
 
+	logger := environment.GetLogger()
 	if len(input) != 33 {
-		environment.GetLogger().Error(
+		logger.Error(
 			"cast RequiredGas() input needs to contain a ciphertext and one byte for its type",
 			"len", len(input))
 		return 0
 	}
-	return environment.FhevmParams().GasCosts.FheCast
+
+	ct, loadGas := loadCiphertext(environment, common.BytesToHash(input[0:32]))
+	if ct == nil {
+		logger.Error("cast RequiredGas() input doesn't point to verified ciphertext", "input", hex.EncodeToString(input))
+		return loadGas
+	}
+	return environment.FhevmParams().GasCosts.FheCast + loadGas
 }
 
 func decryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -75,7 +82,7 @@ func decryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	ct, loadGas := loadCiphertext(environment, common.BytesToHash(input))
 	if ct == nil {
 		logger.Error("decrypt RequiredGas() input doesn't point to verified ciphertext", "input", hex.EncodeToString(input))
-		return 0
+		return loadGas
 	}
 	return environment.FhevmParams().GasCosts.FheDecrypt[ct.Type()] + loadGas
 }

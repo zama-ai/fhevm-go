@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 )
 
 func fheShlRequiredGas(environment EVMEnvironment, input []byte) uint64 {
@@ -16,24 +15,22 @@ func fheShlRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 		logger.Error("fheShift RequiredGas() can not detect if operator is meant to be scalar", "err", err, "input", hex.EncodeToString(input))
 		return 0
 	}
-	var lhs, rhs *tfhe.TfheCiphertext
-	loadGas := uint64(0)
 	if !isScalar {
-		lhs, rhs, loadGas, err = load2Ciphertexts(environment, input)
+		lhs, rhs, loadGas, err := load2Ciphertexts(environment, input)
 		if err != nil {
 			logger.Error("fheShift RequiredGas() ciphertext failed to load inputs", "err", err, "input", hex.EncodeToString(input))
-			return 0
+			return loadGas
 		}
 		if lhs.Type() != rhs.Type() {
 			logger.Error("fheShift RequiredGas() operand type mismatch", "lhs", lhs.Type(), "rhs", rhs.Type())
-			return 0
+			return loadGas
 		}
-		return environment.FhevmParams().GasCosts.FheShift[lhs.Type()]
+		return environment.FhevmParams().GasCosts.FheShift[lhs.Type()] + loadGas
 	} else {
-		lhs, _, loadGas, err = getScalarOperands(environment, input)
+		lhs, _, loadGas, err := getScalarOperands(environment, input)
 		if err != nil {
 			logger.Error("fheShift RequiredGas() scalar failed to load inputs", "err", err, "input", hex.EncodeToString(input))
-			return 0
+			return loadGas
 		}
 		return environment.FhevmParams().GasCosts.FheScalarShift[lhs.Type()] + loadGas
 	}
@@ -65,7 +62,7 @@ func fheNegRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	ct, loadGas := loadCiphertext(environment, common.BytesToHash(input[0:32]))
 	if ct == nil {
 		logger.Error("fheNeg failed to load input", "input", hex.EncodeToString(input))
-		return 0
+		return loadGas
 	}
 	return environment.FhevmParams().GasCosts.FheNeg[ct.Type()] + loadGas
 }
@@ -81,7 +78,7 @@ func fheNotRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	ct, loadGas := loadCiphertext(environment, common.BytesToHash(input[0:32]))
 	if ct == nil {
 		logger.Error("fheNot failed to load input", "input", hex.EncodeToString(input))
-		return 0
+		return loadGas
 	}
 	return environment.FhevmParams().GasCosts.FheNot[ct.Type()] + loadGas
 }
@@ -106,11 +103,11 @@ func fheBitAndRequiredGas(environment EVMEnvironment, input []byte) uint64 {
 	lhs, rhs, loadGas, err := load2Ciphertexts(environment, input)
 	if err != nil {
 		logger.Error("Bitwise op RequiredGas() failed to load inputs", "err", err, "input", hex.EncodeToString(input))
-		return 0
+		return loadGas
 	}
 	if lhs.Type() != rhs.Type() {
 		logger.Error("Bitwise op RequiredGas() operand type mismatch", "lhs", lhs.Type(), "rhs", rhs.Type())
-		return 0
+		return loadGas
 	}
 	return environment.FhevmParams().GasCosts.FheBitwiseOp[lhs.Type()] + loadGas
 }

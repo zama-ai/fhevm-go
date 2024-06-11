@@ -309,11 +309,11 @@ func load2Ciphertexts(environment EVMEnvironment, input []byte) (lhs *tfhe.TfheC
 	loadGasRhs := uint64(0)
 	lhs, loadGasLhs = loadCiphertext(environment, common.BytesToHash(input[0:32]))
 	if lhs == nil {
-		return nil, nil, 0, errors.New("unverified ciphertext handle")
+		return nil, nil, loadGasLhs, errors.New("unverified ciphertext handle")
 	}
 	rhs, loadGasRhs = loadCiphertext(environment, common.BytesToHash(input[32:64]))
 	if rhs == nil {
-		return nil, nil, 0, errors.New("unverified ciphertext handle")
+		return nil, nil, loadGasLhs + loadGasRhs, errors.New("unverified ciphertext handle")
 	}
 	err = nil
 	loadGas = loadGasLhs + loadGasRhs
@@ -337,15 +337,15 @@ func load3Ciphertexts(environment EVMEnvironment, input []byte) (first *tfhe.Tfh
 	loadGasThird := uint64(0)
 	first, loadGasFirst = loadCiphertext(environment, common.BytesToHash(input[0:32]))
 	if first == nil {
-		return nil, nil, nil, 0, errors.New("unverified ciphertext handle")
+		return nil, nil, nil, loadGasFirst, errors.New("unverified ciphertext handle")
 	}
 	second, loadGasSecond = loadCiphertext(environment, common.BytesToHash(input[32:64]))
 	if second == nil {
-		return nil, nil, nil, 0, errors.New("unverified ciphertext handle")
+		return nil, nil, nil, loadGasFirst + loadGasSecond, errors.New("unverified ciphertext handle")
 	}
 	third, loadGasThird = loadCiphertext(environment, common.BytesToHash(input[64:96]))
 	if third == nil {
-		return nil, nil, nil, 0, errors.New("unverified ciphertext handle")
+		return nil, nil, nil, loadGasFirst + loadGasSecond + loadGasThird, errors.New("unverified ciphertext handle")
 	}
 	err = nil
 	loadGas = loadGasFirst + loadGasSecond + loadGasThird
@@ -358,7 +358,7 @@ func getScalarOperands(environment EVMEnvironment, input []byte) (lhs *tfhe.Tfhe
 	}
 	lhs, loadGas = loadCiphertext(environment, common.BytesToHash(input[0:32]))
 	if lhs == nil {
-		return nil, nil, 0, errors.New("failed to load ciphertext")
+		return nil, nil, loadGas, errors.New("failed to load ciphertext")
 	}
 	rhs = &big.Int{}
 	rhs.SetBytes(input[32:64])

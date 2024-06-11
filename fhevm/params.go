@@ -11,7 +11,9 @@ const EvmNetSstoreInitGas uint64 = 20000
 const AdjustFHEGas uint64 = 10000
 const ColdSloadCostEIP2929 uint64 = 2100
 
-const GetNonExistentCiphertextGas uint64 = 1000
+const GetNonExistentCiphertextGas uint64 = ColdSloadCostEIP2929
+
+const DeserializeCiphertextGas uint64 = 30
 
 // Base costs of fhEVM SSTORE and SLOAD operations.
 // TODO: We don't take whether the slot is cold or warm into consideration.
@@ -31,32 +33,32 @@ type FhevmParams struct {
 }
 
 type GasCosts struct {
-	FheCast                   uint64
-	FhePubKey                 uint64
-	FheAddSub                 map[tfhe.FheUintType]uint64
-	FheDecrypt                map[tfhe.FheUintType]uint64
-	FheBitwiseOp              map[tfhe.FheUintType]uint64
-	FheMul                    map[tfhe.FheUintType]uint64
-	FheScalarMul              map[tfhe.FheUintType]uint64
-	FheScalarDiv              map[tfhe.FheUintType]uint64
-	FheScalarRem              map[tfhe.FheUintType]uint64
-	FheShift                  map[tfhe.FheUintType]uint64
-	FheScalarShift            map[tfhe.FheUintType]uint64
-	FheEq                     map[tfhe.FheUintType]uint64
-	FheArrayEqBigArrayFactor  uint64 // TODO: either rename or come up with a better solution
-	FheLe                     map[tfhe.FheUintType]uint64
-	FheMinMax                 map[tfhe.FheUintType]uint64
-	FheScalarMinMax           map[tfhe.FheUintType]uint64
-	FheNot                    map[tfhe.FheUintType]uint64
-	FheNeg                    map[tfhe.FheUintType]uint64
-	FheReencrypt              map[tfhe.FheUintType]uint64
-	FheTrivialEncrypt         map[tfhe.FheUintType]uint64
-	FheRand                   map[tfhe.FheUintType]uint64
-	FheIfThenElse             map[tfhe.FheUintType]uint64
-	FheVerify                 map[tfhe.FheUintType]uint64
-	FheGetCiphertext          map[tfhe.FheUintType]uint64
-	FheStorageSstoreGas       map[tfhe.FheUintType]uint64
-	FheStorageSloadGas        map[tfhe.FheUintType]uint64
+	FheCast                  uint64
+	FhePubKey                uint64
+	FheAddSub                map[tfhe.FheUintType]uint64
+	FheDecrypt               map[tfhe.FheUintType]uint64
+	FheBitwiseOp             map[tfhe.FheUintType]uint64
+	FheMul                   map[tfhe.FheUintType]uint64
+	FheScalarMul             map[tfhe.FheUintType]uint64
+	FheScalarDiv             map[tfhe.FheUintType]uint64
+	FheScalarRem             map[tfhe.FheUintType]uint64
+	FheShift                 map[tfhe.FheUintType]uint64
+	FheScalarShift           map[tfhe.FheUintType]uint64
+	FheEq                    map[tfhe.FheUintType]uint64
+	FheArrayEqBigArrayFactor uint64 // TODO: either rename or come up with a better solution
+	FheLe                    map[tfhe.FheUintType]uint64
+	FheMinMax                map[tfhe.FheUintType]uint64
+	FheScalarMinMax          map[tfhe.FheUintType]uint64
+	FheNot                   map[tfhe.FheUintType]uint64
+	FheNeg                   map[tfhe.FheUintType]uint64
+	FheReencrypt             map[tfhe.FheUintType]uint64
+	FheTrivialEncrypt        map[tfhe.FheUintType]uint64
+	FheRand                  map[tfhe.FheUintType]uint64
+	FheIfThenElse            map[tfhe.FheUintType]uint64
+	FheVerify                map[tfhe.FheUintType]uint64
+	FheGetCiphertext         map[tfhe.FheUintType]uint64
+	FheStorageSstoreGas      map[tfhe.FheUintType]uint64
+	FheStorageSloadGas       map[tfhe.FheUintType]uint64
 }
 
 func DefaultGasCosts() GasCosts {
