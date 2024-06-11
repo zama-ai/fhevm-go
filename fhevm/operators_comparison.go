@@ -617,20 +617,22 @@ func init() {
 	}
 }
 
-func getVerifiedCiphertexts(environment EVMEnvironment, unpacked interface{}) ([]*tfhe.TfheCiphertext, error) {
+func getVerifiedCiphertexts(environment EVMEnvironment, unpacked interface{}) ([]*tfhe.TfheCiphertext, uint64, error) {
+	totalLoadGas := uint64(0)
 	big, ok := unpacked.([]*big.Int)
 	if !ok {
-		return nil, fmt.Errorf("fheArrayEq failed to cast to []*big.Int")
+		return nil, 0, fmt.Errorf("fheArrayEq failed to cast to []*big.Int")
 	}
 	ret := make([]*tfhe.TfheCiphertext, 0, len(big))
 	for _, b := range big {
-		ct, _ := loadCiphertext(environment, common.BigToHash(b))
+		ct, loadGas := loadCiphertext(environment, common.BigToHash(b))
 		if ct == nil {
-			return nil, fmt.Errorf("fheArrayEq unverified ciphertext")
+			return nil, totalLoadGas + loadGas, fmt.Errorf("fheArrayEq unverified ciphertext")
 		}
+		totalLoadGas += loadGas
 		ret = append(ret, ct)
 	}
-	return ret, nil
+	return ret, totalLoadGas, nil
 }
 
 func fheArrayEqRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
@@ -649,14 +651,14 @@ func fheArrayEqRun(environment EVMEnvironment, caller common.Address, addr commo
 		return nil, err
 	}
 
-	lhs, err := getVerifiedCiphertexts(environment, unpacked[0])
+	lhs, _, err := getVerifiedCiphertexts(environment, unpacked[0])
 	if err != nil {
 		msg := "fheArrayEqRun failed to get lhs to verified ciphertexts"
 		logger.Error(msg, "err", err)
 		return nil, err
 	}
 
-	rhs, err := getVerifiedCiphertexts(environment, unpacked[1])
+	rhs, _, err := getVerifiedCiphertexts(environment, unpacked[1])
 	if err != nil {
 		msg := "fheArrayEqRun failed to get rhs to verified ciphertexts"
 		logger.Error(msg, "err", err)
