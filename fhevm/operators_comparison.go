@@ -624,11 +624,11 @@ func getVerifiedCiphertexts(environment EVMEnvironment, unpacked interface{}) ([
 	}
 	ret := make([]*tfhe.TfheCiphertext, 0, len(big))
 	for _, b := range big {
-		ct := getVerifiedCiphertext(environment, common.BigToHash(b))
+		ct, _ := loadCiphertext(environment, common.BigToHash(b))
 		if ct == nil {
 			return nil, fmt.Errorf("fheArrayEq unverified ciphertext")
 		}
-		ret = append(ret, ct.ciphertext)
+		ret = append(ret, ct)
 	}
 	return ret, nil
 }
@@ -665,7 +665,7 @@ func fheArrayEqRun(environment EVMEnvironment, caller common.Address, addr commo
 
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() && !environment.IsEthCall() {
-		return importRandomCiphertext(environment, tfhe.FheBool), nil
+		return insertRandomCiphertext(environment, tfhe.FheBool), nil
 	}
 
 	result, err := tfhe.EqArray(lhs, rhs)
@@ -674,7 +674,7 @@ func fheArrayEqRun(environment EVMEnvironment, caller common.Address, addr commo
 		logger.Error(msg, "err", err)
 		return nil, err
 	}
-	importCiphertext(environment, result)
+	insertCiphertextToMemory(environment, result)
 	resultHash := result.GetHash()
 	logger.Info("fheArrayEqRun success", "result", resultHash.Hex())
 	return resultHash[:], nil
