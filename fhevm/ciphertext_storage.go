@@ -63,7 +63,7 @@ func loadCiphertextMetadata(env EVMEnvironment, handle common.Hash) *ciphertextM
 	return newCiphertextMetadata(metadataInt.Bytes32())
 }
 
-// Returns the ciphertext for the given `handle“ and the gas needed to laod the ciphertext.
+// Returns the ciphertext for the given `handle` and the gas needed to laod the ciphertext.
 // Returned gas would be zero if already loaded to memory.
 // If `handle` doesn't point to a ciphertext or an error occurs, (nil, 0) is returned.
 func loadCiphertext(env EVMEnvironment, handle common.Hash) (ct *tfhe.TfheCiphertext, gas uint64) {
@@ -99,31 +99,31 @@ func loadCiphertext(env EVMEnvironment, handle common.Hash) (ct *tfhe.TfheCipher
 	return ct, env.FhevmParams().GasCosts.FheStorageSloadGas[ct.Type()]
 }
 
-func insertCiphertextToMemory(env EVMEnvironment, ct *tfhe.TfheCiphertext) {
-	env.FhevmData().loadedCiphertexts[ct.GetHash()] = ct
+func insertCiphertextToMemory(env EVMEnvironment, handle common.Hash, ct *tfhe.TfheCiphertext) {
+	env.FhevmData().loadedCiphertexts[handle] = ct
 }
 
 // Persist the given ciphertext.
-func persistCiphertext(env EVMEnvironment, ct *tfhe.TfheCiphertext) {
+func persistCiphertext(env EVMEnvironment, handle common.Hash, ct *tfhe.TfheCiphertext) {
 	logger := env.GetLogger()
-	if isCiphertextPersisted(env, ct.GetHash()) {
+	if isCiphertextPersisted(env, handle) {
 		// Assuming a handle is a hash of the ciphertext, if metadata is already existing in storage it means the ciphertext is too.
-		logger.Info("ciphertext already persisted to storage", "handle", ct.GetHash().Hex())
+		logger.Info("ciphertext already persisted to storage", "handle", handle.Hex())
 		return
 	}
 
 	metadata := ciphertextMetadata{}
-	metadata.length = uint64(tfhe.ExpandedFheCiphertextSize[ct.FheUintType])
-	metadata.fheUintType = ct.FheUintType
+	metadata.length = uint64(tfhe.ExpandedFheCiphertextSize[ct.Type()])
+	metadata.fheUintType = ct.Type()
 
 	// Persist the metadata in storage.
-	env.SetState(ciphertextStorage, ct.GetHash(), metadata.serialize())
+	env.SetState(ciphertextStorage, handle, metadata.serialize())
 
-	ciphertextSlot := newInt(ct.GetHash().Bytes())
+	ciphertextSlot := newInt(handle.Bytes())
 	ciphertextSlot.AddUint64(ciphertextSlot, 1)
 	if env.IsCommitting() {
 		logger.Info("persisting new ciphertext",
-			"handle", hex.EncodeToString(ct.GetHash().Bytes()),
+			"handle", hex.EncodeToString(handle.Bytes()),
 			"type", metadata.fheUintType,
 			"len", metadata.length,
 			"ciphertextSlot", hex.EncodeToString(ciphertextSlot.Bytes()))

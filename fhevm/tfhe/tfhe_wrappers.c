@@ -365,6 +365,18 @@ void* deserialize_fhe_uint160(DynamicBufferView in) {
 	return ct;
 }
 
+int serialize_fhe_uint2048(void *ct, DynamicBuffer* out) {
+	return fhe_uint2048_serialize(ct, out);
+}
+
+void* deserialize_fhe_uint2048(DynamicBufferView in) {
+	FheUint2048* ct = NULL;
+	const int r = fhe_uint2048_deserialize(in, &ct);
+	if(r != 0) {
+		return NULL;
+	}
+	return ct;
+}
 
 void* deserialize_compact_fhe_uint160(DynamicBufferView in) {
 	CompactFheUint160List* list = NULL;
@@ -387,6 +399,31 @@ void* deserialize_compact_fhe_uint160(DynamicBufferView in) {
 		ct = NULL;
 	}
 	r = compact_fhe_uint160_list_destroy(list);
+	assert(r == 0);
+	return ct;
+}
+
+void* deserialize_compact_fhe_uint2048(DynamicBufferView in) {
+	CompactFheUint2048List* list = NULL;
+	FheUint2048* ct = NULL;
+
+	int r = compact_fhe_uint2048_list_deserialize(in, &list);
+	if(r != 0) {
+		return NULL;
+	}
+	size_t len = 0;
+	r = compact_fhe_uint2048_list_len(list, &len);
+	// Expect only 1 ciphertext in the list.
+	if(r != 0 || len != 1) {
+		r = compact_fhe_uint2048_list_destroy(list);
+		assert(r == 0);
+		return NULL;
+	}
+	r = compact_fhe_uint2048_list_expand(list, &ct, 1);
+	if(r != 0) {
+		ct = NULL;
+	}
+	r = compact_fhe_uint2048_list_destroy(list);
 	assert(r == 0);
 	return ct;
 }
@@ -423,6 +460,11 @@ void destroy_fhe_uint64(void* ct) {
 
 void destroy_fhe_uint160(void* ct) {
 	const int r = fhe_uint160_destroy(ct);
+	assert(r == 0);
+}
+
+void destroy_fhe_uint2048(void* ct) {
+	const int r = fhe_uint2048_destroy(ct);
 	assert(r == 0);
 }
 
@@ -1570,6 +1612,17 @@ void* eq_fhe_uint160(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* eq_fhe_uint2048(void* ct1, void* ct2, void* sks)
+{
+	FheBool* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint2048_eq(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* scalar_eq_fhe_uint4(void* ct, uint8_t pt, void* sks)
 {
 	FheBool* result = NULL;
@@ -1632,6 +1685,17 @@ void* scalar_eq_fhe_uint160(void* ct, struct U256 pt, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint160_scalar_eq(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_eq_fhe_uint2048(void* ct, struct U2048 pt, void* sks)
+{
+	FheBool* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint2048_scalar_eq(ct, pt, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -1757,6 +1821,17 @@ void* ne_fhe_uint160(void* ct1, void* ct2, void* sks)
 	return result;
 }
 
+void* ne_fhe_uint2048(void* ct1, void* ct2, void* sks)
+{
+	FheBool* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint2048_ne(ct1, ct2, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
 void* scalar_ne_fhe_uint4(void* ct, uint8_t pt, void* sks)
 {
 	FheBool* result = NULL;
@@ -1819,6 +1894,17 @@ void* scalar_ne_fhe_uint160(void* ct, struct U256 pt, void* sks)
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint160_scalar_ne(ct, pt, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* scalar_ne_fhe_uint2048(void* ct, struct U2048 pt, void* sks)
+{
+	FheBool* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint2048_scalar_ne(ct, pt, &result);
 	if(r != 0) return NULL;
 	return result;
 }
@@ -2700,6 +2786,10 @@ int decrypt_fhe_uint160(void* cks, void* ct, struct U256 *res)
 	return fhe_uint160_decrypt(ct, cks, res);
 }
 
+int decrypt_fhe_uint2048(void* cks, void* ct, struct U2048* res) {
+	return fhe_uint2048_decrypt(ct, cks, res);
+}
+
 void* public_key_encrypt_fhe_bool(void* pks, bool value) {
 	CompactFheBoolList* list = NULL;
 	FheBool* ct = NULL;
@@ -2812,6 +2902,15 @@ void* public_key_encrypt_fhe_uint160(void* pks, struct U256 *value) {
 	return ct;
 }
 
+void* public_key_encrypt_fhe_uint2048(void* pks, struct U2048 *value) {
+	FheUint2048* ct = NULL;
+
+	int r = fhe_uint2048_try_encrypt_with_compact_public_key_u2048(*value, pks, &ct);
+  	assert(r == 0);
+
+	return ct;
+}
+
 void* trivial_encrypt_fhe_bool(void* sks, bool value) {
 	FheBool* ct = NULL;
 
@@ -2878,12 +2977,23 @@ void* trivial_encrypt_fhe_uint64(void* sks, uint64_t value) {
 	return ct;
 }
 
-void* trivial_encrypt_fhe_uint160(void* sks, struct U256 value) {
+void* trivial_encrypt_fhe_uint160(void* sks, struct U256* value) {
 	FheUint160* ct = NULL;
 
 	checked_set_server_key(sks);
 
-	int r = fhe_uint160_try_encrypt_trivial_u256(value, &ct);
+	int r = fhe_uint160_try_encrypt_trivial_u256(*value, &ct);
+  	assert(r == 0);
+
+	return ct;
+}
+
+void* trivial_encrypt_fhe_uint2048(void* sks, struct U2048* value) {
+	FheUint2048* ct = NULL;
+
+	checked_set_server_key(sks);
+
+	int r = fhe_uint2048_try_encrypt_trivial_u2048(*value, &ct);
   	assert(r == 0);
 
 	return ct;
@@ -2978,6 +3088,20 @@ void public_key_encrypt_and_serialize_fhe_uint160_list(void* pks, struct U256 *v
 	assert(r == 0);
 
 	r = compact_fhe_uint160_list_destroy(list);
+	assert(r == 0);
+}
+
+void public_key_encrypt_and_serialize_fhe_uint2048_list(void* pks, struct U2048 *value, DynamicBuffer* out) {
+	CompactFheUint2048List* list = NULL;
+	FheUint2048* ct = NULL;
+
+	int r = compact_fhe_uint2048_list_try_encrypt_with_compact_public_key_u2048(value, 1, pks, &list);
+  	assert(r == 0);
+
+	r = compact_fhe_uint2048_list_serialize(list, out);
+	assert(r == 0);
+
+	r = compact_fhe_uint2048_list_destroy(list);
 	assert(r == 0);
 }
 
@@ -3177,6 +3301,56 @@ void* cast_64_32(void* ct, void* sks) {
 	checked_set_server_key(sks);
 
 	const int r = fhe_uint64_cast_into_fhe_uint32(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_160_4(void* ct, void* sks) {
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint160_cast_into_fhe_uint4(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_160_8(void* ct, void* sks) {
+	FheUint8* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint160_cast_into_fhe_uint8(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_160_16(void* ct, void* sks) {
+	FheUint16* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint160_cast_into_fhe_uint16(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_160_32(void* ct, void* sks) {
+	FheUint32* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint160_cast_into_fhe_uint32(ct, &result);
+	if(r != 0) return NULL;
+	return result;
+}
+
+void* cast_160_64(void* ct, void* sks) {
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = fhe_uint160_cast_into_fhe_uint64(ct, &result);
 	if(r != 0) return NULL;
 	return result;
 }

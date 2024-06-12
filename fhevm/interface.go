@@ -47,6 +47,9 @@ type FhevmData struct {
 	// A map from a ciphertext hash to the ciphertext itself.
 	loadedCiphertexts map[common.Hash]*tfhe.TfheCiphertext
 
+	// A map from the hash of the ciphertext list to an array of expanded ciphertexts.
+	expandedInputCiphertexts map[common.Hash][]*tfhe.TfheCiphertext
+
 	nextCiphertextHashOnGasEst uint256.Int
 }
 

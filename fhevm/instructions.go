@@ -22,7 +22,7 @@ func OpSstore(pc *uint64, env EVMEnvironment, scope ScopeContext) ([]byte, error
 	if newValHash != oldValHash && env.IsCommitting() {
 		ct := GetCiphertextFromMemory(env, newValHash)
 		if ct != nil {
-			persistCiphertext(env, ct)
+			persistCiphertext(env, newValHash, ct)
 		}
 	}
 	// Set the SSTORE's value in the actual contract.

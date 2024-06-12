@@ -882,6 +882,14 @@ func TfheEq(t *testing.T, fheUintType FheUintType) {
 		}
 		a.SetBytes(byteValue)
 		b.SetBytes(byteValue)
+	case FheUint2048:
+		hexValue := "12345676876661323221435343778899"
+		byteValue, err := hex.DecodeString(hexValue)
+		if err != nil {
+			log.Fatalf("Failed to decode hex string: %v", err)
+		}
+		a.SetBytes(byteValue)
+		b.SetBytes(byteValue)
 	}
 
 	var expected uint64
@@ -892,6 +900,7 @@ func TfheEq(t *testing.T, fheUintType FheUintType) {
 		expected = 0
 	}
 
+	// TODO: use encryption for FheUint2048 when available in tfhe-rs
 	ctA := new(TfheCiphertext)
 	ctA.Encrypt(a, fheUintType)
 	ctB := new(TfheCiphertext)
@@ -973,6 +982,14 @@ func TfheNe(t *testing.T, fheUintType FheUintType) {
 		}
 		a.SetBytes(byteValue)
 		b.SetUint64(8888)
+	case FheUint2048:
+		hexValue := "12345676876661323221435343990055"
+		byteValue, err := hex.DecodeString(hexValue)
+		if err != nil {
+			log.Fatalf("Failed to decode hex string: %v", err)
+		}
+		a.SetBytes(byteValue)
+		b.SetUint64(8888)
 	}
 
 	var expected uint64
@@ -982,6 +999,7 @@ func TfheNe(t *testing.T, fheUintType FheUintType) {
 	} else {
 		expected = 1
 	}
+	// TODO: use encryption for FheUint2048 when available in tfhe-rs
 	ctA := new(TfheCiphertext)
 	ctA.Encrypt(a, fheUintType)
 	ctB := new(TfheCiphertext)
@@ -1734,6 +1752,65 @@ func TestTfheEqArrayUnsupportedType(t *testing.T) {
 	}
 }
 
+func TfheCompact160ListSerDeserRoundTrip(t *testing.T, input []big.Int) {
+	serList, err := EncryptAndSerializeCompact160List(input)
+	if err != nil {
+		t.Fatalf("EncryptAndSerializeCompact160List failed with %v", err)
+	}
+	cts, err := DeserializeAndExpandCompact160List(serList)
+	if err != nil {
+		t.Fatalf("DeserializeAndExpandCompact160List failed with %v", err)
+	}
+	if len(cts) != len(input) {
+		t.Fatalf("DeserializeAndExpandCompact160List returned %d ciphertexts, expected %d", len(cts), len(input))
+	}
+
+	for i, ct := range cts {
+		v, err := ct.Decrypt()
+		if err != nil {
+			t.Fatalf("Decrypt of ct%d failed with %v", i, err)
+		}
+		if v.Cmp(&input[i]) != 0 {
+			t.Fatalf("v%d=%v is not equa to in%d=%v", i, v, i, input[i])
+		}
+	}
+}
+
+func TestTfheCompact160ListSerDeserRoundTrip64Bit(t *testing.T) {
+	input := make([]big.Int, 0)
+	input = append(input, *big.NewInt(79))
+	input = append(input, *big.NewInt(42))
+	TfheCompact160ListSerDeserRoundTrip(t, input)
+}
+
+func TestTfheCompact160ListSerDeserRoundTrip160Bit(t *testing.T) {
+	input := make([]big.Int, 0)
+	in1, ok := new(big.Int).SetString("1edd3edac274a90128356fb8caa11bd2", 16)
+	if in1 == nil || !ok {
+		t.Fatalf("failed to create 128 bit integer")
+	}
+	in2, ok := new(big.Int).SetString("9f24d93621347ca0832d1a3980750eea", 16)
+	if in2 == nil || !ok {
+		t.Fatalf("failed to create 128 bit integer")
+	}
+	in3, ok := new(big.Int).SetString("e80e81fe4402389034f8123d4d2fffe9", 16)
+	if in3 == nil || !ok {
+		t.Fatalf("failed to create 128 bit integer")
+	}
+	input = append(input, *in1)
+	input = append(input, *in2)
+	input = append(input, *in3)
+	TfheCompact160ListSerDeserRoundTrip(t, input)
+}
+
+func TestTfheCompact160ListEmptyInput(t *testing.T) {
+	input := make([]big.Int, 0)
+	_, err := EncryptAndSerializeCompact160List(input)
+	if err == nil {
+		t.Fatalf("EncryptAndSerializeCompact160List must have failed on empty input")
+	}
+}
+
 func TestTfheEncryptDecryptBool(t *testing.T) {
 	TfheEncryptDecrypt(t, FheBool)
 }
@@ -2338,6 +2415,10 @@ func TestTfheEq160(t *testing.T) {
 	TfheEq(t, FheUint160)
 }
 
+func TestTfheEq2048(t *testing.T) {
+	TfheEq(t, FheUint2048)
+}
+
 func TestTfheScalarEq4(t *testing.T) {
 	TfheScalarEq(t, FheUint4)
 }
@@ -2384,6 +2465,10 @@ func TestTfheNe64(t *testing.T) {
 
 func TestTfheNe160(t *testing.T) {
 	TfheNe(t, FheUint160)
+}
+
+func TestTfheNe2048(t *testing.T) {
+	TfheNe(t, FheUint2048)
 }
 
 func TestTfheScalarNe4(t *testing.T) {

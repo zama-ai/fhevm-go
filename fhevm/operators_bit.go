@@ -42,9 +42,9 @@ func fheShlRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 			logger.Error("fheShl failed", "err", err)
 			return nil, err
 		}
-		insertCiphertextToMemory(environment, result)
-
 		resultHash := result.GetHash()
+		insertCiphertextToMemory(environment, resultHash, result)
+
 		logger.Info("fheShl success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.GetHash().Hex(), "result", resultHash.Hex())
 		return resultHash[:], nil
 
@@ -66,9 +66,9 @@ func fheShlRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 			logger.Error("fheShl failed", "err", err)
 			return nil, err
 		}
-		insertCiphertextToMemory(environment, result)
-
 		resultHash := result.GetHash()
+		insertCiphertextToMemory(environment, resultHash, result)
+
 		logger.Info("fheShl scalar success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
 		return resultHash[:], nil
 	}
@@ -108,9 +108,9 @@ func fheShrRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 			logger.Error("fheShr failed", "err", err)
 			return nil, err
 		}
-		insertCiphertextToMemory(environment, result)
-
 		resultHash := result.GetHash()
+		insertCiphertextToMemory(environment, resultHash, result)
+
 		logger.Info("fheShr success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.GetHash().Hex(), "result", resultHash.Hex())
 		return resultHash[:], nil
 
@@ -132,9 +132,9 @@ func fheShrRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 			logger.Error("fheShr failed", "err", err)
 			return nil, err
 		}
-		insertCiphertextToMemory(environment, result)
-
 		resultHash := result.GetHash()
+		insertCiphertextToMemory(environment, resultHash, result)
+
 		logger.Info("fheShr scalar success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
 		return resultHash[:], nil
 	}
@@ -174,9 +174,9 @@ func fheRotlRun(environment EVMEnvironment, caller common.Address, addr common.A
 			logger.Error("fheRotl failed", "err", err)
 			return nil, err
 		}
-		insertCiphertextToMemory(environment, result)
-
 		resultHash := result.GetHash()
+		insertCiphertextToMemory(environment, resultHash, result)
+
 		logger.Info("fheRotl success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.GetHash().Hex(), "result", resultHash.Hex())
 		return resultHash[:], nil
 
@@ -198,9 +198,9 @@ func fheRotlRun(environment EVMEnvironment, caller common.Address, addr common.A
 			logger.Error("fheRotl failed", "err", err)
 			return nil, err
 		}
-		insertCiphertextToMemory(environment, result)
-
 		resultHash := result.GetHash()
+		insertCiphertextToMemory(environment, resultHash, result)
+
 		logger.Info("fheRotl scalar success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
 		return resultHash[:], nil
 	}
@@ -240,9 +240,9 @@ func fheRotrRun(environment EVMEnvironment, caller common.Address, addr common.A
 			logger.Error("fheRotr failed", "err", err)
 			return nil, err
 		}
-		insertCiphertextToMemory(environment, result)
-
 		resultHash := result.GetHash()
+		insertCiphertextToMemory(environment, resultHash, result)
+
 		logger.Info("fheRotr success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.GetHash().Hex(), "result", resultHash.Hex())
 		return resultHash[:], nil
 
@@ -264,9 +264,9 @@ func fheRotrRun(environment EVMEnvironment, caller common.Address, addr common.A
 			logger.Error("fheRotr failed", "err", err)
 			return nil, err
 		}
-		insertCiphertextToMemory(environment, result)
-
 		resultHash := result.GetHash()
+		insertCiphertextToMemory(environment, resultHash, result)
+
 		logger.Info("fheRotr scalar success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.Uint64(), "result", resultHash.Hex())
 		return resultHash[:], nil
 	}
@@ -302,9 +302,9 @@ func fheNegRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		logger.Error("fheNeg failed", "err", err)
 		return nil, err
 	}
-	insertCiphertextToMemory(environment, result)
-
 	resultHash := result.GetHash()
+	insertCiphertextToMemory(environment, resultHash, result)
+
 	logger.Info("fheNeg success", "ct", ct.GetHash().Hex(), "result", resultHash.Hex())
 	return resultHash[:], nil
 }
@@ -339,9 +339,9 @@ func fheNotRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		logger.Error("fheNot failed", "err", err)
 		return nil, err
 	}
-	insertCiphertextToMemory(environment, result)
-
 	resultHash := result.GetHash()
+	insertCiphertextToMemory(environment, resultHash, result)
+
 	logger.Info("fheNot success", "ct", ct.GetHash().Hex(), "result", resultHash.Hex())
 	return resultHash[:], nil
 }
@@ -386,9 +386,9 @@ func fheBitAndRun(environment EVMEnvironment, caller common.Address, addr common
 		logger.Error("fheBitAnd failed", "err", err)
 		return nil, err
 	}
-	insertCiphertextToMemory(environment, result)
-
 	resultHash := result.GetHash()
+	insertCiphertextToMemory(environment, resultHash, result)
+
 	logger.Info("fheBitAnd success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.GetHash().Hex(), "result", resultHash.Hex())
 	return resultHash[:], nil
 }
@@ -433,9 +433,9 @@ func fheBitOrRun(environment EVMEnvironment, caller common.Address, addr common.
 		logger.Error("fheBitOr failed", "err", err)
 		return nil, err
 	}
-	insertCiphertextToMemory(environment, result)
-
 	resultHash := result.GetHash()
+	insertCiphertextToMemory(environment, resultHash, result)
+
 	logger.Info("fheBitOr success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.GetHash().Hex(), "result", resultHash.Hex())
 	return resultHash[:], nil
 }
@@ -480,9 +480,9 @@ func fheBitXorRun(environment EVMEnvironment, caller common.Address, addr common
 		logger.Error("fheBitXor failed", "err", err)
 		return nil, err
 	}
-	insertCiphertextToMemory(environment, result)
-
 	resultHash := result.GetHash()
+	insertCiphertextToMemory(environment, resultHash, result)
+
 	logger.Info("fheBitXor success", "lhs", lhs.GetHash().Hex(), "rhs", rhs.GetHash().Hex(), "result", resultHash.Hex())
 	return resultHash[:], nil
 }

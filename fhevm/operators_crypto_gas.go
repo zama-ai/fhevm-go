@@ -8,14 +8,14 @@ import (
 )
 
 func verifyCiphertextRequiredGas(environment EVMEnvironment, input []byte) uint64 {
-	if len(input) <= 1 {
+	_, ct, err := parseVerifyCiphertextInput(environment, input)
+	if err != nil {
 		environment.GetLogger().Error(
-			"verifyCiphertext RequiredGas() input needs to contain a ciphertext and one byte for its type",
-			"len", len(input))
+			"verifyCiphertext RequiredGas() input parsing failed",
+			"err", err)
 		return 0
 	}
-	ctType := tfhe.FheUintType(input[len(input)-1])
-	return environment.FhevmParams().GasCosts.FheVerify[ctType]
+	return environment.FhevmParams().GasCosts.FheVerify[ct.Type()]
 }
 
 func reencryptRequiredGas(environment EVMEnvironment, input []byte) uint64 {
