@@ -3,14 +3,16 @@ package fhevm
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/zama-ai/fhevm-go/fhevm/kms"
 	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 	"go.opentelemetry.io/otel/trace"
@@ -18,69 +20,164 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+const verifyCipertextAbiJson = `
+	[
+		{
+			"name": "verifyCiphertext",
+			"type": "function",
+			"inputs": [
+				{
+					"name": "inputHandle",
+					"type": "bytes32"
+				},
+				{
+					"name": "callerAddress",
+					"type": "address"
+				},
+				{
+					"name": "inputProof",
+					"type": "bytes"
+				},
+				{
+					"name": "inputType",
+					"type": "bytes1"
+				}
+			],
+			"outputs": [
+				{
+					"name": "",
+					"type": "uint256"
+				}
+			]
+		}
+	]
+`
+
+var verifyCipertextMethod abi.Method
+
+func init() {
+	reader := strings.NewReader(verifyCipertextAbiJson)
+	verifyCiphertextAbi, err := abi.JSON(reader)
+	if err != nil {
+		panic(err)
+	}
+
+	var ok bool
+	verifyCipertextMethod, ok = verifyCiphertextAbi.Methods["verifyCiphertext"]
+	if !ok {
+		panic("couldn't find the verifyCiphertext method")
+	}
+}
+
+func parseVerifyCiphertextInput(environment EVMEnvironment, input []byte) ([32]byte, *tfhe.TfheCiphertext, error) {
+	unpacked, err := verifyCipertextMethod.Inputs.UnpackValues(input)
+	if err != nil {
+		return [32]byte{}, nil, err
+	} else if len(unpacked) != 4 {
+		return [32]byte{}, nil, fmt.Errorf("parseVerifyCiphertextInput unexpected unpacked len: %d", len(unpacked))
+	}
+
+	// Get handle from input.
+	handle, ok := unpacked[0].([32]byte)
+	if !ok {
+		return [32]byte{}, nil, fmt.Errorf("parseVerifyCiphertextInput failed to parse bytes32 inputHandle")
+	}
+
+	// Get the ciphertext from the input.
+	ciphertextList, ok := unpacked[2].([]byte)
+	if !ok || len(ciphertextList) == 0 {
+		return [32]byte{}, nil, fmt.Errorf("parseVerifyCiphertextInput failed to parse bytes inputProof")
+	}
+
+	// Get the type from the input.
+	inputTypeByteArray, ok := unpacked[3].([1]byte)
+	if !ok {
+		return [32]byte{}, nil, fmt.Errorf("parseVerifyCiphertextInput failed to parse byte inputType")
+	}
+	if !tfhe.IsValidFheType(inputTypeByteArray[0]) {
+		return [32]byte{}, nil, fmt.Errorf("parseVerifyCiphertextInput invalid inputType")
+	}
+	inputType := tfhe.FheUintType(inputTypeByteArray[0])
+
+	// Get the type from the handle.
+	handleIndex := uint8(handle[29])
+	handleTypeByte := handle[30]
+	if !tfhe.IsValidFheType(handleTypeByte) {
+		return [32]byte{}, nil, fmt.Errorf("parseVerifyCiphertextInput invalid handleType")
+	}
+	handleType := tfhe.FheUintType(handleTypeByte)
+
+	// Make sure handle type matches the input type.
+	if handleType != inputType {
+		return [32]byte{}, nil, fmt.Errorf("parseVerifyCiphertextInput handle type (%d) is different from the input type (%d)", handleType, inputType)
+	}
+
+	// Make sure hash in the handle is correct.
+	ciphertextListHash := crypto.Keccak256Hash(ciphertextList)
+	ciphertextListAndIndexHash := crypto.Keccak256Hash(append(ciphertextListHash.Bytes(), handleIndex))
+	if !bytes.Equal(ciphertextListAndIndexHash[:29], handle[:29]) {
+		return [32]byte{}, nil, fmt.Errorf("parseVerifyCiphertextInput input hash doesn't match handle hash")
+	}
+
+	var cts []*tfhe.TfheCiphertext
+	if environment.FhevmData().expandedInputCiphertexts == nil {
+		environment.FhevmData().expandedInputCiphertexts = make(map[common.Hash][]*tfhe.TfheCiphertext)
+	}
+	if cts, ok = environment.FhevmData().expandedInputCiphertexts[ciphertextListHash]; !ok {
+		if inputType == tfhe.FheUint2048 {
+			cts, err = tfhe.DeserializeAndExpandCompact2048List(ciphertextList)
+		} else {
+			cts, err = tfhe.DeserializeAndExpandCompact160List(ciphertextList)
+		}
+		if err != nil {
+			return [32]byte{}, nil, err
+		}
+	}
+
+	// Extract ciphertext from the list via the handle index.
+	if int(handleIndex) >= len(cts) {
+		return [32]byte{}, nil, fmt.Errorf("parseVerifyCiphertextInput ciphertext index out of range")
+	}
+	ct := cts[handleIndex]
+
+	// Cast, if needed.
+	if inputType == tfhe.FheUint2048 {
+		if handleType != tfhe.FheUint2048 {
+			return [32]byte{}, nil, fmt.Errorf("parseVerifyCiphertextInput only FheUint2048 allowed in FheUint2048List")
+		}
+	} else {
+		if handleType != ct.Type() {
+			ct, err = ct.CastTo(handleType)
+			if err != nil {
+				return [32]byte{}, nil, err
+			}
+		}
+	}
+	environment.FhevmData().expandedInputCiphertexts[ciphertextListHash] = cts
+	return handle, ct, nil
+}
+
 func verifyCiphertextRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	logger := environment.GetLogger()
-	// first 32 bytes of the payload is offset, then 32 bytes are size of byte array
-	if len(input) <= 68 {
-		err := errors.New("verifyCiphertext(bytes) must contain at least 68 bytes for selector, byte offset and size")
-		logger.Error("fheLib precompile error", "err", err, "input", hex.EncodeToString(input))
+
+	handle, ct, err := parseVerifyCiphertextInput(environment, input)
+	if err != nil {
+		logger.Error(err.Error())
 		return nil, err
 	}
-	bytesPaddingSize := 32
-	bytesSizeSlotSize := 32
-	// read only last 4 bytes of padded number for byte array size
-	sizeStart := bytesPaddingSize + bytesSizeSlotSize - 4
-	sizeEnd := sizeStart + 4
-	bytesSize := binary.BigEndian.Uint32(input[sizeStart:sizeEnd])
-	bytesStart := bytesPaddingSize + bytesSizeSlotSize
-	bytesEnd := bytesStart + int(bytesSize)
-	input = input[bytesStart:minInt(bytesEnd, len(input))]
-
-	if len(input) <= 1 {
-		msg := "verifyCiphertext Run() input needs to contain a ciphertext and one byte for its type"
-		logger.Error(msg, "len", len(input))
-		return nil, errors.New(msg)
-	}
-
-	ctBytes := input[:len(input)-1]
-	ctTypeByte := input[len(input)-1]
-	if !tfhe.IsValidFheType(ctTypeByte) {
-		msg := "verifyCiphertext Run() ciphertext type is invalid"
-		logger.Error(msg, "type", ctTypeByte)
-		return nil, errors.New(msg)
-	}
-	ctType := tfhe.FheUintType(ctTypeByte)
-	otelDescribeOperandsFheTypes(runSpan, ctType)
-
-	expectedSize, found := tfhe.GetCompactFheCiphertextSize(ctType)
-	if !found || expectedSize != uint(len(ctBytes)) {
-		msg := "verifyCiphertext Run() compact ciphertext size is invalid"
-		logger.Error(msg, "type", ctTypeByte, "size", len(ctBytes), "expectedSize", expectedSize)
-		return nil, errors.New(msg)
-	}
+	otelDescribeOperandsFheTypes(runSpan, ct.Type())
 
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() && !environment.IsEthCall() {
-		return insertRandomCiphertext(environment, ctType), nil
+		return insertRandomCiphertext(environment, ct.Type()), nil
 	}
 
-	ct := new(tfhe.TfheCiphertext)
-	err := ct.DeserializeCompact(ctBytes, ctType)
-	if err != nil {
-		logger.Error("verifyCiphertext failed to deserialize input ciphertext",
-			"err", err,
-			"len", len(ctBytes),
-			"ctBytes64", hex.EncodeToString(ctBytes[:minInt(len(ctBytes), 64)]))
-		return nil, err
-	}
-	ctHash := ct.GetHash()
-	insertCiphertextToMemory(environment, ct)
+	insertCiphertextToMemory(environment, handle, ct)
 	if environment.IsCommitting() {
 		logger.Info("verifyCiphertext success",
-			"ctHash", ctHash.Hex(),
-			"ctBytes64", hex.EncodeToString(ctBytes[:minInt(len(ctBytes), 64)]))
+			"ctHash", ct.GetHash().Hex())
 	}
-	return ctHash.Bytes(), nil
+	return handle[:], nil
 }
 
 func reencryptRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
@@ -337,7 +434,7 @@ func castRun(environment EVMEnvironment, caller common.Address, addr common.Addr
 
 	resHash := res.GetHash()
 
-	insertCiphertextToMemory(environment, res)
+	insertCiphertextToMemory(environment, resHash, res)
 	if environment.IsCommitting() {
 		logger.Info("cast success",
 			"ctHash", resHash.Hex(),
@@ -392,7 +489,7 @@ func trivialEncryptRun(environment EVMEnvironment, caller common.Address, addr c
 	ct := new(tfhe.TfheCiphertext).TrivialEncrypt(valueToEncrypt, encryptToType)
 
 	ctHash := ct.GetHash()
-	insertCiphertextToMemory(environment, ct)
+	insertCiphertextToMemory(environment, ctHash, ct)
 	if environment.IsCommitting() {
 		logger.Info("trivialEncrypt success",
 			"ctHash", ctHash.Hex(),

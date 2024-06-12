@@ -3,13 +3,11 @@ package fhevm
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -238,12 +236,54 @@ func toLibPrecompileInputNoScalar(method string, hashes ...common.Hash) []byte {
 	return ret
 }
 
-// verifyCiphertext expect a certain format: mainly some padding and the size of the buffer
-func prepareInputForVerifyCiphertext(input []byte) []byte {
-	padding := make([]byte, 60)
-	size := make([]byte, 4)
-	binary.BigEndian.PutUint32(size, uint32(len(input)))
-	return append(append(padding, size...), input...)
+func createInputList(values []big.Int, types []tfhe.FheUintType, listFheUintType tfhe.FheUintType) (handles [][32]byte, ciphertext []byte) {
+	if listFheUintType == tfhe.FheUint160 {
+		ciphertext, _ = tfhe.EncryptAndSerializeCompact160List(values)
+	} else if listFheUintType == tfhe.FheUint2048 {
+		ciphertext, _ = tfhe.EncryptAndSerializeCompact2048List(values)
+	} else {
+		panic("unsupported list type")
+	}
+	ciphertextHash := crypto.Keccak256Hash(ciphertext).Bytes()
+	handles = make([][32]byte, 0)
+	for i := range types {
+		index := byte(i)
+		handle := crypto.Keccak256Hash(append(ciphertextHash, index))
+		handle[29] = index
+		handle[30] = byte(types[i])
+		handle[31] = 0
+		handles = append(handles, handle)
+	}
+	return
+}
+
+func createInputListWithBadIndex(values []big.Int, types []tfhe.FheUintType, listFheUintType tfhe.FheUintType) (handles [][32]byte, ciphertext []byte) {
+	if listFheUintType == tfhe.FheUint160 {
+		ciphertext, _ = tfhe.EncryptAndSerializeCompact160List(values)
+	} else if listFheUintType == tfhe.FheUint2048 {
+		panic("")
+	} else {
+		panic("unsupported list type")
+	}
+	ciphertextHash := crypto.Keccak256Hash(ciphertext).Bytes()
+	handles = make([][32]byte, 0)
+	for i := range types {
+		index := byte(i + 25)
+		handle := crypto.Keccak256Hash(append(ciphertextHash, index))
+		handle[29] = byte(i + 25)
+		handle[30] = byte(types[i])
+		handle[31] = 0
+		handles = append(handles, handle)
+	}
+	return
+}
+
+func packInputList(handle [32]byte, ciphertext []byte, fheUintType tfhe.FheUintType) []byte {
+	input, err := verifyCipertextMethod.Inputs.Pack(handle, [20]byte{}, ciphertext, [1]byte{byte(fheUintType)})
+	if err != nil {
+		panic(err)
+	}
+	return input
 }
 
 func loadCiphertextInTestMemory(environment EVMEnvironment, value uint64, depth int, t tfhe.FheUintType) *tfhe.TfheCiphertext {
@@ -254,77 +294,193 @@ func loadCiphertextInTestMemory(environment EVMEnvironment, value uint64, depth 
 	if err != nil {
 		panic(err)
 	}
-	insertCiphertextToMemory(environment, ct)
+	insertCiphertextToMemory(environment, ct.GetHash(), ct)
 	return ct
 }
 
-func VerifyCiphertext(t *testing.T, fheUintType tfhe.FheUintType) {
-	var value uint64
-	switch fheUintType {
-	case tfhe.FheBool:
-		value = 1
-	case tfhe.FheUint4:
-		value = 4
-	case tfhe.FheUint8:
-		value = 234
-	case tfhe.FheUint16:
-		value = 4283
-	case tfhe.FheUint32:
-		value = 1333337
-	case tfhe.FheUint64:
-		value = 13333377777777777
-	}
+func VerifyCiphertextList(t *testing.T, listFheUintType tfhe.FheUintType, fheUintType tfhe.FheUintType) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
 	addr := tfheExecutorContractAddress
 	readOnly := false
-	compact := tfhe.EncryptAndSerializeCompact(value, fheUintType)
-	input := prepareInputForVerifyCiphertext(append(compact, byte(fheUintType)))
-	out, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
+	handles, ciphertext := createInputList([]big.Int{*big.NewInt(5), *big.NewInt(6)}, []tfhe.FheUintType{fheUintType, fheUintType}, listFheUintType)
+	handle1 := handles[0]
+	handle2 := handles[1]
+
+	input1 := packInputList(handle1, ciphertext, fheUintType)
+	out1, err := verifyCiphertextRun(environment, addr, addr, input1, readOnly, nil)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	ct := new(tfhe.TfheCiphertext)
-	if err = ct.DeserializeCompact(compact, fheUintType); err != nil {
+	input2 := packInputList(handle2, ciphertext, fheUintType)
+	out2, err := verifyCiphertextRun(environment, addr, addr, input2, readOnly, nil)
+	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	if common.BytesToHash(out) != ct.GetHash() {
-		t.Fatalf("output hash in verifyCipertext is incorrect")
+	if len(environment.fhevmData.expandedInputCiphertexts) != 1 {
+		t.Fatalf("expected 1 input list ciphertext, got %d", len(environment.fhevmData.expandedInputCiphertexts))
 	}
-	res, _ := loadCiphertext(environment, ct.GetHash())
-	if res == nil {
+	for _, expandedCiphertexts := range environment.fhevmData.expandedInputCiphertexts {
+		if len(expandedCiphertexts) != 2 {
+			t.Fatalf("expected 2 expanded ciphertexts, got %d", len(expandedCiphertexts))
+		}
+	}
+
+	if !bytes.Equal(out1, handle1[:]) {
+		t.Fatalf("output from verifyCipertext is not equal to input handle")
+	}
+	expanded1, _ := loadCiphertext(environment, handle1)
+	if expanded1 == nil {
 		t.Fatalf("verifyCiphertext must have verified given ciphertext")
+	}
+	if expanded1.Type() != fheUintType {
+		t.Fatalf("verifyCiphertext must have casted the expanded ciphertext of type %d to the requested type %d", expanded1.Type(), fheUintType)
+	}
+	decrypted1, err := expanded1.Decrypt()
+	if err != nil || !decrypted1.IsUint64() {
+		t.Fatalf("verifyCiphertext decrypted1 must be uint64")
+	}
+	if fheUintType == tfhe.FheBool {
+		if decrypted1.Uint64() == 0 {
+			t.Fatalf("verifyCiphertext decrypted1 value must be true")
+		}
+	} else if decrypted1.Uint64() != 5 {
+		t.Fatalf("verifyCiphertext decrypted1 value must be 5")
+	}
+
+	if !bytes.Equal(out2, handle2[:]) {
+		t.Fatalf("output from verifyCipertext is not equal to input handle")
+	}
+	expanded2, _ := loadCiphertext(environment, handle2)
+	if expanded2 == nil {
+		t.Fatalf("verifyCiphertext must have verified given ciphertext")
+	}
+	if expanded2.Type() != fheUintType {
+		t.Fatalf("verifyCiphertext must have casted the expanded ciphertext of type %d to the requested type %d", expanded2.Type(), fheUintType)
+	}
+	decrypted2, err := expanded2.Decrypt()
+	if err != nil || !decrypted2.IsUint64() {
+		t.Fatalf("verifyCiphertext decrypted2 must be uint64")
+	}
+	if fheUintType == tfhe.FheBool {
+		if decrypted2.Uint64() == 0 {
+			t.Fatalf("verifyCiphertext decrypted2 value must be true")
+		}
+	} else if decrypted2.Uint64() != 6 {
+		t.Fatalf("verifyCiphertext decrypted2 value must be 6")
 	}
 }
 
-func VerifyCiphertextBadType(t *testing.T, actualType tfhe.FheUintType, metadataType tfhe.FheUintType) {
-	var value uint64
-	switch actualType {
-	case tfhe.FheUint4:
-		value = 2
-	case tfhe.FheUint8:
-		value = 2
-	case tfhe.FheUint16:
-		value = 4283
-	case tfhe.FheUint32:
-		value = 1333337
-	case tfhe.FheUint64:
-		value = 13333377777777777
-	}
+func TestVerifyCiphertextBadType(t *testing.T) {
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
 	addr := tfheExecutorContractAddress
 	readOnly := false
-	compact := tfhe.EncryptAndSerializeCompact(value, actualType)
-	input := prepareInputForVerifyCiphertext(append(compact, byte(metadataType)))
+	handles, ciphertext := createInputList([]big.Int{*big.NewInt(42)}, []tfhe.FheUintType{tfhe.FheUint32}, tfhe.FheUint160)
+	handle := handles[0]
+	badType := tfhe.FheUintType(255)
+	input := packInputList(handle, ciphertext, badType)
 	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
 	if err == nil {
-		t.Fatalf("verifyCiphertext must have failed on type mismatch")
+		t.Fatalf("verifyCiphertext must have failed on bad type")
 	}
-	if len(environment.FhevmData().loadedCiphertexts) != 0 {
-		t.Fatalf("verifyCiphertext mustn't have verified given ciphertext")
+	if len(environment.fhevmData.expandedInputCiphertexts) != 0 {
+		t.Fatalf("expected 0 expanded input ciphertexts, got %d", len(environment.fhevmData.expandedInputCiphertexts))
+	}
+	if len(environment.fhevmData.loadedCiphertexts) != 0 {
+		t.Fatalf("expected 0 loaded ciphertexts, got %d", len(environment.fhevmData.loadedCiphertexts))
+	}
+}
+
+func TestVerifyCiphertextBadTypeInHandle(t *testing.T) {
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := tfheExecutorContractAddress
+	readOnly := false
+	handles, ciphertext := createInputList([]big.Int{*big.NewInt(42)}, []tfhe.FheUintType{tfhe.FheUint32}, tfhe.FheUint160)
+	handle := handles[0]
+	// put a bad type in the handle
+	handle[30] = 255
+	input := packInputList(handle, ciphertext, tfhe.FheUint32)
+	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
+	if err == nil {
+		t.Fatalf("verifyCiphertext must have failed on bad type in handle")
+	}
+	if len(environment.fhevmData.expandedInputCiphertexts) != 0 {
+		t.Fatalf("expected 0 expanded input ciphertexts, got %d", len(environment.fhevmData.expandedInputCiphertexts))
+	}
+	if len(environment.fhevmData.loadedCiphertexts) != 0 {
+		t.Fatalf("expected 0 loaded ciphertexts, got %d", len(environment.fhevmData.loadedCiphertexts))
+	}
+}
+
+func TestVerifyCiphertextTypeMismatchInHandle(t *testing.T) {
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := tfheExecutorContractAddress
+	readOnly := false
+	handles, ciphertext := createInputList([]big.Int{*big.NewInt(42)}, []tfhe.FheUintType{tfhe.FheUint32}, tfhe.FheUint160)
+	handle := handles[0]
+	// put a different type in the handle
+	handle[30] = byte(tfhe.FheUint16)
+	input := packInputList(handle, ciphertext, tfhe.FheUint32)
+	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
+	if err == nil {
+		t.Fatalf("verifyCiphertext must have failed on type mismatch in handle")
+	}
+	if len(environment.fhevmData.expandedInputCiphertexts) != 0 {
+		t.Fatalf("expected 0 expanded input ciphertexts, got %d", len(environment.fhevmData.expandedInputCiphertexts))
+	}
+	if len(environment.fhevmData.loadedCiphertexts) != 0 {
+		t.Fatalf("expected 0 loaded ciphertexts, got %d", len(environment.fhevmData.loadedCiphertexts))
+	}
+}
+
+func TestVerifyCiphertextBadHashInHandle(t *testing.T) {
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := tfheExecutorContractAddress
+	readOnly := false
+	handles, ciphertext := createInputList([]big.Int{*big.NewInt(42)}, []tfhe.FheUintType{tfhe.FheUint32}, tfhe.FheUint160)
+	handle := handles[0]
+	// change hash such that it is not correct
+	handle[0]++
+	input := packInputList(handle, ciphertext, tfhe.FheUint32)
+	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
+	if err == nil {
+		t.Fatalf("verifyCiphertext must have failed on bad hash in handle")
+	}
+	if len(environment.fhevmData.expandedInputCiphertexts) != 0 {
+		t.Fatalf("expected 0 expanded input ciphertexts, got %d", len(environment.fhevmData.expandedInputCiphertexts))
+	}
+	if len(environment.fhevmData.loadedCiphertexts) != 0 {
+		t.Fatalf("expected 0 loaded ciphertexts, got %d", len(environment.fhevmData.loadedCiphertexts))
+	}
+}
+
+func TestVerifyCiphertextIndexOutOfRangeInHandle(t *testing.T) {
+	depth := 1
+	environment := newTestEVMEnvironment()
+	environment.depth = depth
+	addr := tfheExecutorContractAddress
+	readOnly := false
+	handles, ciphertext := createInputListWithBadIndex([]big.Int{*big.NewInt(42)}, []tfhe.FheUintType{tfhe.FheUint32}, tfhe.FheUint160)
+	handle := handles[0]
+	input := packInputList(handle, ciphertext, tfhe.FheUint32)
+	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
+	if err == nil {
+		t.Fatalf("verifyCiphertext must have failed on index out of range in handle")
+	}
+	if len(environment.fhevmData.expandedInputCiphertexts) != 0 {
+		t.Fatalf("expected 0 expanded input ciphertexts, got %d", len(environment.fhevmData.expandedInputCiphertexts))
+	}
+	if len(environment.fhevmData.loadedCiphertexts) != 0 {
+		t.Fatalf("expected 0 loaded ciphertexts, got %d", len(environment.fhevmData.loadedCiphertexts))
 	}
 }
 
@@ -1787,31 +1943,6 @@ func LibDecrypt(t *testing.T, fheUintType tfhe.FheUintType) {
 	}
 }
 
-func TestLibVerifyCiphertextInvalidType(t *testing.T) {
-	signature := "verifyCiphertext(bytes)"
-	hashRes := crypto.Keccak256([]byte(signature))
-	signatureBytes := hashRes[0:4]
-	depth := 1
-	environment := newTestEVMEnvironment()
-	environment.depth = depth
-	addr := tfheExecutorContractAddress
-	readOnly := false
-	invalidType := tfhe.FheUintType(255)
-	input := make([]byte, 0)
-	input = append(input, signatureBytes...)
-	compact := tfhe.EncryptAndSerializeCompact(0, tfhe.FheUint32)
-	input = append(input, compact...)
-	input = append(input, byte(invalidType))
-	_, err := FheLibRun(environment, addr, addr, input, readOnly)
-	if err == nil {
-		t.Fatalf("verifyCiphertext must have failed on invalid ciphertext type")
-	}
-
-	if !strings.Contains(err.Error(), "ciphertext type is invalid") {
-		t.Fatalf("Unexpected test error: %s", err.Error())
-	}
-}
-
 // TODO: can be enabled if mocking kms or running a kms during tests
 // func TestLibReencrypt(t *testing.T) {
 // 	signature := "reencrypt(uint256,uint256)"
@@ -2381,6 +2512,12 @@ func FheEq(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 	case tfhe.FheUint64:
 		lhs = 13333377777
 		rhs = 133337
+	case tfhe.FheUint160:
+		lhs = 133333777776
+		rhs = 1333376
+	case tfhe.FheUint2048:
+		lhs = 133333777778
+		rhs = 1333378
 	}
 	depth := 1
 	environment := newTestEVMEnvironment()
@@ -3531,21 +3668,6 @@ func TestFheArrayEqUnverifiedCtInRhs(t *testing.T) {
 	}
 }
 
-func TestVerifyCiphertextInvalidType(t *testing.T) {
-	depth := 1
-	environment := newTestEVMEnvironment()
-	environment.depth = depth
-	addr := tfheExecutorContractAddress
-	readOnly := false
-	invalidType := tfhe.FheUintType(255)
-	compact := tfhe.EncryptAndSerializeCompact(0, tfhe.FheUint64)
-	input := prepareInputForVerifyCiphertext(append(compact, byte(invalidType)))
-	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
-	if err == nil {
-		t.Fatalf("verifyCiphertext must have failed on invalid ciphertext type")
-	}
-}
-
 func TestTrivialEncryptInvalidType(t *testing.T) {
 	// TODO: maybe trivialEncryptRun shouldn't panic but return an error?
 	defer func() {
@@ -3581,39 +3703,36 @@ func TestCastInvalidType(t *testing.T) {
 	}
 }
 
-func TestVerifyCiphertextInvalidSize(t *testing.T) {
-	depth := 1
-	environment := newTestEVMEnvironment()
-	environment.depth = depth
-	addr := tfheExecutorContractAddress
-	readOnly := false
-	ctType := tfhe.FheUint32
-	compact := tfhe.EncryptAndSerializeCompact(0, ctType)
-	input := prepareInputForVerifyCiphertext(append(compact[:len(compact)-1], byte(ctType)))
-	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
-	if err == nil {
-		t.Fatalf("verifyCiphertext must have failed on invalid ciphertext size")
-	}
+func TestVerifyCiphertextList160TypeBool(t *testing.T) {
+	VerifyCiphertextList(t, tfhe.FheUint160, tfhe.FheBool)
 }
 
-func TestVerifyCiphertext4(t *testing.T) {
-	VerifyCiphertext(t, tfhe.FheUint4)
+func TestVerifyCiphertextList160Type4(t *testing.T) {
+	VerifyCiphertextList(t, tfhe.FheUint160, tfhe.FheUint4)
 }
 
-func TestVerifyCiphertext8(t *testing.T) {
-	VerifyCiphertext(t, tfhe.FheUint8)
+func TestVerifyCiphertextList160Type8(t *testing.T) {
+	VerifyCiphertextList(t, tfhe.FheUint160, tfhe.FheUint8)
 }
 
-func TestVerifyCiphertext16(t *testing.T) {
-	VerifyCiphertext(t, tfhe.FheUint16)
+func TestVerifyCiphertextList160Type16(t *testing.T) {
+	VerifyCiphertextList(t, tfhe.FheUint160, tfhe.FheUint16)
 }
 
-func TestVerifyCiphertext32(t *testing.T) {
-	VerifyCiphertext(t, tfhe.FheUint32)
+func TestVerifyCiphertextList160Type32(t *testing.T) {
+	VerifyCiphertextList(t, tfhe.FheUint160, tfhe.FheUint32)
 }
 
-func TestVerifyCiphertext64(t *testing.T) {
-	VerifyCiphertext(t, tfhe.FheUint64)
+func TestVerifyCiphertextList160Type64(t *testing.T) {
+	VerifyCiphertextList(t, tfhe.FheUint160, tfhe.FheUint64)
+}
+
+func TestVerifyCiphertextList160Type160(t *testing.T) {
+	VerifyCiphertextList(t, tfhe.FheUint160, tfhe.FheUint160)
+}
+
+func TestVerifyCiphertextList2048Type2048(t *testing.T) {
+	VerifyCiphertextList(t, tfhe.FheUint2048, tfhe.FheUint2048)
 }
 
 func TestTrivialEncrypt4(t *testing.T) {
@@ -3634,57 +3753,6 @@ func TestTrivialEncrypt32(t *testing.T) {
 
 func TestTrivialEncrypt64(t *testing.T) {
 	TrivialEncrypt(t, tfhe.FheUint64)
-}
-
-func TestVerifyCiphertext4BadType(t *testing.T) {
-	VerifyCiphertextBadType(t, tfhe.FheUint4, tfhe.FheUint8)
-	VerifyCiphertextBadType(t, tfhe.FheUint4, tfhe.FheUint16)
-	VerifyCiphertextBadType(t, tfhe.FheUint4, tfhe.FheUint32)
-	VerifyCiphertextBadType(t, tfhe.FheUint4, tfhe.FheUint64)
-}
-
-func TestVerifyCiphertext8BadType(t *testing.T) {
-	VerifyCiphertextBadType(t, tfhe.FheUint8, tfhe.FheUint4)
-	VerifyCiphertextBadType(t, tfhe.FheUint8, tfhe.FheUint16)
-	VerifyCiphertextBadType(t, tfhe.FheUint8, tfhe.FheUint32)
-	VerifyCiphertextBadType(t, tfhe.FheUint8, tfhe.FheUint64)
-}
-
-func TestVerifyCiphertext16BadType(t *testing.T) {
-	VerifyCiphertextBadType(t, tfhe.FheUint16, tfhe.FheUint4)
-	VerifyCiphertextBadType(t, tfhe.FheUint16, tfhe.FheUint8)
-	VerifyCiphertextBadType(t, tfhe.FheUint16, tfhe.FheUint32)
-	VerifyCiphertextBadType(t, tfhe.FheUint16, tfhe.FheUint64)
-}
-
-func TestVerifyCiphertext32BadType(t *testing.T) {
-	VerifyCiphertextBadType(t, tfhe.FheUint32, tfhe.FheUint4)
-	VerifyCiphertextBadType(t, tfhe.FheUint32, tfhe.FheUint8)
-	VerifyCiphertextBadType(t, tfhe.FheUint32, tfhe.FheUint16)
-	VerifyCiphertextBadType(t, tfhe.FheUint32, tfhe.FheUint64)
-}
-
-func TestVerifyCiphertext64BadType(t *testing.T) {
-	VerifyCiphertextBadType(t, tfhe.FheUint64, tfhe.FheUint4)
-	VerifyCiphertextBadType(t, tfhe.FheUint64, tfhe.FheUint8)
-	VerifyCiphertextBadType(t, tfhe.FheUint64, tfhe.FheUint16)
-	VerifyCiphertextBadType(t, tfhe.FheUint64, tfhe.FheUint32)
-}
-
-func TestVerifyCiphertextBadCiphertext(t *testing.T) {
-	depth := 1
-	environment := newTestEVMEnvironment()
-	environment.depth = depth
-	addr := tfheExecutorContractAddress
-	readOnly := false
-	input := prepareInputForVerifyCiphertext(make([]byte, 10))
-	_, err := verifyCiphertextRun(environment, addr, addr, input, readOnly, nil)
-	if err == nil {
-		t.Fatalf("verifyCiphertext must fail on bad ciphertext input")
-	}
-	if len(environment.FhevmData().loadedCiphertexts) != 0 {
-		t.Fatalf("verifyCiphertext mustn't have verified given ciphertext")
-	}
 }
 
 func TestFheLibBitAndBool(t *testing.T) {
@@ -4256,6 +4324,10 @@ func TestFheScalarShr64(t *testing.T) {
 	FheShr(t, tfhe.FheUint64, true)
 }
 
+func TestFheEq4(t *testing.T) {
+	FheEq(t, tfhe.FheUint4, false)
+}
+
 func TestFheEq8(t *testing.T) {
 	FheEq(t, tfhe.FheUint8, false)
 }
@@ -4272,6 +4344,18 @@ func TestFheEq64(t *testing.T) {
 	FheEq(t, tfhe.FheUint64, false)
 }
 
+func TestFheEq160(t *testing.T) {
+	FheEq(t, tfhe.FheUint160, false)
+}
+
+func TestFheEq2048(t *testing.T) {
+	FheEq(t, tfhe.FheUint2048, false)
+}
+
+func TestFheScalarEq4(t *testing.T) {
+	FheEq(t, tfhe.FheUint4, true)
+}
+
 func TestFheScalarEq8(t *testing.T) {
 	FheEq(t, tfhe.FheUint8, true)
 }
@@ -4286,6 +4370,14 @@ func TestFheScalarEq32(t *testing.T) {
 
 func TestFheScalarEq64(t *testing.T) {
 	FheEq(t, tfhe.FheUint64, true)
+}
+
+func TestFheScalarEq160(t *testing.T) {
+	FheEq(t, tfhe.FheUint160, true)
+}
+
+func TestFheScalarEq2048(t *testing.T) {
+	FheEq(t, tfhe.FheUint2048, true)
 }
 
 func TestFheNe8(t *testing.T) {
@@ -4791,14 +4883,6 @@ func newInterpreterFromEnvironment(environment *MockEVMEnvironment) *vm.EVMInter
 	return interpreter
 }
 
-func newStopOpcodeContract() *vm.Contract {
-	addr := vm.AccountRef{}
-	c := vm.NewContract(addr, addr, big.NewInt(0), 100000)
-	c.Code = make([]byte, 1)
-	c.Code[0] = byte(vm.STOP)
-	return c
-}
-
 func TestDecryptInTransactionDisabled(t *testing.T) {
 	depth := 0
 	environment := newTestEVMEnvironment()
@@ -4840,7 +4924,7 @@ func TestFheLibGetCiphertextNonExistentHandle(t *testing.T) {
 	readOnly := true
 	value := big.NewInt(42)
 	ct := new(tfhe.TfheCiphertext).TrivialEncrypt(*value, tfhe.FheUint32)
-	persistCiphertext(environment, ct)
+	persistCiphertext(environment, ct.GetHash(), ct)
 	// Change the handle so that it won't exist.
 	handle := ct.GetHash().Bytes()
 	handle[2]++
@@ -4861,7 +4945,7 @@ func FheLibGetCiphertext(t *testing.T, fheUintType tfhe.FheUintType) {
 	readOnly := true
 	value := big.NewInt(1)
 	ct := new(tfhe.TfheCiphertext).TrivialEncrypt(*value, fheUintType)
-	persistCiphertext(environment, ct)
+	persistCiphertext(environment, ct.GetHash(), ct)
 	originalSer := ct.Serialize()
 	input := make([]byte, 0)
 	signature := crypto.Keccak256([]byte("getCiphertext(uint256)"))[0:4]

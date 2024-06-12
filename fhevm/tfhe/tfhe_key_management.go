@@ -24,14 +24,6 @@ func GetExpandedFheCiphertextSize(t FheUintType) (size uint, found bool) {
 	return
 }
 
-// Compact TFHE ciphertext sizes by type, in bytes.
-var compactFheCiphertextSize map[FheUintType]uint
-
-func GetCompactFheCiphertextSize(t FheUintType) (size uint, found bool) {
-	size, found = compactFheCiphertextSize[t]
-	return
-}
-
 // server key: evaluation key
 var sks unsafe.Pointer
 
@@ -64,7 +56,6 @@ func InitGlobalKeysWithNewKeys() {
 
 func initCiphertextSizes() {
 	ExpandedFheCiphertextSize = make(map[FheUintType]uint)
-	compactFheCiphertextSize = make(map[FheUintType]uint)
 
 	ExpandedFheCiphertextSize[FheBool] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheBool).Serialize()))
 	ExpandedFheCiphertextSize[FheUint4] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint4).Serialize()))
@@ -73,14 +64,7 @@ func initCiphertextSizes() {
 	ExpandedFheCiphertextSize[FheUint32] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint32).Serialize()))
 	ExpandedFheCiphertextSize[FheUint64] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint64).Serialize()))
 	ExpandedFheCiphertextSize[FheUint160] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint160).Serialize()))
-
-	compactFheCiphertextSize[FheBool] = uint(len(EncryptAndSerializeCompact(0, FheBool)))
-	compactFheCiphertextSize[FheUint4] = uint(len(EncryptAndSerializeCompact(0, FheUint4)))
-	compactFheCiphertextSize[FheUint8] = uint(len(EncryptAndSerializeCompact(0, FheUint8)))
-	compactFheCiphertextSize[FheUint16] = uint(len(EncryptAndSerializeCompact(0, FheUint16)))
-	compactFheCiphertextSize[FheUint32] = uint(len(EncryptAndSerializeCompact(0, FheUint32)))
-	compactFheCiphertextSize[FheUint64] = uint(len(EncryptAndSerializeCompact(0, FheUint64)))
-	compactFheCiphertextSize[FheUint160] = uint(len(EncryptAndSerializeCompact(0, FheUint160)))
+	ExpandedFheCiphertextSize[FheUint2048] = uint(len(new(TfheCiphertext).TrivialEncrypt(*big.NewInt(0), FheUint2048).Serialize()))
 }
 
 func InitGlobalKeysFromFiles(keysDir string) error {

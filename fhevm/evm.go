@@ -60,7 +60,7 @@ func insertRandomCiphertext(environment EVMEnvironment, t tfhe.FheUintType) []by
 	ct := new(tfhe.TfheCiphertext)
 	ct.FheUintType = t
 	ct.Hash = &handle
-	insertCiphertextToMemory(environment, ct)
+	insertCiphertextToMemory(environment, handle, ct)
 	temp := nextCtHash.Clone()
 	nextCtHash.Add(temp, uint256.NewInt(1))
 	return ct.GetHash().Bytes()

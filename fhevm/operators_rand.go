@@ -131,12 +131,8 @@ func generateRandom(environment EVMEnvironment, caller common.Address, resultTyp
 	randBigInt := big.NewInt(0)
 	randBigInt.SetUint64(randUint)
 	randCt.TrivialEncrypt(*randBigInt, resultType)
-	insertCiphertextToMemory(environment, randCt)
-
-	if err != nil {
-		return nil, err
-	}
 	ctHash := randCt.GetHash()
+	insertCiphertextToMemory(environment, ctHash, randCt)
 	return ctHash[:], nil
 }
 
