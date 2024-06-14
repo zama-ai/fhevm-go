@@ -75,6 +75,16 @@ void destroy_fhe_uint64(void* ct);
 
 void destroy_fhe_uint160(void* ct);
 
+void* generate_oblivious_pseudo_random_uint4(uint64_t seed, uint64_t numberOfBits, void* sks);
+
+void* generate_oblivious_pseudo_random_uint8(uint64_t seed, uint64_t numberOfBits, void* sks);
+
+void* generate_oblivious_pseudo_random_uint16(uint64_t seed, uint64_t numberOfBits, void* sks);
+
+void* generate_oblivious_pseudo_random_uint32(uint64_t seed, uint64_t numberOfBits, void* sks);
+
+void* generate_oblivious_pseudo_random_uint64(uint64_t seed, uint64_t numberOfBits, void* sks);
+
 void* add_fhe_uint4(void* ct1, void* ct2, void* sks);
 
 void* add_fhe_uint8(void* ct1, void* ct2, void* sks);

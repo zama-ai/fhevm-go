@@ -2680,3 +2680,82 @@ func EqArray(lhs []*TfheCiphertext, rhs []*TfheCiphertext) (*TfheCiphertext, err
 	}
 	return result, nil
 }
+
+func GenerateObliviousPseudoRandom(generatedType FheUintType, seed uint64, numberOfBits uint64) (*TfheCiphertext, error) {
+	result := new(TfheCiphertext)
+
+	// Do the FHE computation.
+	var resultPtr unsafe.Pointer
+	switch generatedType {
+		case FheUint4:
+			resultPtr = C.generate_oblivious_pseudo_random_uint4(C.uint64_t(seed), C.uint64_t(numberOfBits), sks)
+			if resultPtr == nil {
+				return nil, errors.New("GenerateObliviousPseudoRandom: generation failed")
+			}
+			defer C.destroy_fhe_uint4(resultPtr)
+		case FheUint8:
+			resultPtr = C.generate_oblivious_pseudo_random_uint8(C.uint64_t(seed), C.uint64_t(numberOfBits), sks)
+			if resultPtr == nil {
+				return nil, errors.New("GenerateObliviousPseudoRandom: generation failed")
+			}
+			defer C.destroy_fhe_uint8(resultPtr)
+		case FheUint16:
+			resultPtr = C.generate_oblivious_pseudo_random_uint16(C.uint64_t(seed), C.uint64_t(numberOfBits), sks)
+			if resultPtr == nil {
+				return nil, errors.New("GenerateObliviousPseudoRandom: generation failed")
+			}
+			defer C.destroy_fhe_uint16(resultPtr)
+		case FheUint32:
+			resultPtr = C.generate_oblivious_pseudo_random_uint32(C.uint64_t(seed), C.uint64_t(numberOfBits), sks)
+			if resultPtr == nil {
+				return nil, errors.New("GenerateObliviousPseudoRandom: generation failed")
+			}
+			defer C.destroy_fhe_uint32(resultPtr)
+		case FheUint64:
+			resultPtr = C.generate_oblivious_pseudo_random_uint64(C.uint64_t(seed), C.uint64_t(numberOfBits), sks)
+			if resultPtr == nil {
+				return nil, errors.New("GenerateObliviousPseudoRandom: generation failed")
+			}
+			defer C.destroy_fhe_uint64(resultPtr)
+		default:
+			return nil, fmt.Errorf("GenerateObliviousPseudoRandom: unsupported ciphertext type %d", generatedType)
+	}
+
+	ser := &C.DynamicBuffer{}
+
+	switch generatedType {
+		case FheUint4:
+			ret := C.serialize_fhe_uint4(resultPtr, ser)
+			if ret != 0 {
+				return nil, errors.New("GenerateObliviousPseudoRandom: serialization failed")
+			}
+		case FheUint8:
+			ret := C.serialize_fhe_uint8(resultPtr, ser)
+			if ret != 0 {
+				return nil, errors.New("GenerateObliviousPseudoRandom: serialization failed")
+			}
+		case FheUint16:
+			ret := C.serialize_fhe_uint16(resultPtr, ser)
+			if ret != 0 {
+				return nil, errors.New("GenerateObliviousPseudoRandom: serialization failed")
+			}
+		case FheUint32:
+			ret := C.serialize_fhe_uint32(resultPtr, ser)
+			if ret != 0 {
+				return nil, errors.New("GenerateObliviousPseudoRandom: serialization failed")
+			}
+		case FheUint64:
+			ret := C.serialize_fhe_uint64(resultPtr, ser)
+			if ret != 0 {
+				return nil, errors.New("GenerateObliviousPseudoRandom: serialization failed")
+			}
+		default:
+			return nil, fmt.Errorf("GenerateObliviousPseudoRandom: unsupported ciphertext type %d", generatedType)
+	}
+
+	defer C.destroy_dynamic_buffer(ser)
+	result.Serialization = C.GoBytes(unsafe.Pointer(ser.pointer), C.int(ser.length))
+	result.FheUintType = generatedType
+	result.computeHash()
+	return result, nil
+}

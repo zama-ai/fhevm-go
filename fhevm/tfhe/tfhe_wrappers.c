@@ -212,6 +212,7 @@ void* deserialize_fhe_uint8(DynamicBufferView in) {
 	return ct;
 }
 
+
 void* deserialize_compact_fhe_uint8(DynamicBufferView in) {
 	CompactFheUint8List* list = NULL;
 	FheUint8* ct = NULL;
@@ -424,6 +425,61 @@ void destroy_fhe_uint64(void* ct) {
 void destroy_fhe_uint160(void* ct) {
 	const int r = fhe_uint160_destroy(ct);
 	assert(r == 0);
+}
+
+void* generate_oblivious_pseudo_random_uint4(uint64_t seed, uint64_t numberOfBits, void* sks) {
+	FheUint4* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = generate_oblivious_pseudo_random_bits_fhe_uint4(&result, seed, seed, numberOfBits);
+	if(r != 0) return NULL;
+	
+	return result;
+}
+
+void* generate_oblivious_pseudo_random_uint8(uint64_t seed, uint64_t numberOfBits, void* sks) {
+	FheUint8* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = generate_oblivious_pseudo_random_bits_fhe_uint8(&result, seed, seed, numberOfBits);
+	if(r != 0) return NULL;
+
+	return result;
+}
+
+void* generate_oblivious_pseudo_random_uint16(uint64_t seed, uint64_t numberOfBits, void* sks) {
+	FheUint16* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = generate_oblivious_pseudo_random_bits_fhe_uint16(&result, seed, seed, numberOfBits);
+	if(r != 0) return NULL;
+	
+	return result;
+}
+
+void* generate_oblivious_pseudo_random_uint32(uint64_t seed, uint64_t numberOfBits, void* sks) {
+	FheUint32* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = generate_oblivious_pseudo_random_bits_fhe_uint32(&result, seed, seed, numberOfBits);
+	if(r != 0) return NULL;
+
+	return result;
+}
+
+void* generate_oblivious_pseudo_random_uint64(uint64_t seed, uint64_t numberOfBits, void* sks) {
+	FheUint64* result = NULL;
+
+	checked_set_server_key(sks);
+
+	const int r = generate_oblivious_pseudo_random_bits_fhe_uint64(&result, seed, seed, numberOfBits);
+	if(r != 0) return NULL;
+
+	return result;
 }
 
 void* add_fhe_uint4(void* ct1, void* ct2, void* sks)
