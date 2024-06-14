@@ -2689,29 +2689,41 @@ func GenerateObliviousPseudoRandom(generatedType FheUintType, seed uint64, numbe
 	switch generatedType {
 		case FheUint4:
 			resultPtr = C.generate_oblivious_pseudo_random_uint4(C.uint64_t(seed), C.uint64_t(numberOfBits), sks)
+			if resultPtr == nil {
+				return nil, errors.New("GenerateObliviousPseudoRandom: generation failed")
+			}
+			defer C.destroy_fhe_uint4(resultPtr)
 		case FheUint8:
 			resultPtr = C.generate_oblivious_pseudo_random_uint8(C.uint64_t(seed), C.uint64_t(numberOfBits), sks)
+			if resultPtr == nil {
+				return nil, errors.New("GenerateObliviousPseudoRandom: generation failed")
+			}
+			defer C.destroy_fhe_uint8(resultPtr)
 		case FheUint16:
 			resultPtr = C.generate_oblivious_pseudo_random_uint16(C.uint64_t(seed), C.uint64_t(numberOfBits), sks)
+			if resultPtr == nil {
+				return nil, errors.New("GenerateObliviousPseudoRandom: generation failed")
+			}
+			defer C.destroy_fhe_uint16(resultPtr)
 		case FheUint32:
 			resultPtr = C.generate_oblivious_pseudo_random_uint32(C.uint64_t(seed), C.uint64_t(numberOfBits), sks)
+			if resultPtr == nil {
+				return nil, errors.New("GenerateObliviousPseudoRandom: generation failed")
+			}
+			defer C.destroy_fhe_uint32(resultPtr)
 		case FheUint64:
 			resultPtr = C.generate_oblivious_pseudo_random_uint64(C.uint64_t(seed), C.uint64_t(numberOfBits), sks)
+			if resultPtr == nil {
+				return nil, errors.New("GenerateObliviousPseudoRandom: generation failed")
+			}
+			defer C.destroy_fhe_uint64(resultPtr)
 		default:
 			return nil, fmt.Errorf("GenerateObliviousPseudoRandom: unsupported ciphertext type %d", generatedType)
 	}
-	if resultPtr == nil {
-		return nil, errors.New("GenerateObliviousPseudoRandom: generation failed")
-	}
-	defer C.destroy_fhe_bool(resultPtr)
+
 	ser := &C.DynamicBuffer{}
 
 	switch generatedType {
-		case FheBool:
-			ret := C.serialize_fhe_bool(resultPtr, ser)
-			if ret != 0 {
-				return nil, errors.New("GenerateObliviousPseudoRandom: serialization failed")
-			}
 		case FheUint4:
 			ret := C.serialize_fhe_uint4(resultPtr, ser)
 			if ret != 0 {
