@@ -1,12 +1,10 @@
 package fhevm
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
-	"fmt"
-	"math/big"
 	"math/bits"
+	"unsafe"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -60,7 +58,7 @@ func applyUpperBound(rand uint64, bitsInRand int, upperBound *uint64) uint64 {
 	return rand >> shift
 }
 
-func generateRandom(environment EVMEnvironment, caller common.Address, resultType tfhe.FheUintType, upperBound *uint64) ([]byte, error) {
+func generateRandom(environment EVMEnvironment, caller common.Address, resultType tfhe.FheUintType, numberOfBits uint64) ([]byte, error) {
 	// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 	if !environment.IsCommitting() {
 		return insertRandomCiphertext(environment, resultType), nil
@@ -84,58 +82,15 @@ func generateRandom(environment EVMEnvironment, caller common.Address, resultTyp
 	if err != nil {
 		return nil, err
 	}
-	// The RNG nonce bytes are of size chacha20.NonceSizeX, which is assumed to be 24 bytes (see init() above).
-	// Since uint256.Int.z[0] is the least significant byte and since uint256.Int.Bytes32() serializes
-	// in order of z[3], z[2], z[1], z[0], we want to essentially ignore the first byte, i.e. z[3], because
-	// it will always be 0 as the nonce size is 24.
-	cipher, err := chacha20.NewUnauthenticatedCipher(seed.Bytes(), currentRngNonceBytes[32-chacha20.NonceSizeX:32])
+
+	randCt, err := tfhe.GenerateObliviousPseudoRandom(resultType, *(*uint64)(unsafe.Pointer(&seed.Bytes()[0])), numberOfBits)
+
 	if err != nil {
 		return nil, err
 	}
-
-	// XOR a byte array of 0s with the stream from the cipher and receive the result in the same array.
-	// Apply upperBound, if set.
-	var randUint uint64
-	switch resultType {
-	case tfhe.FheUint4:
-		randBytes := make([]byte, 1)
-		cipher.XORKeyStream(randBytes, randBytes)
-		randUint = uint64(randBytes[0])
-		randUint = uint64(applyUpperBound(randUint, 4, upperBound))
-	case tfhe.FheUint8:
-		randBytes := make([]byte, 1)
-		cipher.XORKeyStream(randBytes, randBytes)
-		randUint = uint64(randBytes[0])
-		randUint = uint64(applyUpperBound(randUint, 8, upperBound))
-	case tfhe.FheUint16:
-		randBytes := make([]byte, 2)
-		cipher.XORKeyStream(randBytes, randBytes)
-		randUint = uint64(binary.BigEndian.Uint16(randBytes))
-		randUint = uint64(applyUpperBound(randUint, 16, upperBound))
-	case tfhe.FheUint32:
-		randBytes := make([]byte, 4)
-		cipher.XORKeyStream(randBytes, randBytes)
-		randUint = uint64(binary.BigEndian.Uint32(randBytes))
-		randUint = uint64(applyUpperBound(randUint, 32, upperBound))
-	case tfhe.FheUint64:
-		randBytes := make([]byte, 8)
-		cipher.XORKeyStream(randBytes, randBytes)
-		randUint = uint64(binary.BigEndian.Uint64(randBytes))
-		randUint = uint64(applyUpperBound(randUint, 64, upperBound))
-	default:
-		return nil, fmt.Errorf("generateRandom() invalid type requested: %d", resultType)
-	}
-
-	// Trivially encrypt the random integer.
-	randCt := new(tfhe.TfheCiphertext)
-	randBigInt := big.NewInt(0)
-	randBigInt.SetUint64(randUint)
-	randCt.TrivialEncrypt(*randBigInt, resultType)
+	
 	insertCiphertextToMemory(environment, randCt)
 
-	if err != nil {
-		return nil, err
-	}
 	ctHash := randCt.GetHash()
 	return ctHash[:], nil
 }
@@ -156,7 +111,7 @@ func fheRandRun(environment EVMEnvironment, caller common.Address, addr common.A
 	}
 	resultType := tfhe.FheUintType(input[0])
 	otelDescribeOperandsFheTypes(runSpan, resultType)
-	var noUpperBound *uint64 = nil
+	var noUpperBound uint64 = uint64(resultType.NumBits())
 	return generateRandom(environment, caller, resultType, noUpperBound)
 }
 
@@ -177,5 +132,10 @@ func fheRandBoundedRun(environment EVMEnvironment, caller common.Address, addr c
 		return nil, errors.New(msg)
 	}
 	bound64 := bound.Uint64()
-	return generateRandom(environment, caller, randType, &bound64)
+	numberOfBits := uint64(1);
+	for bound64 > uint64(1) {
+		bound64 = bound64 / uint64(2);
+		numberOfBits++;
+	}
+	return generateRandom(environment, caller, randType, numberOfBits)
 }
