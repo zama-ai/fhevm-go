@@ -228,18 +228,6 @@ var fhelibMethods = []*FheLibMethod{
 		runFunction:         trivialEncryptRun,
 	},
 	{
-		name:                "decrypt",
-		argTypes:            "(uint256)",
-		requiredGasFunction: decryptRequiredGas,
-		runFunction:         decryptRun,
-	},
-	{
-		name:                "reencrypt",
-		argTypes:            "(uint256,uint256)",
-		requiredGasFunction: reencryptRequiredGas,
-		runFunction:         reencryptRun,
-	},
-	{
 		name:                "verifyCiphertext",
 		argTypes:            "(bytes32,address,bytes,bytes1)",
 		requiredGasFunction: verifyCiphertextRequiredGas,

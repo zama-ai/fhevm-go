@@ -22,21 +22,18 @@ const SloadFheUint4Gas = ColdSloadCostEIP2929 + 100
 
 func DefaultFhevmParams() FhevmParams {
 	return FhevmParams{
-		GasCosts:                        DefaultGasCosts(),
-		DisableDecryptionsInTransaction: false,
+		GasCosts: DefaultGasCosts(),
 	}
 }
 
 type FhevmParams struct {
-	GasCosts                        GasCosts
-	DisableDecryptionsInTransaction bool
+	GasCosts GasCosts
 }
 
 type GasCosts struct {
 	FheCast                  uint64
 	FhePubKey                uint64
 	FheAddSub                map[tfhe.FheUintType]uint64
-	FheDecrypt               map[tfhe.FheUintType]uint64
 	FheBitwiseOp             map[tfhe.FheUintType]uint64
 	FheMul                   map[tfhe.FheUintType]uint64
 	FheScalarMul             map[tfhe.FheUintType]uint64
@@ -51,7 +48,6 @@ type GasCosts struct {
 	FheScalarMinMax          map[tfhe.FheUintType]uint64
 	FheNot                   map[tfhe.FheUintType]uint64
 	FheNeg                   map[tfhe.FheUintType]uint64
-	FheReencrypt             map[tfhe.FheUintType]uint64
 	FheTrivialEncrypt        map[tfhe.FheUintType]uint64
 	FheRand                  map[tfhe.FheUintType]uint64
 	FheIfThenElse            map[tfhe.FheUintType]uint64
@@ -71,13 +67,6 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint16: 123000 + AdjustFHEGas,
 			tfhe.FheUint32: 152000 + AdjustFHEGas,
 			tfhe.FheUint64: 178000 + AdjustFHEGas,
-		},
-		FheDecrypt: map[tfhe.FheUintType]uint64{
-			tfhe.FheUint4:  500000,
-			tfhe.FheUint8:  500000,
-			tfhe.FheUint16: 500000,
-			tfhe.FheUint32: 500000,
-			tfhe.FheUint64: 500000,
 		},
 		FheBitwiseOp: map[tfhe.FheUintType]uint64{
 			tfhe.FheBool:   16000 + AdjustFHEGas,
@@ -130,12 +119,13 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint64: 28000 + AdjustFHEGas,
 		},
 		FheEq: map[tfhe.FheUintType]uint64{
-			tfhe.FheUint4:   41000 + AdjustFHEGas,
-			tfhe.FheUint8:   43000 + AdjustFHEGas,
-			tfhe.FheUint16:  44000 + AdjustFHEGas,
-			tfhe.FheUint32:  72000 + AdjustFHEGas,
-			tfhe.FheUint64:  76000 + AdjustFHEGas,
-			tfhe.FheUint160: 80000 + AdjustFHEGas,
+			tfhe.FheUint4:    41000 + AdjustFHEGas,
+			tfhe.FheUint8:    43000 + AdjustFHEGas,
+			tfhe.FheUint16:   44000 + AdjustFHEGas,
+			tfhe.FheUint32:   72000 + AdjustFHEGas,
+			tfhe.FheUint64:   76000 + AdjustFHEGas,
+			tfhe.FheUint160:  80000 + AdjustFHEGas,
+			tfhe.FheUint2048: 160000 + AdjustFHEGas,
 		},
 		FheArrayEqBigArrayFactor: 1000,
 		FheLe: map[tfhe.FheUintType]uint64{
@@ -160,6 +150,7 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint64: 182000 + AdjustFHEGas,
 		},
 		FheNot: map[tfhe.FheUintType]uint64{
+			tfhe.FheBool:   22000 + AdjustFHEGas,
 			tfhe.FheUint4:  23000 + AdjustFHEGas,
 			tfhe.FheUint8:  24000 + AdjustFHEGas,
 			tfhe.FheUint16: 25000 + AdjustFHEGas,
@@ -173,30 +164,26 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint32: 150000 + AdjustFHEGas,
 			tfhe.FheUint64: 189000 + AdjustFHEGas,
 		},
-		// TODO: Costs will depend on the complexity of doing reencryption/decryption by the oracle.
-		FheReencrypt: map[tfhe.FheUintType]uint64{
-			tfhe.FheBool:   1000,
-			tfhe.FheUint4:  1000,
-			tfhe.FheUint8:  1000,
-			tfhe.FheUint16: 1100,
-			tfhe.FheUint32: 1200,
-		},
 		// As of now, verification costs only cover ciphertext deserialization and assume there is no ZKPoK to verify.
 		FheVerify: map[tfhe.FheUintType]uint64{
-			tfhe.FheBool:   200,
-			tfhe.FheUint4:  200,
-			tfhe.FheUint8:  200,
-			tfhe.FheUint16: 300,
-			tfhe.FheUint32: 400,
-			tfhe.FheUint64: 800,
+			tfhe.FheBool:     200 + 5000, // TODO: Requires an FheUint160 comparisson via FheEq. Make it cheaper than that, though. Need to fix that.
+			tfhe.FheUint4:    200 + 500,
+			tfhe.FheUint8:    200 + 500,
+			tfhe.FheUint16:   300 + 500,
+			tfhe.FheUint32:   400 + 500,
+			tfhe.FheUint64:   800 + 500,
+			tfhe.FheUint160:  1200 + 500,
+			tfhe.FheUint2048: 2000 + 500,
 		},
 		FheTrivialEncrypt: map[tfhe.FheUintType]uint64{
-			tfhe.FheBool:   100,
-			tfhe.FheUint4:  100,
-			tfhe.FheUint8:  100,
-			tfhe.FheUint16: 200,
-			tfhe.FheUint32: 300,
-			tfhe.FheUint64: 600,
+			tfhe.FheBool:     100,
+			tfhe.FheUint4:    100,
+			tfhe.FheUint8:    100,
+			tfhe.FheUint16:   200,
+			tfhe.FheUint32:   300,
+			tfhe.FheUint64:   600,
+			tfhe.FheUint160:  700,
+			tfhe.FheUint2048: 900,
 		},
 		// TODO: These will change once we have an FHE-based random generaration.
 		FheRand: map[tfhe.FheUintType]uint64{
@@ -214,31 +201,38 @@ func DefaultGasCosts() GasCosts {
 			tfhe.FheUint64: 43000 + AdjustFHEGas,
 		},
 		FheGetCiphertext: map[tfhe.FheUintType]uint64{
-			tfhe.FheUint8:  12000,
-			tfhe.FheUint16: 14000,
-			tfhe.FheUint32: 18000,
-			tfhe.FheUint64: 28000,
+			tfhe.FheBool:     10000,
+			tfhe.FheUint8:    12000,
+			tfhe.FheUint16:   14000,
+			tfhe.FheUint32:   18000,
+			tfhe.FheUint64:   28000,
+			tfhe.FheUint160:  50000,
+			tfhe.FheUint2048: 100000,
 		},
 		// TODO: The values here are chosen somewhat arbitrarily.
 		// Also, we don't take into account whether a ciphertext existed (either "current" or "original") for the given handle.
 		// Finally, costs are likely to change in the future.
 		FheStorageSstoreGas: map[tfhe.FheUintType]uint64{
-			tfhe.FheUint4:   SstoreFheUint4Gas,
-			tfhe.FheUint8:   SstoreFheUint4Gas * 2,
-			tfhe.FheUint16:  SstoreFheUint4Gas * 4,
-			tfhe.FheUint32:  SstoreFheUint4Gas * 8,
-			tfhe.FheUint64:  SstoreFheUint4Gas * 16,
-			tfhe.FheUint128: SstoreFheUint4Gas * 32,
-			tfhe.FheUint160: SstoreFheUint4Gas * 40,
+			tfhe.FheBool:     SstoreFheUint4Gas / 2,
+			tfhe.FheUint4:    SstoreFheUint4Gas,
+			tfhe.FheUint8:    SstoreFheUint4Gas * 2,
+			tfhe.FheUint16:   SstoreFheUint4Gas * 4,
+			tfhe.FheUint32:   SstoreFheUint4Gas * 8,
+			tfhe.FheUint64:   SstoreFheUint4Gas * 16,
+			tfhe.FheUint128:  SstoreFheUint4Gas * 32,
+			tfhe.FheUint160:  SstoreFheUint4Gas * 40,
+			tfhe.FheUint2048: SstoreFheUint4Gas * 120,
 		},
 		FheStorageSloadGas: map[tfhe.FheUintType]uint64{
-			tfhe.FheUint4:   SloadFheUint4Gas,
-			tfhe.FheUint8:   SloadFheUint4Gas * 2,
-			tfhe.FheUint16:  SloadFheUint4Gas * 4,
-			tfhe.FheUint32:  SloadFheUint4Gas * 8,
-			tfhe.FheUint64:  SloadFheUint4Gas * 16,
-			tfhe.FheUint128: SloadFheUint4Gas * 32,
-			tfhe.FheUint160: SloadFheUint4Gas * 40,
+			tfhe.FheBool:     SloadFheUint4Gas / 2,
+			tfhe.FheUint4:    SloadFheUint4Gas,
+			tfhe.FheUint8:    SloadFheUint4Gas * 2,
+			tfhe.FheUint16:   SloadFheUint4Gas * 4,
+			tfhe.FheUint32:   SloadFheUint4Gas * 8,
+			tfhe.FheUint64:   SloadFheUint4Gas * 16,
+			tfhe.FheUint128:  SloadFheUint4Gas * 32,
+			tfhe.FheUint160:  SloadFheUint4Gas * 40,
+			tfhe.FheUint2048: SloadFheUint4Gas * 120, // TODO: technically, it is more than 10 times bigger than 160 bits
 		},
 	}
 }

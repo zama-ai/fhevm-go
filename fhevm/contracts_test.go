@@ -3,8 +3,6 @@ package fhevm
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
-	"errors"
 	"fmt"
 	"math/big"
 	"os"
@@ -162,46 +160,6 @@ func toPrecompileInputNoScalar(isScalar bool, hashes ...common.Hash) []byte {
 		ret = append(ret, hash.Bytes()...)
 	}
 	return ret
-}
-
-func decryptRunWithoutKms(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool) ([]byte, error) {
-	logger := environment.GetLogger()
-	// if not gas estimation and not view function fail if decryptions are disabled in transactions
-	if environment.IsCommitting() && !environment.IsEthCall() && environment.FhevmParams().DisableDecryptionsInTransaction {
-		msg := "decryptions during transaction are disabled"
-		logger.Error(msg, "input", hex.EncodeToString(input))
-		return nil, errors.New(msg)
-	}
-	if len(input) != 32 {
-		msg := "decrypt input len must be 32 bytes"
-		logger.Error(msg, "input", hex.EncodeToString(input), "len", len(input))
-		return nil, errors.New(msg)
-	}
-	ct, _ := loadCiphertext(environment, common.BytesToHash(input))
-	if ct == nil {
-		msg := "decrypt unverified handle"
-		logger.Error(msg, "input", hex.EncodeToString(input))
-		return nil, errors.New(msg)
-	}
-
-	// If we are doing gas estimation, skip decryption and make sure we return the maximum possible value.
-	// We need that, because non-zero bytes cost more than zero bytes in some contexts (e.g. SSTORE or memory operations).
-	if !environment.IsCommitting() && !environment.IsEthCall() {
-		return bytes.Repeat([]byte{0xFF}, 32), nil
-	}
-
-	plaintext, err := ct.Decrypt()
-	if err != nil {
-		logger.Error("decrypt failed", "err", err)
-		return nil, err
-	}
-
-	logger.Info("decrypt success", "plaintext", plaintext)
-
-	// Always return a 32-byte big-endian integer.
-	ret := make([]byte, 32)
-	plaintext.FillBytes(ret)
-	return ret, nil
 }
 
 var scalarBytePadding = make([]byte, 31)
@@ -1943,31 +1901,6 @@ func LibDecrypt(t *testing.T, fheUintType tfhe.FheUintType) {
 	}
 }
 
-// TODO: can be enabled if mocking kms or running a kms during tests
-// func TestLibReencrypt(t *testing.T) {
-// 	signature := "reencrypt(uint256,uint256)"
-// 	hashRes := crypto.Keccak256([]byte(signature))
-// 	signatureBytes := hashRes[0:4]
-// 	depth := 1
-// 	environment := newTestEVMEnvironment()
-// 	environment.depth = depth
-// 	environment.ethCall = true
-// 	toEncrypt := 7
-// 	fheUintType := tfhe.FheUint8
-// 	encCiphertext := loadCiphertextInTestMemory(environment, uint64(toEncrypt), depth, fheUintType).getHash()
-// 	addr := tfheExecutorContractAddress
-// 	readOnly := false
-// 	input := make([]byte, 0)
-// 	input = append(input, signatureBytes...)
-// 	input = append(input, encCiphertext.Bytes()...)
-// 	// just append twice not to generate public key
-// 	input = append(input, encCiphertext.Bytes()...)
-// 	_, err := FheLibRun(environment, addr, addr, input, readOnly)
-// 	if err != nil {
-// 		t.Fatalf("Reencrypt error: %s", err.Error())
-// 	}
-// }
-
 func TestLibCast(t *testing.T) {
 	signature := "cast(uint256,bytes1)"
 	hashRes := crypto.Keccak256([]byte(signature))
@@ -3119,41 +3052,6 @@ func FheIfThenElse(t *testing.T, fheUintType tfhe.FheUintType, condition uint64)
 	decrypted, err := res.Decrypt()
 	if err != nil || condition == 1 && decrypted.Uint64() != lhs || condition == 0 && decrypted.Uint64() != rhs {
 		t.Fatalf("invalid decrypted result, decrypted %v != expected %v", decrypted.Uint64(), 0)
-	}
-}
-
-func Decrypt(t *testing.T, fheUintType tfhe.FheUintType) {
-	var value uint64
-	switch fheUintType {
-	case tfhe.FheBool:
-		value = 1
-	case tfhe.FheUint4:
-		value = 2
-	case tfhe.FheUint8:
-		value = 2
-	case tfhe.FheUint16:
-		value = 4283
-	case tfhe.FheUint32:
-		value = 1333337
-	case tfhe.FheUint64:
-		value = 133333777777777
-	}
-	depth := 1
-	environment := newTestEVMEnvironment()
-	environment.depth = depth
-	addr := tfheExecutorContractAddress
-	readOnly := false
-	hash := loadCiphertextInTestMemory(environment, value, depth, fheUintType).GetHash()
-	out, err := decryptRunWithoutKms(environment, addr, addr, hash.Bytes(), readOnly)
-	if err != nil {
-		t.Fatalf(err.Error())
-	} else if len(out) != 32 {
-		t.Fatalf("decrypt expected output len of 32, got %v", len(out))
-	}
-	result := big.Int{}
-	result.SetBytes(out)
-	if result.Uint64() != value {
-		t.Fatalf("decrypt result not equal to value, result %v != value %v", result.Uint64(), value)
 	}
 }
 
@@ -4677,22 +4575,6 @@ func TestFheScalarMax64(t *testing.T) {
 	FheMax(t, tfhe.FheUint64, true)
 }
 
-func TestDecrypt8(t *testing.T) {
-	Decrypt(t, tfhe.FheUint8)
-}
-
-func TestDecrypt16(t *testing.T) {
-	Decrypt(t, tfhe.FheUint16)
-}
-
-func TestDecrypt32(t *testing.T) {
-	Decrypt(t, tfhe.FheUint32)
-}
-
-func TestDecrypt64(t *testing.T) {
-	Decrypt(t, tfhe.FheUint64)
-}
-
 func TestFheRand8(t *testing.T) {
 	FheRand(t, tfhe.FheUint8)
 }
@@ -4881,25 +4763,6 @@ func newInterpreterFromEnvironment(environment *MockEVMEnvironment) *vm.EVMInter
 	evm.StateDB = environment.stateDb
 	interpreter := vm.NewEVMInterpreter(evm)
 	return interpreter
-}
-
-func TestDecryptInTransactionDisabled(t *testing.T) {
-	depth := 0
-	environment := newTestEVMEnvironment()
-	environment.depth = depth
-	environment.commit = true
-	environment.ethCall = false
-	environment.fhevmParams.DisableDecryptionsInTransaction = true
-	addr := tfheExecutorContractAddress
-	readOnly := false
-	hash := loadCiphertextInTestMemory(environment, 1, depth, tfhe.FheUint8).GetHash()
-	// Call decrypt and expect it to fail due to disabling of decryptions during commit
-	_, err := decryptRunWithoutKms(environment, addr, addr, hash.Bytes(), readOnly)
-	if err == nil {
-		t.Fatalf("expected to error out in test")
-	} else if err.Error() != "decryptions during transaction are disabled" {
-		t.Fatalf("unexpected error for disabling decryption transactions, got %s", err.Error())
-	}
 }
 
 func TestFheLibGetCiphertextInvalidInputSize(t *testing.T) {
