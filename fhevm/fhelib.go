@@ -97,13 +97,13 @@ var fhelibMethods = []*FheLibMethod{
 	},
 	{
 		name:                "fheRand",
-		argTypes:            "(bytes1)",
+		argTypes:            "(bytes1,uint256)",
 		requiredGasFunction: fheRandRequiredGas,
 		runFunction:         fheRandRun,
 	},
 	{
 		name:                "fheRandBounded",
-		argTypes:            "(uint256,bytes1)",
+		argTypes:            "(uint256,bytes1,uint256)",
 		requiredGasFunction: fheRandBoundedRequiredGas,
 		runFunction:         fheRandBoundedRun,
 	},

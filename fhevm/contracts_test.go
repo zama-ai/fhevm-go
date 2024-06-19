@@ -1687,7 +1687,7 @@ func FheLibBitXor(t *testing.T, fheUintType tfhe.FheUintType, scalar bool) {
 }
 
 func FheLibRand(t *testing.T, fheUintType tfhe.FheUintType) {
-	signature := "fheRand(bytes1)"
+	signature := "fheRand(bytes1,uint256)"
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
@@ -1741,7 +1741,7 @@ func FheLibRand(t *testing.T, fheUintType tfhe.FheUintType) {
 }
 
 func FheLibRandBounded(t *testing.T, fheUintType tfhe.FheUintType, upperBound64 uint64) {
-	signature := "fheRandBounded(uint256,bytes1)"
+	signature := "fheRandBounded(uint256,bytes1,uint256)"
 	depth := 1
 	environment := newTestEVMEnvironment()
 	environment.depth = depth
