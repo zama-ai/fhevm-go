@@ -143,18 +143,6 @@ to:
 RunPrecompiledContract(p, evm, caller.Address(), addr, input, gas)
 ```
 
-#### Rewrite `Create` and `Create2` by a call to their fhevm implementation
-
-```go
-func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
-    return fhevm.Create(evm.FhevmEnvironment(), caller.Address(), code, gas, value)
-}
-
-func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *big.Int, salt *uint256.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
-    return fhevm.Create2(evm.FhevmEnvironment(), caller.Address(), code, gas, endowment, salt)
-}
-```
-
 #### Implement EVMEnvironment interface
 
 Now implement the `fhevm.EVMEnvironment` interface for `FhevmImplementation`:
@@ -232,66 +220,14 @@ func (evm *FhevmImplementation) CreateContract2(caller common.Address, code []by
 
 ### Step 5: update `core/vm/instructions.go`
 
-#### Update `opSload`, `opSstore` and `opReturn`
+#### Update `opSstore`
 
-Rewrite `opSload`, `opSstore` and `opReturn` by a call to their fhevm implementation:
+Rewrite `opSstore` by a call to their fhevm implementation:
 
 ```go
-func opSload(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
-    return fhevm.OpSload(pc, interpreter.evm.FhevmEnvironment(), scope)
-}
-
 func opSstore(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
     return fhevm.OpSstore(pc, interpreter.evm.FhevmEnvironment(), scope)
 }
-
-func opReturn(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
-    return fhevm.OpReturn(pc, interpreter.evm.FhevmEnvironment(), scope), errStopToken
-}
-```
-
-#### Update `opCall`, `opCallCode` and `opStaticCall`
-
-In `opCall`, `opCallCode` and `opStaticCall`, add lines to delegate ciphertexts before the call and to restore at the end of function (using `defer`)
-
-{% hint style="info" %}
-There might be other functions that calls other contracts (e.g. `opDelegateCall`), in which case you will also need to do the same modifications as below. Basically, anything that will execute code after incrementing the depth would need this.
-{% endhint %}
-
-Add the 2 following lines:
-
-```go
-verifiedBefore := fhevm.DelegateCiphertextHandlesInArgs(interpreter.evm.FhevmEnvironment(), args)
-defer fhevm.RestoreVerifiedDepths(interpreter.evm.FhevmEnvironment(), verifiedBefore)
-```
-
-The call function is named differently in the 3 functions to update:
-
-```go
-ret, returnGas, err := interpreter.evm.Call(scope.Contract, toAddr, args, gas, bigVal)
-```
-
-#### Update `opSelfdestruct`
-
-In:
-
-```go
-func opSelfdestruct(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error)
-```
-
-Replace the following lines:
-
-```go
-beneficiary := scope.Stack.pop()
-balance := interpreter.evm.StateDB.GetBalance(scope.Contract.Address())
-interpreter.evm.StateDB.AddBalance(beneficiary.Bytes20(), balance)
-interpreter.evm.StateDB.SelfDestruct(scope.Contract.Address())
-```
-
-with this call to the fhevm:
-
-```go
-beneficiary, balance := fhevm.OpSelfdestruct(pc, interpreter.evm.FhevmEnvironment(), scope)
 ```
 
 ### Step 6: update `core/vm/interpreter.go`
@@ -327,15 +263,6 @@ In:
 func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (ret []byte, err error)
 ```
 
-- Add the deletion of verified ciphertexts at current depth in the `defer` at the top:
-
-```go
-defer func() {
-    fhevm.RemoveVerifiedCipherextsAtCurrentDepth(in.evm.FhevmEnvironment())
-    in.evm.depth--
-}()
-```
-
 ### Step 7: update `core/vm/stack.go`
 
 #### Implement the following methods
@@ -350,7 +277,22 @@ func (st *Stack) Peek() *uint256.Int {
 }
 ```
 
-### Step 8: update `internal/ethapi/api.go`
+### Step 8: update `core/vm/operations_acl.go`
+
+#### Implement gas cost for storing a ciphertext
+
+In `func makeGasSStoreFunc(clearingRefund uint64) gasFunc {`
+
+Just before `original := evm.StateDB.GetCommittedState(contract.Address(), x.Bytes32())`, add this block to increase SSTORE gas cost for storing a ciphertext:
+
+```go
+ct := fhevm.GetCiphertextFromMemory(evm.FhevmEnvironment(), value)
+if ct != nil {
+    cost += evm.fhevmEnvironment.params.GasCosts.FheStorageSstoreGas[ct.Type()]
+}
+```
+
+### Step 9: update `internal/ethapi/api.go`
 
 - Add `isGasEstimation, isEthCall bool` arguments to `func doCall` and pass them in `vm.Config` during EVM creation:
 
@@ -361,6 +303,6 @@ evm, vmError := b.GetEVM(ctx, msg, state, header, &vm.Config{NoBaseFee: true, Is
 - Add `isGasEstimation, isEthCall bool` arguments to `func DoCall` and forward them in the call to `doCall`
 - Update usages of `doCall` and `DoCall` by simply setting `IsEthCall` to `true` when it’s a call, and `IsGasEstimation` to `true` when it’s estimating gas
 
-### Step 9: update `graphql/graphql.go`
+### Step 10: update `graphql/graphql.go`
 
 Update usages of `doCall` and `DoCall` by simply setting `IsEthCall` to `true` when it’s a call, and `IsGasEstimation` to `true` when it’s estimating gas
