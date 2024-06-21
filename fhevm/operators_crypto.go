@@ -35,6 +35,10 @@ const verifyCipertextAbiJson = `
 					"type": "address"
 				},
 				{
+					"name": "contractAddress",
+					"type": "address"
+				},
+				{
 					"name": "inputProof",
 					"type": "bytes"
 				},
@@ -73,7 +77,7 @@ func parseVerifyCiphertextInput(environment EVMEnvironment, input []byte) ([32]b
 	unpacked, err := verifyCipertextMethod.Inputs.UnpackValues(input)
 	if err != nil {
 		return [32]byte{}, nil, err
-	} else if len(unpacked) != 4 {
+	} else if len(unpacked) != 5 {
 		return [32]byte{}, nil, fmt.Errorf("parseVerifyCiphertextInput unexpected unpacked len: %d", len(unpacked))
 	}
 
@@ -84,13 +88,13 @@ func parseVerifyCiphertextInput(environment EVMEnvironment, input []byte) ([32]b
 	}
 
 	// Get the ciphertext from the input.
-	ciphertextList, ok := unpacked[2].([]byte)
+	ciphertextList, ok := unpacked[3].([]byte)
 	if !ok || len(ciphertextList) == 0 {
 		return [32]byte{}, nil, fmt.Errorf("parseVerifyCiphertextInput failed to parse bytes inputProof")
 	}
 
 	// Get the type from the input.
-	inputTypeByteArray, ok := unpacked[3].([1]byte)
+	inputTypeByteArray, ok := unpacked[4].([1]byte)
 	if !ok {
 		return [32]byte{}, nil, fmt.Errorf("parseVerifyCiphertextInput failed to parse byte inputType")
 	}

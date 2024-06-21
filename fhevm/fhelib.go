@@ -229,7 +229,7 @@ var fhelibMethods = []*FheLibMethod{
 	},
 	{
 		name:                "verifyCiphertext",
-		argTypes:            "(bytes32,address,bytes,bytes1)",
+		argTypes:            "(bytes32,address,address,bytes,bytes1)",
 		requiredGasFunction: verifyCiphertextRequiredGas,
 		runFunction:         verifyCiphertextRun,
 	},

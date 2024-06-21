@@ -237,7 +237,7 @@ func createInputListWithBadIndex(values []big.Int, types []tfhe.FheUintType, lis
 }
 
 func packInputList(handle [32]byte, ciphertext []byte, fheUintType tfhe.FheUintType) []byte {
-	input, err := verifyCipertextMethod.Inputs.Pack(handle, [20]byte{}, ciphertext, [1]byte{byte(fheUintType)})
+	input, err := verifyCipertextMethod.Inputs.Pack(handle, [20]byte{}, [20]byte{}, ciphertext, [1]byte{byte(fheUintType)})
 	if err != nil {
 		panic(err)
 	}
