@@ -319,18 +319,9 @@ func castRun(environment EVMEnvironment, caller common.Address, addr common.Addr
 	return resHash.Bytes(), nil
 }
 
-var fhePubKeyHashPrecompile = common.BytesToAddress([]byte{93})
-var fhePubKeyHashSlot = common.Hash{}
-
 func fhePubKeyRun(environment EVMEnvironment, caller common.Address, addr common.Address, input []byte, readOnly bool, runSpan trace.Span) ([]byte, error) {
 	input = input[:minInt(1, len(input))]
 
-	existing := environment.GetState(fhePubKeyHashPrecompile, fhePubKeyHashSlot)
-	if existing != tfhe.GetPksHash() {
-		msg := "fhePubKey FHE public key hash doesn't match one stored in state"
-		environment.GetLogger().Error(msg, "existing", existing.Hex(), "pksHash", tfhe.GetPksHash().Hex())
-		return nil, errors.New(msg)
-	}
 	// serialize public key
 	pksBytes, err := tfhe.SerializePublicKey()
 	if err != nil {
