@@ -66,17 +66,7 @@ func insertRandomCiphertext(environment EVMEnvironment, t tfhe.FheUintType) []by
 	return ct.GetHash().Bytes()
 }
 
-func InitFhevm(accessibleState EVMEnvironment) {
-	persistFhePubKeyHash(accessibleState)
-}
-
-func persistFhePubKeyHash(accessibleState EVMEnvironment) {
-	existing := accessibleState.GetState(fhePubKeyHashPrecompile, fhePubKeyHashSlot)
-	if newInt(existing[:]).IsZero() {
-		var pksHash = tfhe.GetPksHash()
-		accessibleState.SetState(fhePubKeyHashPrecompile, fhePubKeyHashSlot, pksHash)
-	}
-}
+func InitFhevm(accessibleState EVMEnvironment) {}
 
 func Create(evm EVMEnvironment, caller common.Address, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
 	contractAddr = crypto.CreateAddress(caller, evm.GetNonce(caller))
