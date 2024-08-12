@@ -166,12 +166,12 @@ func fheRandBoundedRun(environment EVMEnvironment, caller common.Address, addr c
 		return nil, errors.New(msg)
 	}
 	randType, bound, err := parseRandUpperBoundInput(input)
-	otelDescribeOperandsFheTypes(runSpan, randType)
 	if err != nil {
 		msg := "fheRandBounded bound error"
 		logger.Error(msg, "input", hex.EncodeToString(input), "err", err)
 		return nil, errors.New(msg)
 	}
+	otelDescribeOperandsFheTypes(runSpan, randType)
 	bound64 := bound.Uint64()
 	return generateRandom(environment, caller, randType, &bound64)
 }
