@@ -21,11 +21,11 @@ func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	if !isScalar {
 		lhs, rhs, _, err := load2Ciphertexts(environment, input)
-		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
 			logger.Error("fheAdd failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
 		}
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if lhs.Type() != rhs.Type() {
 			msg := "fheAdd operand type mismatch"
 			logger.Error(msg, "lhs", lhs.Type(), "rhs", rhs.Type())
@@ -50,11 +50,11 @@ func fheAddRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	} else {
 		lhs, rhs, _, err := getScalarOperands(environment, input)
-		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheAdd scalar failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
 		}
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
@@ -87,11 +87,11 @@ func fheSubRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	if !isScalar {
 		lhs, rhs, _, err := load2Ciphertexts(environment, input)
-		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
 			logger.Error("fheSub failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
 		}
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if lhs.Type() != rhs.Type() {
 			msg := "fheSub operand type mismatch"
 			logger.Error(msg, "lhs", lhs.Type(), "rhs", rhs.Type())
@@ -116,11 +116,11 @@ func fheSubRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	} else {
 		lhs, rhs, _, err := getScalarOperands(environment, input)
-		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheSub scalar failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
 		}
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
@@ -153,11 +153,11 @@ func fheMulRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	if !isScalar {
 		lhs, rhs, _, err := load2Ciphertexts(environment, input)
-		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if err != nil {
 			logger.Error("fheMul failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
 		}
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), encryptedOperand(*rhs))
 		if lhs.Type() != rhs.Type() {
 			msg := "fheMul operand type mismatch"
 			logger.Error(msg, "lhs", lhs.Type(), "rhs", rhs.Type())
@@ -182,11 +182,11 @@ func fheMulRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 
 	} else {
 		lhs, rhs, _, err := getScalarOperands(environment, input)
-		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheMul scalar failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
 		}
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
@@ -223,11 +223,11 @@ func fheDivRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		return nil, err
 	} else {
 		lhs, rhs, _, err := getScalarOperands(environment, input)
-		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheDiv scalar failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
 		}
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {
@@ -264,11 +264,11 @@ func fheRemRun(environment EVMEnvironment, caller common.Address, addr common.Ad
 		return nil, err
 	} else {
 		lhs, rhs, _, err := getScalarOperands(environment, input)
-		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 		if err != nil {
 			logger.Error("fheRem scalar failed to load inputs", "err", err, "input", hex.EncodeToString(input))
 			return nil, err
 		}
+		otelDescribeOperands(runSpan, encryptedOperand(*lhs), plainOperand(*rhs))
 
 		// If we are doing gas estimation, skip execution and insert a random ciphertext as a result.
 		if !environment.IsCommitting() && !environment.IsEthCall() {

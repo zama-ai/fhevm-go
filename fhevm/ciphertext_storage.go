@@ -8,7 +8,7 @@ import (
 	"github.com/zama-ai/fhevm-go/fhevm/tfhe"
 )
 
-var ciphertextStorage = common.BytesToAddress([]byte{94})
+var CiphertextStorageAddress = common.BytesToAddress([]byte{94})
 
 func newInt(buf []byte) *uint256.Int {
 	i := uint256.NewInt(0)
@@ -50,13 +50,13 @@ func newCiphertextMetadata(buf [32]byte) *ciphertextMetadata {
 }
 
 func isCiphertextPersisted(env EVMEnvironment, handle common.Hash) bool {
-	metadataInt := newInt(env.GetState(ciphertextStorage, handle).Bytes())
+	metadataInt := newInt(env.GetState(CiphertextStorageAddress, handle).Bytes())
 	return !metadataInt.IsZero()
 }
 
 // Returns the ciphertext metadata for the given handle or nil if it doesn't point to a ciphertext.
 func loadCiphertextMetadata(env EVMEnvironment, handle common.Hash) *ciphertextMetadata {
-	metadataInt := newInt(env.GetState(ciphertextStorage, handle).Bytes())
+	metadataInt := newInt(env.GetState(CiphertextStorageAddress, handle).Bytes())
 	if metadataInt.IsZero() {
 		return nil
 	}
@@ -73,7 +73,7 @@ func loadCiphertext(env EVMEnvironment, handle common.Hash) (ct *tfhe.TfheCipher
 		return ct, 0
 	}
 
-	metadataInt := newInt(env.GetState(ciphertextStorage, handle).Bytes())
+	metadataInt := newInt(env.GetState(CiphertextStorageAddress, handle).Bytes())
 	if metadataInt.IsZero() {
 		return nil, ColdSloadCostEIP2929
 	}
@@ -83,7 +83,7 @@ func loadCiphertext(env EVMEnvironment, handle common.Hash) (ct *tfhe.TfheCipher
 	idx := newInt(handle.Bytes())
 	idx.AddUint64(idx, 1)
 	for left > 0 {
-		bytes := env.GetState(ciphertextStorage, idx.Bytes32())
+		bytes := env.GetState(CiphertextStorageAddress, idx.Bytes32())
 		toAppend := minUint64(uint64(len(bytes)), left)
 		left -= toAppend
 		ctBytes = append(ctBytes, bytes[0:toAppend]...)
@@ -117,7 +117,7 @@ func persistCiphertext(env EVMEnvironment, handle common.Hash, ct *tfhe.TfheCiph
 	metadata.fheUintType = ct.Type()
 
 	// Persist the metadata in storage.
-	env.SetState(ciphertextStorage, handle, metadata.serialize())
+	env.SetState(CiphertextStorageAddress, handle, metadata.serialize())
 
 	ciphertextSlot := newInt(handle.Bytes())
 	ciphertextSlot.AddUint64(ciphertextSlot, 1)
@@ -133,7 +133,7 @@ func persistCiphertext(env EVMEnvironment, handle common.Hash, ct *tfhe.TfheCiph
 	ctBytes := ct.Serialize()
 	for i, b := range ctBytes {
 		if i%32 == 0 && i != 0 {
-			env.SetState(ciphertextStorage, ciphertextSlot.Bytes32(), common.BytesToHash(ctPart32))
+			env.SetState(CiphertextStorageAddress, ciphertextSlot.Bytes32(), common.BytesToHash(ctPart32))
 			ciphertextSlot.AddUint64(ciphertextSlot, 1)
 			ctPart32 = make([]byte, 32)
 			partIdx = 0
@@ -142,7 +142,7 @@ func persistCiphertext(env EVMEnvironment, handle common.Hash, ct *tfhe.TfheCiph
 		partIdx++
 	}
 	if len(ctPart32) != 0 {
-		env.SetState(ciphertextStorage, ciphertextSlot.Bytes32(), common.BytesToHash(ctPart32))
+		env.SetState(CiphertextStorageAddress, ciphertextSlot.Bytes32(), common.BytesToHash(ctPart32))
 	}
 }
 
