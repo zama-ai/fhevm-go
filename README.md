@@ -32,9 +32,9 @@ fhEVM-go gives your EVM the ability to compute on encrypted data using fully hom
 In order to use the library, you need to clone the repository and build it. This is required because the library depends on the `tfhe-rs` library that needs to be built from source (for now), and Go doesn't support such a build.
 
 ```bash
-$ git clone --recurse-submodules https://github.com/zama-ai/fhevm-go
-$ cd fhevm-go
-$ make build
+git clone --recurse-submodules https://github.com/zama-ai/fhevm-go
+cd fhevm-go
+make build
 ```
 
 That's it! You can now use it in your project by adding it to `go.mod`, and adding a `replace` to point to your local build. An example using `fhevm-go` v1.0.0:
