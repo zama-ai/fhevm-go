@@ -126,7 +126,7 @@ func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig
 
 - Initialize `isGasEstimation` using `config.IsGasEstimation`
 - Initialize `isEthCall` using `config.IsEthCall`
-- Initialize `fhevmEnvironment` with `FhevmImplementation{interpreter: nil, logger: &fhevm.DefaultLogger{}, data: fhevm.NewFhevmData(), params: fhevm.DefaultFhevmParams()}`
+- Initialize `fhevmEnvironment` with `FhevmImplementation{interpreter: nil, logger: fhevm.NewDefaultLogger(), data: fhevm.NewFhevmData(), params: fhevm.DefaultFhevmParams()}`
 - After initializing `evm.interpreter` make sure to point `fhevmEnvironment` to it `evm.fhevmEnvironment.interpreter = evm.interpreter` then initialize it `fhevm.InitFhevm(&evm.fhevmEnvironment)`
 
 #### Update RunPrecompiledContract
@@ -141,6 +141,38 @@ to:
 
 ```go
 RunPrecompiledContract(p, evm, caller.Address(), addr, input, gas)
+```
+
+#### Update Create() and Create2() functions
+
+Add code to create ciphertext storage:
+
+```go
+// Create creates a new contract using code as deployment code.
+func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
+	contractAddr = crypto.CreateAddress(caller.Address(), evm.StateDB.GetNonce(caller.Address()))
+	// Create the ciphertext storage if not already created.
+	if evm.StateDB.GetNonce(fhevm.CiphertextStorageAddress) == 0 {
+		evm.StateDB.CreateAccount(fhevm.CiphertextStorageAddress)
+		evm.StateDB.SetNonce(fhevm.CiphertextStorageAddress, 1)
+	}
+	return evm.create(caller, &codeAndHash{code: code}, gas, value, contractAddr, CREATE)
+}
+
+// Create2 creates a new contract using code as deployment code.
+//
+// The different between Create2 with Create is Create2 uses keccak256(0xff ++ msg.sender ++ salt ++ keccak256(init_code))[12:]
+// instead of the usual sender-and-nonce-hash as the address where the contract is initialized at.
+func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *big.Int, salt *uint256.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
+	codeAndHash := &codeAndHash{code: code}
+	contractAddr = crypto.CreateAddress2(caller.Address(), salt.Bytes32(), codeAndHash.Hash().Bytes())
+	// Create the ciphertext storage if not already created.
+	if evm.StateDB.GetNonce(fhevm.CiphertextStorageAddress) == 0 {
+		evm.StateDB.CreateAccount(fhevm.CiphertextStorageAddress)
+		evm.StateDB.SetNonce(fhevm.CiphertextStorageAddress, 1)
+	}
+	return evm.create(caller, codeAndHash, gas, endowment, contractAddr, CREATE2)
+}
 ```
 
 #### Implement EVMEnvironment interface
